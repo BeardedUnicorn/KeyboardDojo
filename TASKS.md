@@ -5,7 +5,7 @@ I've created a comprehensive checklist for each milestone, including detailed da
 The folders have already been created for the backend and frontend. The frontend only has the bare vite react typescript setup. Everything else will need to be implemeneted.
 
 
-## Milestone 1: Project Setup and Monorepo Configuration
+## Milestone 1: Project Setup and Monorepo Configuration ✅
 
 ### Frontend Setup
 - [x] Initialize Yarn monorepo with workspaces configuration
@@ -90,7 +90,7 @@ The folders have already been created for the backend and frontend. The frontend
 - [ ] Verify API Gateway health check endpoint is working
 - [ ] Confirm DynamoDB tables are created correctly
 
-## Milestone 2: User Authentication (OAuth & Email Sign-Up)
+## Milestone 2: User Authentication (OAuth & Email Sign-Up) ✅
 
 ### Frontend Authentication
 - [x] Create login/register page with MUI components
@@ -158,16 +158,16 @@ The folders have already been created for the backend and frontend. The frontend
 ## Milestone 3: Core Learning Module and Progress Tracking
 
 ### Frontend Learning Interface
-- [ ] Design and implement interactive keyboard shortcut interface
-- [ ] Create keyboard event handlers for detecting key combinations
-- [ ] Implement real-time feedback system for user attempts
-- [ ] Build lesson navigation (next/previous, progress bar)
-- [ ] Add API integration to fetch lessons from backend
-- [ ] Implement progress tracking after lesson completion
-- [ ] Create user dashboard for displaying overall progress
+- [x] Design and implement interactive keyboard shortcut interface
+- [x] Create keyboard event handlers for detecting key combinations
+- [x] Implement real-time feedback system for user attempts
+- [x] Build lesson navigation (next/previous, progress bar)
+- [x] Add API integration to fetch lessons from backend
+- [x] Implement progress tracking after lesson completion
+- [x] Create user dashboard for displaying overall progress
 
 ### Backend Data Models & API
-- [ ] Finalize Lessons table schema:
+- [x] Finalize Lessons table schema:
   ```yaml
   Resources:
     LessonsTable:
@@ -201,7 +201,7 @@ The folders have already been created for the backend and frontend. The frontend
         # - isPremium: Boolean (for future Stripe integration)
   ```
 
-- [ ] Finalize Progress table schema:
+- [x] Finalize Progress table schema:
   ```yaml
   Resources:
     ProgressTable:
@@ -227,12 +227,12 @@ The folders have already been created for the backend and frontend. The frontend
         # - lastActivityDate: Number (timestamp)
   ```
 
-- [ ] Implement GET /lessons API endpoint
-- [ ] Create GET /lessons/{id} API endpoint
-- [ ] Build GET /progress endpoint for user progress
-- [ ] Implement POST /progress endpoint to update progress
-- [ ] Add authorization checks to progress endpoints
-- [ ] Create seed data script for initial lessons
+- [x] Implement GET /lessons API endpoint
+- [x] Create GET /lessons/{id} API endpoint
+- [x] Build GET /progress endpoint for user progress
+- [x] Implement POST /progress endpoint to update progress
+- [x] Add authorization checks to progress endpoints
+- [x] Create seed data script for initial lessons
 
 ### Testing
 - [ ] Write tests for lesson interface components

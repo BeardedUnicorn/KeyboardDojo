@@ -138,6 +138,69 @@ functions:
           method: post
           cors: true
 
+  # Lesson endpoints
+  getAllLessons:
+    handler: src/functions/lessons/getAllLessons.handler
+    events:
+      - http:
+          path: /lessons
+          method: get
+          cors: true
+
+  getLessonById:
+    handler: src/functions/lessons/getLessonById.handler
+    events:
+      - http:
+          path: /lessons/{id}
+          method: get
+          cors: true
+
+  getLessonsByCategory:
+    handler: src/functions/lessons/getLessonsByCategory.handler
+    events:
+      - http:
+          path: /lessons/category/{category}
+          method: get
+          cors: true
+
+  # Progress endpoints
+  getUserProgress:
+    handler: src/functions/progress/getUserProgress.handler
+    events:
+      - http:
+          path: /progress
+          method: get
+          cors: true
+          authorizer:
+            name: verifyToken
+            identitySource: method.request.header.Authorization
+            type: token
+
+  updateUserProgress:
+    handler: src/functions/progress/updateUserProgress.handler
+    events:
+      - http:
+          path: /progress
+          method: post
+          cors: true
+          authorizer:
+            name: verifyToken
+            identitySource: method.request.header.Authorization
+            type: token
+
+  # Admin functions
+  seedLessons:
+    handler: src/functions/admin/seedLessons.handler
+    events:
+      - http:
+          path: /admin/seed-lessons
+          method: post
+          cors: true
+          authorizer:
+            name: verifyToken
+            identitySource: method.request.header.Authorization
+            type: token
+
 resources:
   Resources:
     # DynamoDB Tables
@@ -180,9 +243,18 @@ resources:
         AttributeDefinitions:
           - AttributeName: lessonId
             AttributeType: S
+          - AttributeName: category
+            AttributeType: S
         KeySchema:
           - AttributeName: lessonId
             KeyType: HASH
+        GlobalSecondaryIndexes:
+          - IndexName: CategoryIndex
+            KeySchema:
+              - AttributeName: category
+                KeyType: HASH
+            Projection:
+              ProjectionType: ALL
 
     ProgressTable:
       Type: AWS::DynamoDB::Table
