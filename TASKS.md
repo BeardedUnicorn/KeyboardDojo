@@ -15,14 +15,14 @@ The folders have already been created for the backend and frontend. The frontend
 - [x] Set up Redux Toolkit (create store and sample slice)
 - [x] Create basic App component and placeholder pages
 - [x] Verify the app runs locally and builds without errors
-- [ ] Set up Git repository
+- [x] Set up Git repository
 
 ### Backend Setup
-- [ ] Create backend package in the monorepo
-- [ ] Initialize Serverless Framework
-- [ ] Create `serverless.yml` with AWS region, runtime, and service name
-- [ ] Implement health check Lambda function
-- [ ] Define API Gateway endpoint for health check
+- [x] Create backend package in the monorepo
+- [x] Initialize Serverless Framework
+- [x] Create `serverless.yml` with AWS region, runtime, and service name
+- [x] Implement health check Lambda function
+- [x] Define API Gateway endpoint for health check
 - [ ] Configure CloudFront and S3 deployment:
   - [ ] Define S3 bucket for static files (private)
   - [ ] Create CloudFront distribution with proper cache settings
