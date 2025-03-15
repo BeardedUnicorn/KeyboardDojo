@@ -243,33 +243,21 @@ The folders have already been created for the backend and frontend. The frontend
 - [ ] Validate proper progress updates in the database
 - [ ] Test authorization on progress endpoints
 
-## Milestone 4: Marketing Website Integration
+## Milestone 4: Premium Features and Monetization
 
-### Marketing Pages
-- [ ] Design and build landing page with clear value proposition
-- [ ] Create About Us/Team page
-- [ ] Build Features page highlighting app capabilities
-- [ ] Add Contact page with support information
-- [ ] Create placeholder Pricing page for future premium features
-- [ ] Implement React Router for navigation between pages
-- [ ] Create navigation menu/header with links to all pages
-- [ ] Ensure proper auth-state-aware navigation (show login/logout)
+### Frontend Tasks
+- [x] Create subscription management UI
+- [x] Implement premium content indicators
+- [x] Add payment form integration
+- [x] Create subscription slice in Redux
+- [x] Build receipt/invoice viewer
 
-### SEO & Integration
-- [ ] Add metadata with React Helmet for each marketing page
-- [ ] Include proper page titles and descriptions
-- [ ] Add Open Graph tags for social sharing
-- [ ] Test responsive design on various screen sizes
-- [ ] Verify cross-browser compatibility
-- [ ] Check CloudFront configuration for proper SPA routing
-- [ ] Optionally integrate analytics service
-
-### Testing
-- [ ] Write tests for any interactive components on marketing pages
-- [ ] Create snapshot tests for static page layouts
-- [ ] Test navigation between marketing and app pages
-- [ ] Verify unauthenticated access to marketing pages
-- [ ] Test authenticated user view of marketing pages
+### Backend Tasks
+- [x] Integrate with Stripe for payments
+- [x] Create subscription Lambda functions
+- [x] Implement webhook handler for Stripe events
+- [x] Add premium content access control
+- [x] Create invoice generation Lambda
 
 ## Milestone 5: Admin Dashboard for Content & User Management
 

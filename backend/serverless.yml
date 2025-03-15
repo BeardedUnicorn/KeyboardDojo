@@ -12,6 +12,7 @@ provider:
     USERS_TABLE: ${self:service}-${self:provider.stage}-users
     LESSONS_TABLE: ${self:service}-${self:provider.stage}-lessons
     PROGRESS_TABLE: ${self:service}-${self:provider.stage}-progress
+    SUBSCRIPTIONS_TABLE: ${self:service}-${self:provider.stage}-subscriptions
     JWT_SECRET: ${self:custom.secrets.JWT_SECRET}
     GOOGLE_CLIENT_ID: ${self:custom.secrets.GOOGLE_CLIENT_ID}
     GOOGLE_CLIENT_SECRET: ${self:custom.secrets.GOOGLE_CLIENT_SECRET}
@@ -20,6 +21,10 @@ provider:
     APPLE_CLIENT_ID: ${self:custom.secrets.APPLE_CLIENT_ID}
     APPLE_CLIENT_SECRET: ${self:custom.secrets.APPLE_CLIENT_SECRET}
     CLIENT_URL: ${self:custom.clientUrl}
+    STRIPE_SECRET_KEY: ${self:custom.secrets.STRIPE_SECRET_KEY}
+    STRIPE_WEBHOOK_SECRET: ${self:custom.secrets.STRIPE_WEBHOOK_SECRET}
+    PRICE_MONTHLY: ${self:custom.secrets.PRICE_MONTHLY}
+    PRICE_ANNUAL: ${self:custom.secrets.PRICE_ANNUAL}
   iamRoleStatements:
     - Effect: Allow
       Action:
@@ -34,9 +39,11 @@ provider:
         - !GetAtt UsersTable.Arn
         - !GetAtt LessonsTable.Arn
         - !GetAtt ProgressTable.Arn
+        - !GetAtt SubscriptionsTable.Arn
         - !Sub "${UsersTable.Arn}/index/*"
         - !Sub "${LessonsTable.Arn}/index/*"
         - !Sub "${ProgressTable.Arn}/index/*"
+        - !Sub "${SubscriptionsTable.Arn}/index/*"
     # Add S3 permissions for frontend deployment
     - Effect: Allow
       Action:
@@ -66,6 +73,10 @@ custom:
     GITHUB_CLIENT_SECRET: ${env:GITHUB_CLIENT_SECRET, ''}
     APPLE_CLIENT_ID: ${env:APPLE_CLIENT_ID, ''}
     APPLE_CLIENT_SECRET: ${env:APPLE_CLIENT_SECRET, ''}
+    STRIPE_SECRET_KEY: ${env:STRIPE_SECRET_KEY, ''}
+    STRIPE_WEBHOOK_SECRET: ${env:STRIPE_WEBHOOK_SECRET, ''}
+    PRICE_MONTHLY: ${env:PRICE_MONTHLY, ''}
+    PRICE_ANNUAL: ${env:PRICE_ANNUAL, ''}
 
 package:
   individually: true
@@ -188,6 +199,51 @@ functions:
             identitySource: method.request.header.Authorization
             type: token
 
+  # Subscription endpoints
+  createCheckoutSession:
+    handler: src/functions/subscriptions/createCheckoutSession.handler
+    events:
+      - http:
+          path: /subscriptions/checkout
+          method: post
+          cors: true
+          authorizer:
+            name: verifyToken
+            identitySource: method.request.header.Authorization
+            type: token
+
+  getUserSubscription:
+    handler: src/functions/subscriptions/getUserSubscription.handler
+    events:
+      - http:
+          path: /subscriptions
+          method: get
+          cors: true
+          authorizer:
+            name: verifyToken
+            identitySource: method.request.header.Authorization
+            type: token
+
+  cancelSubscription:
+    handler: src/functions/subscriptions/cancelSubscription.handler
+    events:
+      - http:
+          path: /subscriptions/cancel
+          method: post
+          cors: true
+          authorizer:
+            name: verifyToken
+            identitySource: method.request.header.Authorization
+            type: token
+
+  stripeWebhook:
+    handler: src/functions/subscriptions/stripeWebhook.handler
+    events:
+      - http:
+          path: /webhooks/stripe
+          method: post
+          cors: true
+
   # Admin functions
   seedLessons:
     handler: src/functions/admin/seedLessons.handler
@@ -233,7 +289,8 @@ resources:
         # - hashedPassword: String (for email auth)
         # - createdAt: Number (timestamp)
         # - isAdmin: Boolean
-        # - isPremium: Boolean (for future)
+        # - isPremium: Boolean (for premium subscription)
+        # - stripeCustomerId: String (Stripe customer ID)
 
     LessonsTable:
       Type: AWS::DynamoDB::Table
@@ -255,6 +312,26 @@ resources:
                 KeyType: HASH
             Projection:
               ProjectionType: ALL
+        # Schema attributes (conceptual):
+        # - lessonId: String (primary key)
+        # - title: String
+        # - description: String
+        # - category: String (GSI key)
+        # - difficulty: String (beginner, intermediate, advanced)
+        # - order: Number
+        # - content: Object
+        #   - introduction: String
+        #   - shortcuts: Array of Shortcut objects
+        #     - id: String
+        #     - name: String
+        #     - description: String
+        #     - keyCombination: Array of String
+        #     - operatingSystem: String (optional)
+        #     - context: String (optional)
+        #   - tips: Array of String
+        # - isPremium: Boolean
+        # - createdAt: Number (timestamp)
+        # - updatedAt: Number (timestamp)
 
     ProgressTable:
       Type: AWS::DynamoDB::Table
@@ -267,62 +344,107 @@ resources:
         KeySchema:
           - AttributeName: userId
             KeyType: HASH
+        # Schema attributes (conceptual):
+        # - userId: String (primary key)
+        # - completedLessons: Map of LessonCompletion objects
+        #   - [lessonId]: Object
+        #     - completedAt: Number (timestamp)
+        #     - score: Number
+        #     - attempts: Number
+        #     - timeSpent: Number (seconds)
+        #     - shortcuts: Map of ShortcutProgress objects
+        #       - [shortcutId]: Object
+        #         - mastered: Boolean
+        #         - attempts: Number
+        #         - correctAttempts: Number
+        #         - lastAttemptAt: Number (timestamp)
+        # - totalLessonsCompleted: Number
+        # - streakDays: Number
+        # - lastActivityDate: Number (timestamp)
+        # - updatedAt: Number (timestamp)
+    
+    SubscriptionsTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:service}-${self:provider.stage}-subscriptions
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - AttributeName: id
+            AttributeType: S
+          - AttributeName: userId
+            AttributeType: S
+          - AttributeName: stripeSubscriptionId
+            AttributeType: S
+        KeySchema:
+          - AttributeName: id
+            KeyType: HASH
+        GlobalSecondaryIndexes:
+          - IndexName: ByUserId
+            KeySchema:
+              - AttributeName: userId
+                KeyType: HASH
+            Projection:
+              ProjectionType: ALL
+          - IndexName: ByStripeSubscriptionId
+            KeySchema:
+              - AttributeName: stripeSubscriptionId
+                KeyType: HASH
+            Projection:
+              ProjectionType: ALL
+        # Schema attributes (conceptual):
+        # - id: String (primary key - unique subscription ID)
+        # - userId: String (GSI key - user who owns the subscription)
+        # - stripeCustomerId: String (Stripe customer ID)
+        # - stripeSubscriptionId: String (GSI key - Stripe subscription ID)
+        # - plan: String (monthly, annual)
+        # - status: String (active, cancelled, past_due, etc.)
+        # - currentPeriodStart: Number (timestamp)
+        # - currentPeriodEnd: Number (timestamp)
+        # - cancelAtPeriodEnd: Boolean
+        # - createdAt: Number (timestamp)
+        # - updatedAt: Number (timestamp)
 
-    # S3 Bucket for frontend assets
+    # CloudFront and S3 for frontend hosting
     WebAppBucket:
       Type: AWS::S3::Bucket
       Properties:
-        BucketName: ${self:service}-${self:provider.stage}-webapp
         AccessControl: Private
-        PublicAccessBlockConfiguration:
-          BlockPublicAcls: true
-          BlockPublicPolicy: true
-          IgnorePublicAcls: true
-          RestrictPublicBuckets: true
         CorsConfiguration:
           CorsRules:
-            - AllowedHeaders:
-                - '*'
-              AllowedMethods:
-                - GET
-              AllowedOrigins:
-                - '*'
+            - AllowedHeaders: ['*']
+              AllowedMethods: [GET]
+              AllowedOrigins: ['*']
               MaxAge: 3000
 
-    # CloudFront Origin Access Identity
-    CloudFrontOriginAccessIdentity:
-      Type: AWS::CloudFront::CloudFrontOriginAccessIdentity
-      Properties:
-        CloudFrontOriginAccessIdentityConfig:
-          Comment: Access identity for ${self:service}-${self:provider.stage} web app
-
-    # S3 Bucket Policy for CloudFront
     WebAppBucketPolicy:
       Type: AWS::S3::BucketPolicy
       Properties:
         Bucket: !Ref WebAppBucket
         PolicyDocument:
-          Version: '2012-10-17'
           Statement:
-            - Effect: Allow
+            - Action: s3:GetObject
+              Effect: Allow
+              Resource: !Join ['', [!GetAtt WebAppBucket.Arn, '/*']]
               Principal:
                 CanonicalUser: !GetAtt CloudFrontOriginAccessIdentity.S3CanonicalUserId
-              Action: s3:GetObject
-              Resource: !Join ['', [!GetAtt WebAppBucket.Arn, '/*']]
 
-    # CloudFront Distribution
+    CloudFrontOriginAccessIdentity:
+      Type: AWS::CloudFront::CloudFrontOriginAccessIdentity
+      Properties:
+        CloudFrontOriginAccessIdentityConfig:
+          Comment: OAI for Keyboard Dojo Web App
+
     CloudFrontDistribution:
       Type: AWS::CloudFront::Distribution
       Properties:
         DistributionConfig:
+          Origins:
+            - DomainName: !GetAtt WebAppBucket.DomainName
+              Id: S3Origin
+              S3OriginConfig:
+                OriginAccessIdentity: !Join ['', ['origin-access-identity/cloudfront/', !Ref CloudFrontOriginAccessIdentity]]
           Enabled: true
           DefaultRootObject: index.html
-          DefaultCacheBehavior:
-            TargetOriginId: WebAppOrigin
-            ViewerProtocolPolicy: redirect-to-https
-            Compress: true
-            CachePolicyId: 658327ea-f89d-4fab-a63d-7e88639e58f6 # Managed-CachingOptimized
-            OriginRequestPolicyId: 88a5eaf4-2fd4-4709-b370-b4c650ea3fcf # Managed-CORS-S3Origin
           CustomErrorResponses:
             - ErrorCode: 404
               ResponseCode: 200
@@ -330,12 +452,17 @@ resources:
             - ErrorCode: 403
               ResponseCode: 200
               ResponsePagePath: /index.html
-          Origins:
-            - Id: WebAppOrigin
-              DomainName: !GetAtt WebAppBucket.RegionalDomainName
-              S3OriginConfig:
-                OriginAccessIdentity: !Join ['', ['origin-access-identity/cloudfront/', !Ref CloudFrontOriginAccessIdentity]]
-          PriceClass: PriceClass_100 # Use only US, Canada and Europe
+          DefaultCacheBehavior:
+            AllowedMethods: [GET, HEAD, OPTIONS]
+            TargetOriginId: S3Origin
+            ForwardedValues:
+              QueryString: false
+              Cookies:
+                Forward: none
+            ViewerProtocolPolicy: redirect-to-https
+          PriceClass: PriceClass_100
+          ViewerCertificate:
+            CloudFrontDefaultCertificate: true
 
   Outputs:
     CloudFrontDistributionDomainName:

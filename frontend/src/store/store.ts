@@ -3,6 +3,7 @@ import settingsReducer from '../features/settings/settingsSlice';
 import authReducer from '../features/auth/authSlice';
 import lessonsReducer from '../features/lessons/lessonsSlice';
 import progressReducer from '../features/progress/progressSlice';
+import subscriptionReducer from '../features/subscription/subscriptionSlice';
 
 export const store = configureStore({
   reducer: {
@@ -10,6 +11,7 @@ export const store = configureStore({
     auth: authReducer,
     lessons: lessonsReducer,
     progress: progressReducer,
+    subscription: subscriptionReducer,
     // Add more reducers here as the application grows
   },
 });

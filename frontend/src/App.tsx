@@ -9,6 +9,8 @@ import Settings from './features/settings/Settings';
 import Login from './features/auth/Login';
 import Register from './features/auth/Register';
 import OAuthCallback from './features/auth/OAuthCallback';
+import SubscriptionManagement from './features/subscription/SubscriptionManagement';
+import SubscriptionSuccess from './features/subscription/SubscriptionSuccess';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import './App.css';
 
@@ -30,6 +32,10 @@ const App = () => {
             <Route path="/practice" element={<Practice />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/settings" element={<Settings />} />
+
+            {/* Subscription Routes */}
+            <Route path="/subscription/management" element={<SubscriptionManagement />} />
+            <Route path="/subscription/success" element={<SubscriptionSuccess />} />
           </Route>
         </Route>
       </Routes>
