@@ -1,0 +1,20 @@
+{
+  "name": "keyboard-dojo-monorepo",
+  "private": true,
+  "workspaces": [
+    "frontend",
+    "backend"
+  ],
+  "version": "1.0.0",
+  "description": "Keyboard Dojo - Learn keyboard shortcuts effectively",
+  "scripts": {
+    "start:frontend": "yarn workspace @keyboard-dojo/frontend dev",
+    "start:backend": "yarn workspace @keyboard-dojo/backend dev",
+    "build:frontend": "yarn workspace @keyboard-dojo/frontend build",
+    "build:backend": "yarn workspace @keyboard-dojo/backend build",
+    "test": "yarn workspaces run test"
+  },
+  "author": "",
+  "license": "ISC",
+  "packageManager": "yarn@1.22.19"
+} 
