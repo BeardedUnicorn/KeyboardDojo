@@ -23,16 +23,16 @@ The folders have already been created for the backend and frontend. The frontend
 - [x] Create `serverless.yml` with AWS region, runtime, and service name
 - [x] Implement health check Lambda function
 - [x] Define API Gateway endpoint for health check
-- [ ] Configure CloudFront and S3 deployment:
-  - [ ] Define S3 bucket for static files (private)
-  - [ ] Create CloudFront distribution with proper cache settings
-  - [ ] Configure default root object to `index.html`
-  - [ ] Set up routing for client-side paths
-  - [ ] Configure permissions with Origin Access Identity
-- [ ] Set up automated frontend build process with Serverless
+- [x] Configure CloudFront and S3 deployment:
+  - [x] Define S3 bucket for static files (private)
+  - [x] Create CloudFront distribution with proper cache settings
+  - [x] Configure default root object to `index.html`
+  - [x] Set up routing for client-side paths
+  - [x] Configure permissions with Origin Access Identity
+- [x] Set up automated frontend build process with Serverless
 
 ### Database Schema Design
-- [ ] Define Users table in `serverless.yml`:
+- [x] Define Users table in `serverless.yml`:
   ```yaml
   Resources:
     UsersTable:
@@ -48,7 +48,7 @@ The folders have already been created for the backend and frontend. The frontend
             KeyType: HASH
   ```
 
-- [ ] Define Lessons table in `serverless.yml`:
+- [x] Define Lessons table in `serverless.yml`:
   ```yaml
   Resources:
     LessonsTable:
@@ -64,7 +64,7 @@ The folders have already been created for the backend and frontend. The frontend
             KeyType: HASH
   ```
 
-- [ ] Define Progress table in `serverless.yml`:
+- [x] Define Progress table in `serverless.yml`:
   ```yaml
   Resources:
     ProgressTable:

@@ -26,10 +26,26 @@ provider:
         - !Sub "${UsersTable.Arn}/index/*"
         - !Sub "${LessonsTable.Arn}/index/*"
         - !Sub "${ProgressTable.Arn}/index/*"
+    # Add S3 permissions for frontend deployment
+    - Effect: Allow
+      Action:
+        - s3:PutObject
+        - s3:GetObject
+        - s3:ListBucket
+        - s3:DeleteObject
+      Resource:
+        - !GetAtt WebAppBucket.Arn
+        - !Join ['', [!GetAtt WebAppBucket.Arn, '/*']]
 
 plugins:
   - serverless-plugin-typescript
   - serverless-offline
+
+custom:
+  # Specify the frontend build path
+  frontendBuildPath: '../frontend/dist'
+  # Custom domain name if needed
+  # domainName: ${self:service}-${self:provider.stage}.example.com
 
 package:
   individually: true
@@ -44,8 +60,17 @@ functions:
           method: get
           cors: true
 
+  # Build and deploy frontend 
+  deployFrontend:
+    handler: src/functions/deployFrontend.handler
+    timeout: 300 # 5 minutes
+    environment:
+      WEB_APP_BUCKET: !Ref WebAppBucket
+      CLOUDFRONT_DISTRIBUTION_ID: !Ref CloudFrontDistribution
+
 resources:
   Resources:
+    # DynamoDB Tables
     UsersTable:
       Type: AWS::DynamoDB::Table
       Properties:
@@ -80,4 +105,82 @@ resources:
             AttributeType: S
         KeySchema:
           - AttributeName: userId
-            KeyType: HASH 
+            KeyType: HASH
+
+    # S3 Bucket for frontend assets
+    WebAppBucket:
+      Type: AWS::S3::Bucket
+      Properties:
+        BucketName: ${self:service}-${self:provider.stage}-webapp
+        AccessControl: Private
+        PublicAccessBlockConfiguration:
+          BlockPublicAcls: true
+          BlockPublicPolicy: true
+          IgnorePublicAcls: true
+          RestrictPublicBuckets: true
+        CorsConfiguration:
+          CorsRules:
+            - AllowedHeaders:
+                - '*'
+              AllowedMethods:
+                - GET
+              AllowedOrigins:
+                - '*'
+              MaxAge: 3000
+
+    # CloudFront Origin Access Identity
+    CloudFrontOriginAccessIdentity:
+      Type: AWS::CloudFront::CloudFrontOriginAccessIdentity
+      Properties:
+        CloudFrontOriginAccessIdentityConfig:
+          Comment: Access identity for ${self:service}-${self:provider.stage} web app
+
+    # S3 Bucket Policy for CloudFront
+    WebAppBucketPolicy:
+      Type: AWS::S3::BucketPolicy
+      Properties:
+        Bucket: !Ref WebAppBucket
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Principal:
+                CanonicalUser: !GetAtt CloudFrontOriginAccessIdentity.S3CanonicalUserId
+              Action: s3:GetObject
+              Resource: !Join ['', [!GetAtt WebAppBucket.Arn, '/*']]
+
+    # CloudFront Distribution
+    CloudFrontDistribution:
+      Type: AWS::CloudFront::Distribution
+      Properties:
+        DistributionConfig:
+          Enabled: true
+          DefaultRootObject: index.html
+          DefaultCacheBehavior:
+            TargetOriginId: WebAppOrigin
+            ViewerProtocolPolicy: redirect-to-https
+            Compress: true
+            CachePolicyId: 658327ea-f89d-4fab-a63d-7e88639e58f6 # Managed-CachingOptimized
+            OriginRequestPolicyId: 88a5eaf4-2fd4-4709-b370-b4c650ea3fcf # Managed-CORS-S3Origin
+          CustomErrorResponses:
+            - ErrorCode: 404
+              ResponseCode: 200
+              ResponsePagePath: /index.html
+            - ErrorCode: 403
+              ResponseCode: 200
+              ResponsePagePath: /index.html
+          Origins:
+            - Id: WebAppOrigin
+              DomainName: !GetAtt WebAppBucket.RegionalDomainName
+              S3OriginConfig:
+                OriginAccessIdentity: !Join ['', ['origin-access-identity/cloudfront/', !Ref CloudFrontOriginAccessIdentity]]
+          PriceClass: PriceClass_100 # Use only US, Canada and Europe
+
+  Outputs:
+    CloudFrontDistributionDomainName:
+      Description: The domain name of the CloudFront distribution
+      Value: !GetAtt CloudFrontDistribution.DomainName
+
+    WebAppBucketName:
+      Description: The name of the S3 bucket for the web app
+      Value: !Ref WebAppBucket 

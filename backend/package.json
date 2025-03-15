@@ -11,13 +11,15 @@
   },
   "dependencies": {
     "aws-sdk": "^2.1550.0",
-    "uuid": "^9.0.1"
+    "uuid": "^9.0.1",
+    "mime-types": "^2.1.35"
   },
   "devDependencies": {
     "@types/aws-lambda": "^8.10.133",
     "@types/jest": "^29.5.12",
     "@types/node": "^20.11.16",
     "@types/uuid": "^9.0.8",
+    "@types/mime-types": "^2.1.4",
     "jest": "^29.7.0",
     "serverless": "^3.38.0",
     "serverless-offline": "^13.3.2",
