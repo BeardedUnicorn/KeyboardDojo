@@ -93,17 +93,17 @@ The folders have already been created for the backend and frontend. The frontend
 ## Milestone 2: User Authentication (OAuth & Email Sign-Up)
 
 ### Frontend Authentication
-- [ ] Create login/register page with MUI components
-- [ ] Implement OAuth client flow for Google
-- [ ] Implement OAuth client flow for Apple
-- [ ] Implement OAuth client flow for GitHub
-- [ ] Build email/password sign-up form with validations
-- [ ] Create Redux auth slice for authentication state
-- [ ] Implement session persistence (cookies or local storage)
-- [ ] Add auth state checks to protected routes
+- [x] Create login/register page with MUI components
+- [x] Implement OAuth client flow for Google
+- [x] Implement OAuth client flow for Apple
+- [x] Implement OAuth client flow for GitHub
+- [x] Build email/password sign-up form with validations
+- [x] Create Redux auth slice for authentication state
+- [x] Implement session persistence (cookies or local storage)
+- [x] Add auth state checks to protected routes
 
 ### Backend Authentication
-- [ ] Expand Users table schema:
+- [x] Expand Users table schema:
   ```yaml
   Resources:
     UsersTable:
@@ -138,14 +138,14 @@ The folders have already been created for the backend and frontend. The frontend
         # - isPremium: Boolean (for future)
   ```
 
-- [ ] Register application with OAuth providers
-- [ ] Implement OAuth callback Lambda functions for each provider
-- [ ] Create JWT token generation function
-- [ ] Implement email registration Lambda
-- [ ] Implement password hashing function
-- [ ] Create email login Lambda
-- [ ] Set up token verification for protected routes
-- [ ] Configure authorizer in serverless.yml
+- [x] Register application with OAuth providers
+- [x] Implement OAuth callback Lambda functions for each provider
+- [x] Create JWT token generation function
+- [x] Implement email registration Lambda
+- [x] Implement password hashing function
+- [x] Create email login Lambda
+- [x] Set up token verification for protected routes
+- [x] Configure authorizer in serverless.yml
 
 ### Testing
 - [ ] Write unit tests for auth UI components

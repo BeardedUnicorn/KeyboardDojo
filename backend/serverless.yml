@@ -9,6 +9,17 @@ provider:
   stage: ${opt:stage, 'dev'}
   environment:
     STAGE: ${self:provider.stage}
+    USERS_TABLE: ${self:service}-${self:provider.stage}-users
+    LESSONS_TABLE: ${self:service}-${self:provider.stage}-lessons
+    PROGRESS_TABLE: ${self:service}-${self:provider.stage}-progress
+    JWT_SECRET: ${self:custom.secrets.JWT_SECRET}
+    GOOGLE_CLIENT_ID: ${self:custom.secrets.GOOGLE_CLIENT_ID}
+    GOOGLE_CLIENT_SECRET: ${self:custom.secrets.GOOGLE_CLIENT_SECRET}
+    GITHUB_CLIENT_ID: ${self:custom.secrets.GITHUB_CLIENT_ID}
+    GITHUB_CLIENT_SECRET: ${self:custom.secrets.GITHUB_CLIENT_SECRET}
+    APPLE_CLIENT_ID: ${self:custom.secrets.APPLE_CLIENT_ID}
+    APPLE_CLIENT_SECRET: ${self:custom.secrets.APPLE_CLIENT_SECRET}
+    CLIENT_URL: ${self:custom.clientUrl}
   iamRoleStatements:
     - Effect: Allow
       Action:
@@ -44,8 +55,17 @@ plugins:
 custom:
   # Specify the frontend build path
   frontendBuildPath: '../frontend/dist'
-  # Custom domain name if needed
-  # domainName: ${self:service}-${self:provider.stage}.example.com
+  # Client URL for CORS and redirects
+  clientUrl: ${opt:clientUrl, 'http://localhost:5173'}
+  # Secrets (would be environment variables or SSM parameters in a real deployment)
+  secrets:
+    JWT_SECRET: ${env:JWT_SECRET, 'your-jwt-secret-for-keyboard-dojo-dev'}
+    GOOGLE_CLIENT_ID: ${env:GOOGLE_CLIENT_ID, ''}
+    GOOGLE_CLIENT_SECRET: ${env:GOOGLE_CLIENT_SECRET, ''}
+    GITHUB_CLIENT_ID: ${env:GITHUB_CLIENT_ID, ''}
+    GITHUB_CLIENT_SECRET: ${env:GITHUB_CLIENT_SECRET, ''}
+    APPLE_CLIENT_ID: ${env:APPLE_CLIENT_ID, ''}
+    APPLE_CLIENT_SECRET: ${env:APPLE_CLIENT_SECRET, ''}
 
 package:
   individually: true
@@ -68,6 +88,56 @@ functions:
       WEB_APP_BUCKET: !Ref WebAppBucket
       CLOUDFRONT_DISTRIBUTION_ID: !Ref CloudFrontDistribution
 
+  # Authentication endpoints
+  register:
+    handler: src/functions/auth/register.handler
+    events:
+      - http:
+          path: /auth/register
+          method: post
+          cors: true
+
+  login:
+    handler: src/functions/auth/login.handler
+    events:
+      - http:
+          path: /auth/login
+          method: post
+          cors: true
+
+  verifyToken:
+    handler: src/functions/auth/verifyToken.handler
+    events:
+      - http:
+          path: /auth/verify
+          method: get
+          cors: true
+
+  # OAuth Endpoints
+  googleAuth:
+    handler: src/functions/auth/oauth/google.handler
+    events:
+      - http:
+          path: /auth/google/callback
+          method: post
+          cors: true
+
+  githubAuth:
+    handler: src/functions/auth/oauth/github.handler
+    events:
+      - http:
+          path: /auth/github/callback
+          method: post
+          cors: true
+
+  appleAuth:
+    handler: src/functions/auth/oauth/apple.handler
+    events:
+      - http:
+          path: /auth/apple/callback
+          method: post
+          cors: true
+
 resources:
   Resources:
     # DynamoDB Tables
@@ -79,9 +149,28 @@ resources:
         AttributeDefinitions:
           - AttributeName: userId
             AttributeType: S
+          - AttributeName: email
+            AttributeType: S
         KeySchema:
           - AttributeName: userId
             KeyType: HASH
+        GlobalSecondaryIndexes:
+          - IndexName: EmailIndex
+            KeySchema:
+              - AttributeName: email
+                KeyType: HASH
+            Projection:
+              ProjectionType: ALL
+        # Schema attributes (not part of CloudFormation but conceptual):
+        # - userId: String (primary key)
+        # - email: String (GSI key)
+        # - name: String
+        # - authProvider: String (google, apple, github, email)
+        # - providerId: String (ID from provider if OAuth)
+        # - hashedPassword: String (for email auth)
+        # - createdAt: Number (timestamp)
+        # - isAdmin: Boolean
+        # - isPremium: Boolean (for future)
 
     LessonsTable:
       Type: AWS::DynamoDB::Table
