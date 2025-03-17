@@ -1,6 +1,17 @@
 import { sign, verify } from 'jsonwebtoken';
 import { createHash, randomBytes, pbkdf2Sync } from 'crypto';
 import { APIGatewayProxyEvent } from 'aws-lambda';
+import { captureException } from './sentry';
+
+/**
+ * Custom authorizer event interface
+ */
+interface CustomAuthorizerEvent {
+  type: string;
+  authorizationToken?: string;
+  methodArn?: string;
+  [key: string]: any;
+}
 
 /**
  * User interface representing the structure of user documents in DynamoDB
@@ -16,6 +27,7 @@ export interface User {
   createdAt: number;
   isAdmin: boolean;
   isPremium: boolean;
+  stripeCustomerId?: string;
 }
 
 /**
@@ -51,30 +63,143 @@ export const generateToken = (user: User): string => {
  */
 export const verifyToken = (token: string): TokenPayload | null => {
   try {
-    return verify(token, process.env.JWT_SECRET || '') as TokenPayload;
+    console.log('Verifying token');
+    
+    if (!process.env.JWT_SECRET) {
+      console.error('JWT_SECRET is not defined in environment variables');
+      captureException(new Error('JWT_SECRET is not defined'), {
+        context: 'verifyToken.missingSecret'
+      });
+      return null;
+    }
+    
+    const decoded = verify(token, process.env.JWT_SECRET) as TokenPayload;
+    console.log('Token verified successfully for user:', decoded.userId);
+    return decoded;
   } catch (error) {
     console.error('Token verification failed:', error);
+    console.error('Token verification error stack:', error instanceof Error ? error.stack : 'No stack trace');
+    
+    // Log more specific error information
+    if (error instanceof Error) {
+      if (error.name === 'TokenExpiredError') {
+        console.error('Token has expired');
+      } else if (error.name === 'JsonWebTokenError') {
+        console.error('Invalid token format or signature');
+      } else if (error.name === 'NotBeforeError') {
+        console.error('Token not yet valid');
+      }
+    }
+    
+    captureException(error instanceof Error ? error : new Error('Token verification failed'), {
+      context: 'verifyToken',
+      errorType: error instanceof Error ? error.name : typeof error,
+      errorMessage: error instanceof Error ? error.message : String(error)
+    });
     return null;
   }
 };
 
 /**
- * Extract and verify the JWT token from an API Gateway event
+ * Extract and verify the JWT token from an API Gateway event or custom authorizer event
  */
-export const extractAndVerifyToken = (event: APIGatewayProxyEvent): TokenPayload | null => {
-  const authHeader = event.headers.Authorization || event.headers.authorization;
-  
-  if (!authHeader) {
+export const extractAndVerifyToken = (event: APIGatewayProxyEvent | CustomAuthorizerEvent): TokenPayload | null => {
+  try {
+    // Log the entire event structure for debugging
+    console.log('Event structure:', JSON.stringify({
+      ...event,
+      // Mask any sensitive data
+      body: 'body' in event && event.body ? '[REDACTED]' : undefined,
+      headers: 'headers' in event && event.headers ? '[HEADERS PRESENT]' : '[NO HEADERS]',
+    }));
+    
+    // Check if event is null or undefined
+    if (!event) {
+      console.error('Event object is null or undefined');
+      captureException(new Error('Event object is null or undefined'), {
+        context: 'extractAndVerifyToken'
+      });
+      return null;
+    }
+    
+    // Check if this is a custom authorizer event
+    if ('type' in event && event.type === 'TOKEN' && 'authorizationToken' in event && event.authorizationToken) {
+      console.log('This appears to be a custom authorizer event');
+      const authHeader = event.authorizationToken;
+      
+      if (!authHeader) {
+        console.error('No authorizationToken found in custom authorizer event');
+        return null;
+      }
+      
+      const tokenParts = authHeader.split(' ');
+      
+      if (tokenParts.length !== 2 || tokenParts[0] !== 'Bearer') {
+        console.error('Invalid Authorization header format in custom authorizer event');
+        return null;
+      }
+      
+      return verifyToken(tokenParts[1]);
+    }
+    
+    // Handle regular API Gateway event
+    if (!('headers' in event) || !event.headers) {
+      console.error('No headers found in event');
+      captureException(new Error('No headers found in event'), {
+        context: 'extractAndVerifyToken',
+        eventPath: 'path' in event ? event.path : undefined,
+        eventHttpMethod: 'httpMethod' in event ? event.httpMethod : undefined,
+        eventKeys: Object.keys(event)
+      });
+      return null;
+    }
+    
+    // Log the headers for debugging
+    console.log('Request headers:', JSON.stringify({
+      ...event.headers,
+      // Mask the token for security
+      Authorization: event.headers.Authorization ? 
+        `${event.headers.Authorization.substring(0, 20)}...` : undefined,
+    }));
+    
+    const authHeader = event.headers.Authorization || event.headers.authorization;
+    
+    if (!authHeader) {
+      console.error('No Authorization header found in headers');
+      captureException(new Error('No Authorization header found'), {
+        context: 'extractAndVerifyToken',
+        eventPath: 'path' in event ? event.path : undefined,
+        eventHttpMethod: 'httpMethod' in event ? event.httpMethod : undefined,
+        headers: JSON.stringify(Object.keys(event.headers))
+      });
+      return null;
+    }
+    
+    const tokenParts = authHeader.split(' ');
+    
+    if (tokenParts.length !== 2 || tokenParts[0] !== 'Bearer') {
+      console.error('Invalid Authorization header format:', 
+        authHeader.substring(0, 15) + '...');
+      captureException(new Error('Invalid Authorization header format'), {
+        context: 'extractAndVerifyToken',
+        authHeaderFormat: tokenParts.length > 0 ? tokenParts[0] : 'empty'
+      });
+      return null;
+    }
+    
+    const token = tokenParts[1];
+    console.log('Token extracted successfully, length:', token.length);
+    
+    return verifyToken(token);
+  } catch (error) {
+    console.error('Error in extractAndVerifyToken:', error);
+    console.error('Extract token error stack:', error instanceof Error ? error.stack : 'No stack trace');
+    captureException(error instanceof Error ? error : new Error('Error in extractAndVerifyToken'), {
+      context: 'extractAndVerifyToken',
+      eventKeys: event ? Object.keys(event) : []
+    });
     return null;
   }
-  
-  const tokenParts = authHeader.split(' ');
-  
-  if (tokenParts.length !== 2 || tokenParts[0] !== 'Bearer') {
-    return null;
-  }
-  
-  return verifyToken(tokenParts[1]);
 };
 
 /**
@@ -122,6 +247,8 @@ export const unauthorizedResponse = () => {
       'Content-Type': 'application/json',
       'Access-Control-Allow-Origin': '*',
       'Access-Control-Allow-Credentials': true,
+      'Access-Control-Allow-Headers': 'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Request-Id',
+      'Access-Control-Allow-Methods': 'GET,POST,PUT,DELETE,OPTIONS',
     },
     body: JSON.stringify({
       message: 'Unauthorized',

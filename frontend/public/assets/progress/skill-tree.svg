@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="300px" height="300px" viewBox="0 0 300 300" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>Skill Tree</title>
+    <defs>
+        <linearGradient x1="0%" y1="0%" x2="100%" y2="100%" id="nodeGradient">
+            <stop stop-color="#4A148C" offset="0%"></stop>
+            <stop stop-color="#7B1FA2" offset="100%"></stop>
+        </linearGradient>
+        <linearGradient x1="0%" y1="0%" x2="100%" y2="100%" id="completedGradient">
+            <stop stop-color="#00C853" offset="0%"></stop>
+            <stop stop-color="#64DD17" offset="100%"></stop>
+        </linearGradient>
+        <linearGradient x1="0%" y1="0%" x2="100%" y2="100%" id="lockedGradient">
+            <stop stop-color="#9E9E9E" offset="0%"></stop>
+            <stop stop-color="#BDBDBD" offset="100%"></stop>
+        </linearGradient>
+    </defs>
+    <g id="skill-tree" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <!-- Connecting Lines -->
+        <path d="M150,50 L150,100 M150,150 L150,200 M150,150 L100,200 M150,150 L200,200 M150,250 L150,275" id="main-path" stroke="#9E9E9E" stroke-width="4" stroke-linecap="round"></path>
+        <path d="M150,50 L150,100 M150,150 L150,200 M150,150 L100,200" id="completed-path" stroke="#00C853" stroke-width="4" stroke-linecap="round"></path>
+        
+        <!-- Nodes -->
+        <!-- Level 1 - Root (Completed) -->
+        <circle id="node-1" fill="url(#completedGradient)" stroke="#FFFFFF" stroke-width="2" cx="150" cy="50" r="20"></circle>
+        <text id="node-1-text" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#FFFFFF" text-anchor="middle" x="150" y="55">1</text>
+        
+        <!-- Level 2 - Basics (Completed) -->
+        <circle id="node-2" fill="url(#completedGradient)" stroke="#FFFFFF" stroke-width="2" cx="150" cy="100" r="20"></circle>
+        <text id="node-2-text" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#FFFFFF" text-anchor="middle" x="150" y="105">2</text>
+        
+        <!-- Level 3 - Intermediate (Current) -->
+        <circle id="node-3" fill="url(#nodeGradient)" stroke="#FFFFFF" stroke-width="2" cx="150" cy="150" r="20"></circle>
+        <text id="node-3-text" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#FFFFFF" text-anchor="middle" x="150" y="155">3</text>
+        
+        <!-- Level 4 - Advanced Branches -->
+        <circle id="node-4-1" fill="url(#lockedGradient)" stroke="#FFFFFF" stroke-width="2" cx="100" cy="200" r="20"></circle>
+        <text id="node-4-1-text" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#FFFFFF" text-anchor="middle" x="100" y="205">4A</text>
+        
+        <circle id="node-4-2" fill="url(#lockedGradient)" stroke="#FFFFFF" stroke-width="2" cx="150" cy="200" r="20"></circle>
+        <text id="node-4-2-text" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#FFFFFF" text-anchor="middle" x="150" y="205">4B</text>
+        
+        <circle id="node-4-3" fill="url(#lockedGradient)" stroke="#FFFFFF" stroke-width="2" cx="200" cy="200" r="20"></circle>
+        <text id="node-4-3-text" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#FFFFFF" text-anchor="middle" x="200" y="205">4C</text>
+        
+        <!-- Level 5 - Master -->
+        <circle id="node-5" fill="url(#lockedGradient)" stroke="#FFFFFF" stroke-width="2" cx="150" cy="250" r="20"></circle>
+        <text id="node-5-text" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#FFFFFF" text-anchor="middle" x="150" y="255">5</text>
+        
+        <!-- Labels -->
+        <text id="label-1" font-family="Arial, sans-serif" font-size="12" fill="#212121" text-anchor="middle" x="150" y="25">Basics</text>
+        <text id="label-2" font-family="Arial, sans-serif" font-size="12" fill="#212121" text-anchor="middle" x="150" y="125">Intermediate</text>
+        <text id="label-4-1" font-family="Arial, sans-serif" font-size="12" fill="#212121" text-anchor="middle" x="100" y="225">Navigation</text>
+        <text id="label-4-2" font-family="Arial, sans-serif" font-size="12" fill="#212121" text-anchor="middle" x="150" y="225">Editing</text>
+        <text id="label-4-3" font-family="Arial, sans-serif" font-size="12" fill="#212121" text-anchor="middle" x="200" y="225">Search</text>
+        <text id="label-5" font-family="Arial, sans-serif" font-size="12" fill="#212121" text-anchor="middle" x="150" y="275">Master</text>
+        
+        <!-- Progress Indicator -->
+        <rect id="progress-bg" fill="#E0E0E0" x="50" y="290" width="200" height="5" rx="2.5"></rect>
+        <rect id="progress-fill" fill="#00C853" x="50" y="290" width="100" height="5" rx="2.5"></rect>
+    </g>
+</svg> 

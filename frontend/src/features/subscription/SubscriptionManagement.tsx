@@ -216,7 +216,7 @@ const SubscriptionManagement: React.FC = () => {
                   transform: 'translateY(-5px)',
                   boxShadow: 6,
                 },
-                border: subscription?.plan === 'MONTHLY' 
+                border: subscription?.plan === SubscriptionPlan.MONTHLY 
                   ? `2px solid ${theme.palette.primary.main}` 
                   : 'none',
               }}
@@ -254,7 +254,7 @@ const SubscriptionManagement: React.FC = () => {
                   fullWidth
                   size="large"
                   onClick={() => handlePlanSelect(SubscriptionPlan.MONTHLY)}
-                  disabled={isLoading || (subscription?.plan === 'MONTHLY' && !subscription.cancelAtPeriodEnd)}
+                  disabled={isLoading || (subscription?.plan === SubscriptionPlan.MONTHLY && !subscription.cancelAtPeriodEnd)}
                 >
                   {isLoading ? <CircularProgress size={24} /> : 'Select Monthly Plan'}
                 </Button>
@@ -277,7 +277,7 @@ const SubscriptionManagement: React.FC = () => {
                   transform: 'translateY(-5px)',
                   boxShadow: 6,
                 },
-                border: subscription?.plan === 'ANNUAL' 
+                border: subscription?.plan === SubscriptionPlan.ANNUAL 
                   ? `2px solid ${theme.palette.primary.main}` 
                   : 'none',
                 backgroundColor: theme.palette.mode === 'light' 
@@ -343,7 +343,7 @@ const SubscriptionManagement: React.FC = () => {
                   size="large"
                   color="secondary"
                   onClick={() => handlePlanSelect(SubscriptionPlan.ANNUAL)}
-                  disabled={isLoading || (subscription?.plan === 'ANNUAL' && !subscription.cancelAtPeriodEnd)}
+                  disabled={isLoading || (subscription?.plan === SubscriptionPlan.ANNUAL && !subscription.cancelAtPeriodEnd)}
                 >
                   {isLoading ? <CircularProgress size={24} /> : 'Select Annual Plan'}
                 </Button>

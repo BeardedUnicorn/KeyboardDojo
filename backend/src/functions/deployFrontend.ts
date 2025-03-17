@@ -104,7 +104,7 @@ export const handler = async (): Promise<any> => {
       statusCode: 500,
       body: JSON.stringify({
         message: 'Error deploying frontend',
-        error: error.message,
+        error: error instanceof Error ? error.message : 'Unknown error',
       }),
     };
   }

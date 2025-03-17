@@ -28,9 +28,7 @@ export interface Progress {
   updatedAt: number;
 }
 
-const API_BASE_URL = process.env.NODE_ENV === 'production' 
-  ? 'https://api.keyboarddojo.com' // Replace with actual API URL in production
-  : 'http://localhost:3000'; // Local development API URL
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 /**
  * Get user progress

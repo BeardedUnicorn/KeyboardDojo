@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="200px" height="200px" viewBox="0 0 200 200" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>Ninja Mascot - Sad</title>
+    <defs>
+        <linearGradient x1="0%" y1="0%" x2="100%" y2="100%" id="ninjaGradient">
+            <stop stop-color="#4A148C" offset="0%"></stop>
+            <stop stop-color="#311B92" offset="100%"></stop>
+        </linearGradient>
+    </defs>
+    <g id="ninja-sad" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <!-- Head -->
+        <circle id="head" fill="url(#ninjaGradient)" cx="100" cy="100" r="80"></circle>
+        
+        <!-- Mask -->
+        <path d="M50,80 C50,60 70,50 100,50 C130,50 150,60 150,80 L150,120 C150,140 130,150 100,150 C70,150 50,140 50,120 L50,80 Z" id="mask" fill="#1A1A2E"></path>
+        
+        <!-- Eyes - Sad -->
+        <path d="M75,95 C75,90 80,85 85,85 C90,85 95,90 95,95 C95,100 90,105 85,105 C80,105 75,100 75,95 Z" id="left-eye" fill="white"></path>
+        <path d="M105,95 C105,90 110,85 115,85 C120,85 125,90 125,95 C125,100 120,105 115,105 C110,105 105,100 105,95 Z" id="right-eye" fill="white"></path>
+        
+        <!-- Eye Pupils - Sad (looking down) -->
+        <circle id="left-pupil" fill="#000000" cx="85" cy="98" r="5"></circle>
+        <circle id="right-pupil" fill="#000000" cx="115" cy="98" r="5"></circle>
+        
+        <!-- Eyebrows - Sad -->
+        <path d="M75,80 L95,75" id="left-eyebrow" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round"></path>
+        <path d="M105,75 L125,80" id="right-eyebrow" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round"></path>
+        
+        <!-- Frown -->
+        <path d="M75,120 C85,110 115,110 125,120" id="frown" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round"></path>
+        
+        <!-- Headband -->
+        <path d="M40,70 C40,40 70,30 100,30 C130,30 160,40 160,70" id="headband" stroke="#FF5722" stroke-width="10" stroke-linecap="round"></path>
+        <circle id="headband-knot" fill="#FF5722" cx="160" cy="70" r="10"></circle>
+        
+        <!-- Tear -->
+        <path d="M85,105 C85,115 85,120 80,125" id="tear-path" stroke="#4FC3F7" stroke-width="2" stroke-linecap="round"></path>
+        <circle id="tear-drop" fill="#4FC3F7" cx="80" cy="125" r="3"></circle>
+    </g>
+</svg> 

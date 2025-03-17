@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="100px" height="100px" viewBox="0 0 100 100" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>VS Code Logo</title>
+    <defs>
+        <linearGradient x1="0%" y1="0%" x2="100%" y2="100%" id="vsGradient">
+            <stop stop-color="#2C8EBB" offset="0%"></stop>
+            <stop stop-color="#0065A9" offset="100%"></stop>
+        </linearGradient>
+    </defs>
+    <g id="vscode-logo" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <!-- VS Code Icon -->
+        <path d="M95,15.3v69.4c0,4.6-2.5,8.8-6.5,11.1c-1.2,0.7-2.5,1.1-3.9,1.3c-1.1,0.2-2.2,0.2-3.3,0c-1.2-0.2-2.4-0.6-3.5-1.1L35.7,74.3L13.3,92.1c-1.3,1-3.1,0.8-4.1-0.5c-0.4-0.5-0.6-1.1-0.6-1.7V75.3L35.7,50L8.6,24.7v-14c0-1.7,1.3-3,3-3c0.6,0,1.2,0.2,1.7,0.5L35.7,25.7L77.8,4.9c1.1-0.5,2.3-0.9,3.5-1.1c1.1-0.2,2.2-0.2,3.3,0c1.4,0.2,2.7,0.6,3.9,1.3C92.5,7.5,95,11.7,95,16.3L95,15.3z" id="vscode-shape" fill="url(#vsGradient)"></path>
+        
+        <!-- Inner Details -->
+        <path d="M77.8,95c-1.1,0.5-2.3,0.9-3.5,1.1c-1.1,0.2-2.2,0.2-3.3,0c-1.4-0.2-2.7-0.6-3.9-1.3c-4-2.3-6.5-6.5-6.5-11.1V16.3c0-4.6,2.5-8.8,6.5-11.1c1.2-0.7,2.5-1.1,3.9-1.3c1.1-0.2,2.2-0.2,3.3,0c1.2,0.2,2.4,0.6,3.5,1.1l0,90z" id="vscode-side" fill="#0065A9" opacity="0.7"></path>
+        
+        <!-- Code Brackets -->
+        <path d="M35.7,50L8.6,75.3V24.7L35.7,50z" id="left-bracket" fill="#FFFFFF" opacity="0.1"></path>
+        <path d="M60.7,37.5L35.7,50L60.7,62.5L60.7,37.5z" id="right-bracket" fill="#FFFFFF" opacity="0.1"></path>
+    </g>
+</svg> 

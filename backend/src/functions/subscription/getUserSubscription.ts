@@ -1,10 +1,11 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
 import { DynamoDB } from 'aws-sdk';
+import { User } from '../../types';
 import { verifyToken } from '../../utils/auth';
-import { getUserByEmail } from '../../utils/dynamodb';
+import { getUserByEmail, dynamoDb } from '../../utils/dynamodb';
 
-// Initialize DynamoDB client
-const dynamoDB = new DynamoDB.DocumentClient();
+// Initialize DynamoDB client if not imported
+// const dynamoDb = new DynamoDB.DocumentClient();
 const subscriptionsTable = process.env.SUBSCRIPTIONS_TABLE || '';
 
 /**
@@ -49,12 +50,12 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     }
     
     // Get user's subscription from the Subscriptions table
-    const { Items: subscriptions } = await dynamoDB.query({
+    const { Items: subscriptions } = await dynamoDb.query({
       TableName: subscriptionsTable,
       IndexName: 'UserIdIndex',
       KeyConditionExpression: 'userId = :userId',
       ExpressionAttributeValues: {
-        ':userId': user.id,
+        ':userId': user.userId,
       },
     }).promise();
     

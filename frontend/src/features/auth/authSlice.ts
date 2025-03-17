@@ -1,13 +1,24 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { RootState } from '../../store/store';
+import { 
+  loginWithEmail, 
+  registerWithEmail, 
+  processOAuthCallback,
+  setAuthData,
+  clearAuthData
+} from '../../api/authService';
 
 // Types
 export type AuthProvider = 'google' | 'apple' | 'github' | 'email';
 
 export interface User {
   userId: string;
+  id: string;
   email: string;
   name: string;
+  displayName?: string;
+  photoURL?: string;
+  picture?: string;
   authProvider: AuthProvider;
   isAdmin: boolean;
   isPremium: boolean;
@@ -63,29 +74,16 @@ export const login = createAsyncThunk(
   'auth/login',
   async ({ email, password }: { email: string; password: string }, { rejectWithValue }) => {
     try {
-      // This would be replaced with an actual API call in a real implementation
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, password }),
-      });
-      
-      if (!response.ok) {
-        const errorData = await response.json();
-        return rejectWithValue(errorData.message || 'Login failed');
-      }
-      
-      const data = await response.json();
+      // Use the actual API service function
+      const data = await loginWithEmail(email, password);
       
       // Store in localStorage for persistence
-      localStorage.setItem('token', data.token);
-      localStorage.setItem('user', JSON.stringify(data.user));
+      setAuthData(data.token, data.user);
       
       return data;
-    } catch (error) {
-      return rejectWithValue('Network error or server is down');
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Network error or server is down';
+      return rejectWithValue(errorMessage);
     }
   }
 );
@@ -97,29 +95,16 @@ export const register = createAsyncThunk(
     { rejectWithValue }
   ) => {
     try {
-      // This would be replaced with an actual API call in a real implementation
-      const response = await fetch('/api/auth/register', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ name, email, password }),
-      });
-      
-      if (!response.ok) {
-        const errorData = await response.json();
-        return rejectWithValue(errorData.message || 'Registration failed');
-      }
-      
-      const data = await response.json();
+      // Use the actual API service function
+      const data = await registerWithEmail(name, email, password);
       
       // Store in localStorage for persistence
-      localStorage.setItem('token', data.token);
-      localStorage.setItem('user', JSON.stringify(data.user));
+      setAuthData(data.token, data.user);
       
       return data;
-    } catch (error) {
-      return rejectWithValue('Network error or server is down');
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Registration failed';
+      return rejectWithValue(errorMessage);
     }
   }
 );
@@ -131,36 +116,22 @@ export const oauthLogin = createAsyncThunk(
     { rejectWithValue }
   ) => {
     try {
-      // This would be replaced with an actual API call in a real implementation
-      const response = await fetch(`/api/auth/${provider}/callback`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ code }),
-      });
-      
-      if (!response.ok) {
-        const errorData = await response.json();
-        return rejectWithValue(errorData.message || 'OAuth login failed');
-      }
-      
-      const data = await response.json();
+      // Use the actual API service function
+      const data = await processOAuthCallback(provider, code);
       
       // Store in localStorage for persistence
-      localStorage.setItem('token', data.token);
-      localStorage.setItem('user', JSON.stringify(data.user));
+      setAuthData(data.token, data.user);
       
       return data;
-    } catch (error) {
-      return rejectWithValue('Network error or server is down');
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'OAuth login failed';
+      return rejectWithValue(errorMessage);
     }
   }
 );
 
 export const logout = createAsyncThunk('auth/logout', async () => {
-  localStorage.removeItem('token');
-  localStorage.removeItem('user');
+  clearAuthData();
   return null;
 });
 

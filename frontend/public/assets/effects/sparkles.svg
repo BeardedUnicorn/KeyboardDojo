@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="200px" height="200px" viewBox="0 0 200 200" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>Sparkles Effect</title>
+    <g id="sparkles-effect" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <!-- Large Sparkles -->
+        <g id="large-sparkle-1" transform="translate(50, 50)">
+            <circle fill="#FFEB3B" opacity="0.3" cx="0" cy="0" r="15"></circle>
+            <path d="M0,-20 L0,20 M-20,0 L20,0" stroke="#FFEB3B" stroke-width="3" stroke-linecap="round"></path>
+            <path d="M-15,-15 L15,15 M-15,15 L15,-15" stroke="#FFEB3B" stroke-width="3" stroke-linecap="round"></path>
+        </g>
+        
+        <g id="large-sparkle-2" transform="translate(150, 50)">
+            <circle fill="#FFEB3B" opacity="0.3" cx="0" cy="0" r="12"></circle>
+            <path d="M0,-18 L0,18 M-18,0 L18,0" stroke="#FFEB3B" stroke-width="3" stroke-linecap="round"></path>
+            <path d="M-12,-12 L12,12 M-12,12 L12,-12" stroke="#FFEB3B" stroke-width="3" stroke-linecap="round"></path>
+        </g>
+        
+        <g id="large-sparkle-3" transform="translate(50, 150)">
+            <circle fill="#FFEB3B" opacity="0.3" cx="0" cy="0" r="12"></circle>
+            <path d="M0,-18 L0,18 M-18,0 L18,0" stroke="#FFEB3B" stroke-width="3" stroke-linecap="round"></path>
+            <path d="M-12,-12 L12,12 M-12,12 L12,-12" stroke="#FFEB3B" stroke-width="3" stroke-linecap="round"></path>
+        </g>
+        
+        <g id="large-sparkle-4" transform="translate(150, 150)">
+            <circle fill="#FFEB3B" opacity="0.3" cx="0" cy="0" r="15"></circle>
+            <path d="M0,-20 L0,20 M-20,0 L20,0" stroke="#FFEB3B" stroke-width="3" stroke-linecap="round"></path>
+            <path d="M-15,-15 L15,15 M-15,15 L15,-15" stroke="#FFEB3B" stroke-width="3" stroke-linecap="round"></path>
+        </g>
+        
+        <!-- Medium Sparkles -->
+        <g id="medium-sparkle-1" transform="translate(100, 30)">
+            <circle fill="#FFFFFF" opacity="0.5" cx="0" cy="0" r="8"></circle>
+            <path d="M0,-12 L0,12 M-12,0 L12,0" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round"></path>
+            <path d="M-8,-8 L8,8 M-8,8 L8,-8" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round"></path>
+        </g>
+        
+        <g id="medium-sparkle-2" transform="translate(30, 100)">
+            <circle fill="#FFFFFF" opacity="0.5" cx="0" cy="0" r="8"></circle>
+            <path d="M0,-12 L0,12 M-12,0 L12,0" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round"></path>
+            <path d="M-8,-8 L8,8 M-8,8 L8,-8" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round"></path>
+        </g>
+        
+        <g id="medium-sparkle-3" transform="translate(170, 100)">
+            <circle fill="#FFFFFF" opacity="0.5" cx="0" cy="0" r="8"></circle>
+            <path d="M0,-12 L0,12 M-12,0 L12,0" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round"></path>
+            <path d="M-8,-8 L8,8 M-8,8 L8,-8" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round"></path>
+        </g>
+        
+        <g id="medium-sparkle-4" transform="translate(100, 170)">
+            <circle fill="#FFFFFF" opacity="0.5" cx="0" cy="0" r="8"></circle>
+            <path d="M0,-12 L0,12 M-12,0 L12,0" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round"></path>
+            <path d="M-8,-8 L8,8 M-8,8 L8,-8" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round"></path>
+        </g>
+        
+        <!-- Small Sparkles -->
+        <g id="small-sparkle-1" transform="translate(75, 75)">
+            <circle fill="#FFFFFF" cx="0" cy="0" r="2"></circle>
+            <path d="M0,-5 L0,5 M-5,0 L5,0" stroke="#FFFFFF" stroke-width="1" stroke-linecap="round"></path>
+        </g>
+        
+        <g id="small-sparkle-2" transform="translate(125, 75)">
+            <circle fill="#FFFFFF" cx="0" cy="0" r="2"></circle>
+            <path d="M0,-5 L0,5 M-5,0 L5,0" stroke="#FFFFFF" stroke-width="1" stroke-linecap="round"></path>
+        </g>
+        
+        <g id="small-sparkle-3" transform="translate(75, 125)">
+            <circle fill="#FFFFFF" cx="0" cy="0" r="2"></circle>
+            <path d="M0,-5 L0,5 M-5,0 L5,0" stroke="#FFFFFF" stroke-width="1" stroke-linecap="round"></path>
+        </g>
+        
+        <g id="small-sparkle-4" transform="translate(125, 125)">
+            <circle fill="#FFFFFF" cx="0" cy="0" r="2"></circle>
+            <path d="M0,-5 L0,5 M-5,0 L5,0" stroke="#FFFFFF" stroke-width="1" stroke-linecap="round"></path>
+        </g>
+        
+        <!-- Center Sparkle -->
+        <g id="center-sparkle" transform="translate(100, 100)">
+            <circle fill="#FFEB3B" opacity="0.5" cx="0" cy="0" r="20"></circle>
+            <path d="M0,-30 L0,30 M-30,0 L30,0" stroke="#FFEB3B" stroke-width="4" stroke-linecap="round"></path>
+            <path d="M-20,-20 L20,20 M-20,20 L20,-20" stroke="#FFEB3B" stroke-width="4" stroke-linecap="round"></path>
+            <circle fill="#FFFFFF" cx="0" cy="0" r="5"></circle>
+        </g>
+    </g>
+</svg> 

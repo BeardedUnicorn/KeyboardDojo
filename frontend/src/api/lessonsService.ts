@@ -11,6 +11,7 @@ export interface Shortcut {
 
 export interface Lesson {
   lessonId: string;
+  id: string;
   title: string;
   description: string;
   category: string;
@@ -21,14 +22,29 @@ export interface Lesson {
     shortcuts: Shortcut[];
     tips: string[];
   };
+  shortcuts: Shortcut[];
   isPremium: boolean;
   createdAt: number;
   updatedAt: number;
 }
 
-const API_BASE_URL = process.env.NODE_ENV === 'production' 
-  ? 'https://api.keyboarddojo.com' // Replace with actual API URL in production
-  : 'http://localhost:3000'; // Local development API URL
+// New interface for creating/updating lessons
+export interface LessonInput {
+  title: string;
+  description: string;
+  category: string;
+  difficulty: 'beginner' | 'intermediate' | 'advanced';
+  order: number;
+  content: {
+    introduction: string;
+    shortcuts: Shortcut[];
+    tips: string[];
+  };
+  shortcuts: Shortcut[];
+  isPremium: boolean;
+}
+
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 /**
  * Get all lessons
@@ -91,6 +107,110 @@ export const getLessonsByCategory = async (category: string): Promise<Lesson[]> 
   if (!response.ok) {
     const error = await response.json();
     throw new Error(error.message || `Failed to fetch ${category} lessons`);
+  }
+
+  return await response.json();
+};
+
+/**
+ * Create a new lesson (admin only)
+ */
+export const createLesson = async (lessonData: LessonInput): Promise<Lesson> => {
+  const token = getToken();
+  
+  if (!token) {
+    throw new Error('Authentication required');
+  }
+  
+  const response = await fetch(`${API_BASE_URL}/admin/lessons`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
+    },
+    body: JSON.stringify(lessonData),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || 'Failed to create lesson');
+  }
+
+  return await response.json();
+};
+
+/**
+ * Update an existing lesson (admin only)
+ */
+export const updateLesson = async (lessonId: string, lessonData: Partial<LessonInput>): Promise<Lesson> => {
+  const token = getToken();
+  
+  if (!token) {
+    throw new Error('Authentication required');
+  }
+  
+  const response = await fetch(`${API_BASE_URL}/admin/lessons/${lessonId}`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
+    },
+    body: JSON.stringify(lessonData),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || 'Failed to update lesson');
+  }
+
+  return await response.json();
+};
+
+/**
+ * Delete a lesson (admin only)
+ */
+export const deleteLesson = async (lessonId: string): Promise<void> => {
+  const token = getToken();
+  
+  if (!token) {
+    throw new Error('Authentication required');
+  }
+  
+  const response = await fetch(`${API_BASE_URL}/admin/lessons/${lessonId}`, {
+    method: 'DELETE',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || 'Failed to delete lesson');
+  }
+};
+
+/**
+ * Seed lessons from template (admin only)
+ */
+export const seedLessons = async (): Promise<{ message: string; results: Array<{ id?: string; title: string; status: 'created' | 'failed' }> }> => {
+  const token = getToken();
+  
+  if (!token) {
+    throw new Error('Authentication required');
+  }
+  
+  const response = await fetch(`${API_BASE_URL}/admin/seed-lessons`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || 'Failed to seed lessons');
   }
 
   return await response.json();

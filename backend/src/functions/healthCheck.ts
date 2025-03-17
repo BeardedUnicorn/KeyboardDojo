@@ -1,24 +1,22 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
+import { withLogger } from '../utils/middleware';
+import { formatSuccessResponse } from '../utils/responseFormatter';
+import { logger } from '../utils/logger';
 
 /**
  * Health check Lambda function
  * @param event - API Gateway event
  * @returns API Gateway response
  */
-export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
-  console.log('Health check requested', { event });
+export const rawHandler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
+  logger.info('Health check requested', { path: event.path });
   
-  return {
-    statusCode: 200,
-    headers: {
-      'Content-Type': 'application/json',
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Credentials': true,
-    },
-    body: JSON.stringify({
-      message: 'Keyboard Dojo API is healthy',
-      stage: process.env.STAGE || 'dev',
-      timestamp: new Date().toISOString(),
-    }),
-  };
-}; 
+  return formatSuccessResponse({
+    message: 'Keyboard Dojo API is healthy',
+    stage: process.env.STAGE || 'dev',
+    timestamp: new Date().toISOString(),
+  });
+};
+
+// Apply the logger middleware
+export const handler = withLogger(rawHandler); 

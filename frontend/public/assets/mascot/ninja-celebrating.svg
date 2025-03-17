@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="200px" height="200px" viewBox="0 0 200 200" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>Ninja Mascot - Celebrating</title>
+    <defs>
+        <linearGradient x1="0%" y1="0%" x2="100%" y2="100%" id="ninjaGradient">
+            <stop stop-color="#4A148C" offset="0%"></stop>
+            <stop stop-color="#311B92" offset="100%"></stop>
+        </linearGradient>
+        <linearGradient x1="0%" y1="0%" x2="100%" y2="100%" id="starGradient">
+            <stop stop-color="#FFC107" offset="0%"></stop>
+            <stop stop-color="#FFEB3B" offset="100%"></stop>
+        </linearGradient>
+    </defs>
+    <g id="ninja-celebrating" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <!-- Head -->
+        <circle id="head" fill="url(#ninjaGradient)" cx="100" cy="100" r="80"></circle>
+        
+        <!-- Mask -->
+        <path d="M50,80 C50,60 70,50 100,50 C130,50 150,60 150,80 L150,120 C150,140 130,150 100,150 C70,150 50,140 50,120 L50,80 Z" id="mask" fill="#1A1A2E"></path>
+        
+        <!-- Eyes - Celebrating (happy) -->
+        <path d="M75,85 C75,85 85,90 85,95 C85,100 75,105 75,105" id="left-eye" stroke="white" stroke-width="3" stroke-linecap="round"></path>
+        <path d="M125,85 C125,85 115,90 115,95 C115,100 125,105 125,105" id="right-eye" stroke="white" stroke-width="3" stroke-linecap="round"></path>
+        
+        <!-- Big Smile -->
+        <path d="M70,110 C80,130 120,130 130,110" id="smile" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round"></path>
+        
+        <!-- Headband -->
+        <path d="M40,70 C40,40 70,30 100,30 C130,30 160,40 160,70" id="headband" stroke="#FF5722" stroke-width="10" stroke-linecap="round"></path>
+        <circle id="headband-knot" fill="#FF5722" cx="160" cy="70" r="10"></circle>
+        
+        <!-- Celebration Stars -->
+        <path d="M40,40 L45,50 L55,50 L47,57 L50,67 L40,62 L30,67 L33,57 L25,50 L35,50 Z" id="star1" fill="url(#starGradient)"></path>
+        <path d="M160,40 L165,50 L175,50 L167,57 L170,67 L160,62 L150,67 L153,57 L145,50 L155,50 Z" id="star2" fill="url(#starGradient)"></path>
+        <path d="M100,20 L105,30 L115,30 L107,37 L110,47 L100,42 L90,47 L93,37 L85,30 L95,30 Z" id="star3" fill="url(#starGradient)"></path>
+        
+        <!-- Raised Arms -->
+        <path d="M30,120 C30,120 40,100 50,100" id="left-arm" stroke="#FFB74D" stroke-width="10" stroke-linecap="round"></path>
+        <path d="M170,120 C170,120 160,100 150,100" id="right-arm" stroke="#FFB74D" stroke-width="10" stroke-linecap="round"></path>
+        
+        <!-- Confetti -->
+        <circle id="confetti1" fill="#F44336" cx="30" cy="30" r="3"></circle>
+        <circle id="confetti2" fill="#2196F3" cx="50" cy="20" r="2"></circle>
+        <circle id="confetti3" fill="#4CAF50" cx="70" cy="40" r="4"></circle>
+        <circle id="confetti4" fill="#FFEB3B" cx="130" cy="30" r="3"></circle>
+        <circle id="confetti5" fill="#9C27B0" cx="150" cy="20" r="2"></circle>
+        <circle id="confetti6" fill="#FF9800" cx="170" cy="40" r="4"></circle>
+        <rect id="confetti7" fill="#E91E63" x="40" y="60" width="4" height="4" transform="rotate(45)"></rect>
+        <rect id="confetti8" fill="#00BCD4" x="160" y="60" width="4" height="4" transform="rotate(45)"></rect>
+    </g>
+</svg> 

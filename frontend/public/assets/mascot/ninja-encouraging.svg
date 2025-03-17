@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="200px" height="200px" viewBox="0 0 200 200" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>Ninja Mascot - Encouraging</title>
+    <defs>
+        <linearGradient x1="0%" y1="0%" x2="100%" y2="100%" id="ninjaGradient">
+            <stop stop-color="#4A148C" offset="0%"></stop>
+            <stop stop-color="#311B92" offset="100%"></stop>
+        </linearGradient>
+    </defs>
+    <g id="ninja-encouraging" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <!-- Head -->
+        <circle id="head" fill="url(#ninjaGradient)" cx="100" cy="100" r="80"></circle>
+        
+        <!-- Mask -->
+        <path d="M50,80 C50,60 70,50 100,50 C130,50 150,60 150,80 L150,120 C150,140 130,150 100,150 C70,150 50,140 50,120 L50,80 Z" id="mask" fill="#1A1A2E"></path>
+        
+        <!-- Eyes - Encouraging (determined) -->
+        <path d="M75,90 C75,85 80,80 85,80 C90,80 95,85 95,90 C95,95 90,100 85,100 C80,100 75,95 75,90 Z" id="left-eye" fill="white"></path>
+        <path d="M105,90 C105,85 110,80 115,80 C120,80 125,85 125,90 C125,95 120,100 115,100 C110,100 105,95 105,90 Z" id="right-eye" fill="white"></path>
+        
+        <!-- Eye Pupils - Encouraging (focused) -->
+        <circle id="left-pupil" fill="#000000" cx="85" cy="90" r="5"></circle>
+        <circle id="right-pupil" fill="#000000" cx="115" cy="90" r="5"></circle>
+        
+        <!-- Eyebrows - Determined -->
+        <path d="M75,75 L95,80" id="left-eyebrow" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round"></path>
+        <path d="M105,80 L125,75" id="right-eyebrow" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round"></path>
+        
+        <!-- Smile - Encouraging -->
+        <path d="M80,110 C90,125 110,125 120,110" id="smile" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round"></path>
+        
+        <!-- Headband -->
+        <path d="M40,70 C40,40 70,30 100,30 C130,30 160,40 160,70" id="headband" stroke="#FF5722" stroke-width="10" stroke-linecap="round"></path>
+        <circle id="headband-knot" fill="#FF5722" cx="160" cy="70" r="10"></circle>
+        
+        <!-- Thumbs Up Hand -->
+        <path d="M160,130 C160,130 170,120 170,110 C170,100 160,95 160,95 L140,95 C140,95 135,85 135,75 C135,65 145,60 150,65 C155,70 155,75 155,75 L165,75 C165,75 175,80 175,90 C175,100 170,110 170,110 L170,130 C170,140 160,140 160,140 L140,140 C140,140 130,140 130,130 L130,110 C130,110 130,100 140,100 L160,100 Z" id="thumbs-up" fill="#FFB74D" stroke="#E65100" stroke-width="2"></path>
+    </g>
+</svg> 

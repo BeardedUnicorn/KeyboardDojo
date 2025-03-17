@@ -2,6 +2,14 @@ import { APIGatewayProxyHandler } from 'aws-lambda';
 import { extractAndVerifyToken, unauthorizedResponse } from '../../utils/auth';
 import { createLesson } from '../../utils/lessons';
 import { v4 as uuidv4 } from 'uuid';
+import { Lesson, Shortcut } from '../../models/lesson';
+
+// Define a type for the result items
+interface SeedResult {
+  id?: string;
+  title: string;
+  status: 'created' | 'failed';
+}
 
 /**
  * Initial seed data for keyboard shortcuts lessons
@@ -238,11 +246,25 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return unauthorizedResponse();
     }
     
-    const results = [];
+    const results: SeedResult[] = [];
     
     // Create each lesson from seed data
     for (const lessonData of seedData) {
-      const lesson = await createLesson(lessonData);
+      // Cast difficulty and operatingSystem to the correct types
+      const typedLessonData = {
+        ...lessonData,
+        difficulty: lessonData.difficulty as 'beginner' | 'intermediate' | 'advanced',
+        content: {
+          ...lessonData.content,
+          shortcuts: lessonData.content.shortcuts.map(shortcut => ({
+            ...shortcut,
+            operatingSystem: shortcut.operatingSystem as 'windows' | 'mac' | 'linux' | 'all',
+            keyCombination: shortcut.keyCombination
+          }))
+        }
+      };
+      
+      const lesson = await createLesson(typedLessonData);
       
       if (lesson) {
         results.push({

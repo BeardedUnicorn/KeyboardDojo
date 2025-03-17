@@ -1,11 +1,15 @@
-import { APIGatewayProxyHandler } from 'aws-lambda';
+import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { verifyPassword, createAuthResponse } from '../../utils/auth';
 import { getUserByEmail } from '../../utils/dynamodb';
+import { withLogger } from '../../utils/middleware';
+import { formatErrorResponse } from '../../utils/responseFormatter';
+import { logger } from '../../utils/logger';
+import { AppError } from '../../utils/errorHandler';
 
 /**
  * Lambda handler for user login with email and password
  */
-export const handler: APIGatewayProxyHandler = async (event) => {
+export const rawHandler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
   try {
     // Parse request body
     const requestBody = JSON.parse(event.body || '{}');
@@ -13,17 +17,15 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
     // Validate required fields
     if (!email || !password) {
-      return {
-        statusCode: 400,
-        headers: {
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*',
-          'Access-Control-Allow-Credentials': true,
-        },
-        body: JSON.stringify({
-          message: 'Email and password are required',
-        }),
-      };
+      logger.warn('Login attempt missing required fields', { 
+        email: !!email, 
+        hasPassword: !!password 
+      });
+      
+      return formatErrorResponse(
+        'Email and password are required',
+        400
+      );
     }
 
     // Get user by email
@@ -31,51 +33,50 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     
     // User not found or not using email authentication
     if (!user || user.authProvider !== 'email' || !user.hashedPassword || !user.salt) {
-      return {
-        statusCode: 401,
-        headers: {
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*',
-          'Access-Control-Allow-Credentials': true,
-        },
-        body: JSON.stringify({
-          message: 'Invalid email or password',
-        }),
-      };
+      logger.warn('Invalid login attempt', { 
+        email, 
+        userExists: !!user,
+        authProvider: user?.authProvider || 'none'
+      });
+      
+      return formatErrorResponse(
+        'Invalid email or password',
+        401
+      );
     }
 
     // Verify password
     const isPasswordValid = verifyPassword(password, user.hashedPassword, user.salt);
     
     if (!isPasswordValid) {
-      return {
-        statusCode: 401,
-        headers: {
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*',
-          'Access-Control-Allow-Credentials': true,
-        },
-        body: JSON.stringify({
-          message: 'Invalid email or password',
-        }),
-      };
+      logger.warn('Invalid password attempt', { 
+        email, 
+        userId: user.userId 
+      });
+      
+      return formatErrorResponse(
+        'Invalid email or password',
+        401
+      );
     }
 
+    logger.info('User logged in successfully', { 
+      userId: user.userId, 
+      email 
+    });
+    
     // Return success response with token and user data
     return createAuthResponse(user);
   } catch (error) {
-    console.error('Login error:', error);
-    
-    return {
-      statusCode: 500,
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Credentials': true,
-      },
-      body: JSON.stringify({
-        message: 'An error occurred during login',
-      }),
-    };
+    // This will be caught by the middleware and properly logged
+    throw new AppError(
+      'An error occurred during login',
+      500,
+      'LOGIN_ERROR',
+      { error: String(error) }
+    );
   }
-}; 
+};
+
+// Apply the logger middleware
+export const handler = withLogger(rawHandler); 

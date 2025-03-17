@@ -1,11 +1,13 @@
 service: keyboard-dojo
+org: archangelherold
+app: fortunefox
 
-frameworkVersion: '3'
+frameworkVersion: '4'
 
 provider:
   name: aws
   runtime: nodejs18.x
-  region: us-east-1
+  region: us-west-2
   stage: ${opt:stage, 'dev'}
   environment:
     STAGE: ${self:provider.stage}
@@ -25,45 +27,30 @@ provider:
     STRIPE_WEBHOOK_SECRET: ${self:custom.secrets.STRIPE_WEBHOOK_SECRET}
     PRICE_MONTHLY: ${self:custom.secrets.PRICE_MONTHLY}
     PRICE_ANNUAL: ${self:custom.secrets.PRICE_ANNUAL}
+    SENTRY_DSN: ${self:custom.secrets.SENTRY_DSN}
   iamRoleStatements:
     - Effect: Allow
       Action:
-        - dynamodb:Query
-        - dynamodb:Scan
-        - dynamodb:GetItem
-        - dynamodb:PutItem
-        - dynamodb:UpdateItem
-        - dynamodb:DeleteItem
-        - dynamodb:BatchWriteItem
+        - logs:CreateLogGroup
+        - logs:CreateLogStream
+        - logs:PutLogEvents
       Resource:
-        - !GetAtt UsersTable.Arn
-        - !GetAtt LessonsTable.Arn
-        - !GetAtt ProgressTable.Arn
-        - !GetAtt SubscriptionsTable.Arn
-        - !Sub "${UsersTable.Arn}/index/*"
-        - !Sub "${LessonsTable.Arn}/index/*"
-        - !Sub "${ProgressTable.Arn}/index/*"
-        - !Sub "${SubscriptionsTable.Arn}/index/*"
-    # Add S3 permissions for frontend deployment
-    - Effect: Allow
-      Action:
-        - s3:PutObject
-        - s3:GetObject
-        - s3:ListBucket
-        - s3:DeleteObject
-      Resource:
-        - !GetAtt WebAppBucket.Arn
-        - !Join ['', [!GetAtt WebAppBucket.Arn, '/*']]
+        - 'arn:aws:logs:*:*:*'
 
 plugins:
-  - serverless-plugin-typescript
   - serverless-offline
+  - serverless-iam-roles-per-function
+  - serverless-s3-sync
 
 custom:
   # Specify the frontend build path
   frontendBuildPath: '../frontend/dist'
   # Client URL for CORS and redirects
   clientUrl: ${opt:clientUrl, 'http://localhost:5173'}
+  # S3 sync configuration
+  s3Sync:
+    - bucketName: ${self:service}-${self:provider.stage}-webapp
+      localDir: ${self:custom.frontendBuildPath}
   # Secrets (would be environment variables or SSM parameters in a real deployment)
   secrets:
     JWT_SECRET: ${env:JWT_SECRET, 'your-jwt-secret-for-keyboard-dojo-dev'}
@@ -77,6 +64,18 @@ custom:
     STRIPE_WEBHOOK_SECRET: ${env:STRIPE_WEBHOOK_SECRET, ''}
     PRICE_MONTHLY: ${env:PRICE_MONTHLY, ''}
     PRICE_ANNUAL: ${env:PRICE_ANNUAL, ''}
+    SENTRY_DSN: ${env:SENTRY_DSN, ''}
+
+# Add build configuration using Serverless's built-in ESBuild
+build:
+  esbuild:
+    bundle: true
+    minify: false
+    sourcemap: true
+    exclude: ['aws-sdk']
+    target: 'node18'
+    define: { 'require.resolve': undefined }
+    platform: 'node'
 
 package:
   individually: true
@@ -84,178 +83,576 @@ package:
 
 functions:
   healthCheck:
-    handler: src/functions/healthCheck.handler
+    handler: src/handler.healthCheckHandler
     events:
       - http:
           path: /health
           method: get
           cors: true
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - logs:CreateLogGroup
+          - logs:CreateLogStream
+          - logs:PutLogEvents
+        Resource:
+          - 'arn:aws:logs:*:*:*'
 
-  # Build and deploy frontend 
+  # Build and deploy frontend
   deployFrontend:
     handler: src/functions/deployFrontend.handler
     timeout: 300 # 5 minutes
     environment:
       WEB_APP_BUCKET: !Ref WebAppBucket
       CLOUDFRONT_DISTRIBUTION_ID: !Ref CloudFrontDistribution
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - logs:CreateLogGroup
+          - logs:CreateLogStream
+          - logs:PutLogEvents
+        Resource:
+          - 'arn:aws:logs:*:*:*'
+      - Effect: Allow
+        Action:
+          - s3:PutObject
+          - s3:GetObject
+          - s3:ListBucket
+          - s3:DeleteObject
+        Resource:
+          - !GetAtt WebAppBucket.Arn
+          - !Join ['', [!GetAtt WebAppBucket.Arn, '/*']]
+      - Effect: Allow
+        Action:
+          - cloudfront:CreateInvalidation
+        Resource: '*'
 
   # Authentication endpoints
   register:
-    handler: src/functions/auth/register.handler
+    handler: src/handler.registerHandler
     events:
       - http:
           path: /auth/register
           method: post
           cors: true
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - logs:CreateLogGroup
+          - logs:CreateLogStream
+          - logs:PutLogEvents
+        Resource:
+          - 'arn:aws:logs:*:*:*'
+      - Effect: Allow
+        Action:
+          - dynamodb:PutItem
+          - dynamodb:Query
+        Resource:
+          - !GetAtt UsersTable.Arn
+          - !Sub "${UsersTable.Arn}/index/*"
 
   login:
-    handler: src/functions/auth/login.handler
+    handler: src/handler.loginHandler
     events:
       - http:
           path: /auth/login
           method: post
           cors: true
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - logs:CreateLogGroup
+          - logs:CreateLogStream
+          - logs:PutLogEvents
+        Resource:
+          - 'arn:aws:logs:*:*:*'
+      - Effect: Allow
+        Action:
+          - dynamodb:Query
+          - dynamodb:GetItem
+        Resource:
+          - !GetAtt UsersTable.Arn
+          - !Sub "${UsersTable.Arn}/index/*"
 
   verifyToken:
-    handler: src/functions/auth/verifyToken.handler
+    handler: src/handler.verifyTokenHandler
     events:
       - http:
           path: /auth/verify
           method: get
           cors: true
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:GetItem
+        Resource: !GetAtt UsersTable.Arn
+
+  tokenAuthorizer:
+    handler: src/handler.authorizerHandler
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:GetItem
+        Resource: !GetAtt UsersTable.Arn
+
+  testAuthorizer:
+    handler: src/handler.testAuthorizerHandler
+    events:
+      - http:
+          path: /auth/test-authorizer
+          method: get
+          cors:
+            origin: '*'
+            headers:
+              - Content-Type
+              - X-Amz-Date
+              - Authorization
+              - X-Api-Key
+              - X-Amz-Security-Token
+              - X-Request-Id
+              - Access-Control-Allow-Origin
+              - Access-Control-Allow-Headers
+            allowCredentials: true
+          authorizer:
+            name: tokenAuthorizer
+            resultTtlInSeconds: 0  # Disable caching for debugging
+            identitySource: method.request.header.Authorization
+            type: token
+      - http:
+          path: /auth/test-authorizer
+          method: options
+          cors:
+            origin: '*'
+            headers:
+              - Content-Type
+              - X-Amz-Date
+              - Authorization
+              - X-Api-Key
+              - X-Amz-Security-Token
+              - X-Request-Id
+              - Access-Control-Allow-Origin
+              - Access-Control-Allow-Headers
+            allowCredentials: true
+          # No authorizer for OPTIONS requests
 
   # OAuth Endpoints
   googleAuth:
-    handler: src/functions/auth/oauth/google.handler
+    handler: src/handler.googleAuthHandler
     events:
       - http:
           path: /auth/google/callback
           method: post
           cors: true
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - logs:CreateLogGroup
+          - logs:CreateLogStream
+          - logs:PutLogEvents
+        Resource:
+          - 'arn:aws:logs:*:*:*'
+      - Effect: Allow
+        Action:
+          - dynamodb:PutItem
+          - dynamodb:Query
+          - dynamodb:GetItem
+        Resource:
+          - !GetAtt UsersTable.Arn
+          - !Sub "${UsersTable.Arn}/index/*"
 
-  githubAuth:
-    handler: src/functions/auth/oauth/github.handler
-    events:
-      - http:
-          path: /auth/github/callback
-          method: post
-          cors: true
+  # Commented out until implementation is complete
+  # githubAuth:
+  #   handler: src/functions/auth/oauth/github.handler
+  #   events:
+  #     - http:
+  #         path: /auth/github/callback
 
-  appleAuth:
-    handler: src/functions/auth/oauth/apple.handler
-    events:
-      - http:
-          path: /auth/apple/callback
-          method: post
-          cors: true
+  # Commented out until implementation is complete
+  # appleAuth:
+  #   handler: src/functions/auth/oauth/apple.handler
+  #   events:
+  #     - http:
+  #         path: /auth/apple/callback
+  #         method: post
+  #         cors: true
+  #   iamRoleStatements:
+  #     - Effect: Allow
+  #       Action:
+  #         - logs:CreateLogGroup
+  #         - logs:CreateLogStream
+  #         - logs:PutLogEvents
+  #       Resource:
+  #         - 'arn:aws:logs:*:*:*'
+  #     - Effect: Allow
+  #       Action:
+  #         - dynamodb:PutItem
+  #         - dynamodb:Query
+  #         - dynamodb:GetItem
+  #       Resource:
+  #         - !GetAtt UsersTable.Arn
+  #         - !Sub "${UsersTable.Arn}/index/*"
 
   # Lesson endpoints
   getAllLessons:
-    handler: src/functions/lessons/getAllLessons.handler
+    handler: src/handler.getAllLessonsHandler
     events:
       - http:
           path: /lessons
           method: get
           cors: true
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - logs:CreateLogGroup
+          - logs:CreateLogStream
+          - logs:PutLogEvents
+        Resource:
+          - 'arn:aws:logs:*:*:*'
+      - Effect: Allow
+        Action:
+          - dynamodb:Scan
+        Resource:
+          - !GetAtt LessonsTable.Arn
 
   getLessonById:
-    handler: src/functions/lessons/getLessonById.handler
+    handler: src/handler.getLessonByIdHandler
     events:
       - http:
           path: /lessons/{id}
           method: get
           cors: true
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - logs:CreateLogGroup
+          - logs:CreateLogStream
+          - logs:PutLogEvents
+        Resource:
+          - 'arn:aws:logs:*:*:*'
+      - Effect: Allow
+        Action:
+          - dynamodb:GetItem
+        Resource:
+          - !GetAtt LessonsTable.Arn
 
   getLessonsByCategory:
-    handler: src/functions/lessons/getLessonsByCategory.handler
+    handler: src/handler.getLessonsByCategoryHandler
     events:
       - http:
           path: /lessons/category/{category}
           method: get
           cors: true
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - logs:CreateLogGroup
+          - logs:CreateLogStream
+          - logs:PutLogEvents
+        Resource:
+          - 'arn:aws:logs:*:*:*'
+      - Effect: Allow
+        Action:
+          - dynamodb:Query
+        Resource:
+          - !GetAtt LessonsTable.Arn
+          - !Sub "${LessonsTable.Arn}/index/*"
 
   # Progress endpoints
   getUserProgress:
-    handler: src/functions/progress/getUserProgress.handler
+    handler: src/handler.getUserProgressHandler
     events:
       - http:
           path: /progress
           method: get
           cors: true
           authorizer:
-            name: verifyToken
+            name: tokenAuthorizer
+            resultTtlInSeconds: 300
             identitySource: method.request.header.Authorization
             type: token
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:GetItem
+        Resource:
+          - !GetAtt ProgressTable.Arn
 
   updateUserProgress:
-    handler: src/functions/progress/updateUserProgress.handler
+    handler: src/handler.updateUserProgressHandler
     events:
       - http:
           path: /progress
           method: post
           cors: true
           authorizer:
-            name: verifyToken
+            name: tokenAuthorizer
+            resultTtlInSeconds: 300
             identitySource: method.request.header.Authorization
             type: token
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:GetItem
+          - dynamodb:PutItem
+          - dynamodb:UpdateItem
+        Resource:
+          - !GetAtt ProgressTable.Arn
 
   # Subscription endpoints
   createCheckoutSession:
-    handler: src/functions/subscriptions/createCheckoutSession.handler
+    handler: src/handler.createCheckoutSessionHandler
     events:
       - http:
           path: /subscriptions/checkout
           method: post
           cors: true
           authorizer:
-            name: verifyToken
+            name: tokenAuthorizer
+            resultTtlInSeconds: 300
             identitySource: method.request.header.Authorization
             type: token
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:GetItem
+        Resource:
+          - !GetAtt UsersTable.Arn
 
   getUserSubscription:
-    handler: src/functions/subscriptions/getUserSubscription.handler
+    handler: src/handler.getUserSubscriptionHandler
     events:
       - http:
           path: /subscriptions
           method: get
           cors: true
           authorizer:
-            name: verifyToken
+            name: tokenAuthorizer
+            resultTtlInSeconds: 300
             identitySource: method.request.header.Authorization
             type: token
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:GetItem
+          - dynamodb:Query
+        Resource:
+          - !GetAtt SubscriptionsTable.Arn
+          - !Sub "${SubscriptionsTable.Arn}/index/*"
 
   cancelSubscription:
-    handler: src/functions/subscriptions/cancelSubscription.handler
+    handler: src/handler.cancelSubscriptionHandler
     events:
       - http:
           path: /subscriptions/cancel
           method: post
           cors: true
           authorizer:
-            name: verifyToken
+            name: tokenAuthorizer
+            resultTtlInSeconds: 300
             identitySource: method.request.header.Authorization
             type: token
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:GetItem
+          - dynamodb:UpdateItem
+        Resource:
+          - !GetAtt SubscriptionsTable.Arn
 
   stripeWebhook:
-    handler: src/functions/subscriptions/stripeWebhook.handler
+    handler: src/handler.stripeWebhookHandler
     events:
       - http:
           path: /webhooks/stripe
           method: post
           cors: true
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - logs:CreateLogGroup
+          - logs:CreateLogStream
+          - logs:PutLogEvents
+        Resource:
+          - 'arn:aws:logs:*:*:*'
+      - Effect: Allow
+        Action:
+          - dynamodb:GetItem
+          - dynamodb:PutItem
+          - dynamodb:UpdateItem
+        Resource:
+          - !GetAtt SubscriptionsTable.Arn
+          - !GetAtt UsersTable.Arn
 
   # Admin functions
   seedLessons:
-    handler: src/functions/admin/seedLessons.handler
+    handler: src/handler.seedLessonsHandler
     events:
       - http:
           path: /admin/seed-lessons
           method: post
           cors: true
           authorizer:
-            name: verifyToken
+            name: tokenAuthorizer
+            resultTtlInSeconds: 300
             identitySource: method.request.header.Authorization
             type: token
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:PutItem
+          - dynamodb:BatchWriteItem
+        Resource:
+          - !GetAtt LessonsTable.Arn
+
+  getUsers:
+    handler: src/handler.getUsersHandler
+    events:
+      - http:
+          path: /admin/users
+          method: get
+          cors:
+            origin: '*'
+            headers:
+              - Content-Type
+              - X-Amz-Date
+              - Authorization
+              - X-Api-Key
+              - X-Amz-Security-Token
+              - X-Request-Id
+              - Access-Control-Allow-Origin
+              - Access-Control-Allow-Headers
+            allowCredentials: true
+          authorizer:
+            name: tokenAuthorizer
+            resultTtlInSeconds: 0  # Disable caching for debugging
+            identitySource: method.request.header.Authorization
+            type: token
+      - http:
+          path: /admin/users
+          method: options
+          cors:
+            origin: '*'
+            headers:
+              - Content-Type
+              - X-Amz-Date
+              - Authorization
+              - X-Api-Key
+              - X-Amz-Security-Token
+              - X-Request-Id
+              - Access-Control-Allow-Origin
+              - Access-Control-Allow-Headers
+            allowCredentials: true
+          # No authorizer for OPTIONS requests
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:Scan
+        Resource: !GetAtt UsersTable.Arn
+
+  getLessons:
+    handler: src/handler.getLessonsHandler
+    events:
+      - http:
+          path: /admin/lessons
+          method: get
+          cors:
+            origin: '*'
+            headers:
+              - Content-Type
+              - X-Amz-Date
+              - Authorization
+              - X-Api-Key
+              - X-Amz-Security-Token
+              - X-Request-Id
+              - Access-Control-Allow-Origin
+              - Access-Control-Allow-Headers
+            allowCredentials: true
+          authorizer:
+            name: tokenAuthorizer
+            resultTtlInSeconds: 0  # Disable caching for debugging
+            identitySource: method.request.header.Authorization
+            type: token
+      - http:
+          path: /admin/lessons
+          method: options
+          cors:
+            origin: '*'
+            headers:
+              - Content-Type
+              - X-Amz-Date
+              - Authorization
+              - X-Api-Key
+              - X-Amz-Security-Token
+              - X-Request-Id
+              - Access-Control-Allow-Origin
+              - Access-Control-Allow-Headers
+            allowCredentials: true
+          # No authorizer for OPTIONS requests
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:Scan
+        Resource:
+          - !GetAtt LessonsTable.Arn
+
+  getAdminUserProgress:
+    handler: src/handler.getAdminUserProgressHandler
+    events:
+      - http:
+          path: /admin/users/{userId}/progress
+          method: get
+          cors: true
+          authorizer:
+            name: tokenAuthorizer
+            resultTtlInSeconds: 300
+            identitySource: method.request.header.Authorization
+            type: token
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:GetItem
+        Resource:
+          - !GetAtt ProgressTable.Arn
+
+  testAdmin:
+    handler: src/handler.testAdminHandler
+    events:
+      - http:
+          path: /admin/test
+          method: get
+          cors:
+            origin: '*'
+            headers:
+              - Content-Type
+              - X-Amz-Date
+              - Authorization
+              - X-Api-Key
+              - X-Amz-Security-Token
+              - X-Request-Id
+              - Access-Control-Allow-Origin
+              - Access-Control-Allow-Headers
+            allowCredentials: true
+          authorizer:
+            name: tokenAuthorizer
+            resultTtlInSeconds: 0  # Disable caching for debugging
+            identitySource: method.request.header.Authorization
+            type: token
+      - http:
+          path: /admin/test
+          method: options
+          cors:
+            origin: '*'
+            headers:
+              - Content-Type
+              - X-Amz-Date
+              - Authorization
+              - X-Api-Key
+              - X-Amz-Security-Token
+              - X-Request-Id
+              - Access-Control-Allow-Origin
+              - Access-Control-Allow-Headers
+            allowCredentials: true
+          # No authorizer for OPTIONS requests
 
 resources:
   Resources:
@@ -362,7 +759,7 @@ resources:
         # - streakDays: Number
         # - lastActivityDate: Number (timestamp)
         # - updatedAt: Number (timestamp)
-    
+
     SubscriptionsTable:
       Type: AWS::DynamoDB::Table
       Properties:
@@ -408,6 +805,7 @@ resources:
     WebAppBucket:
       Type: AWS::S3::Bucket
       Properties:
+        BucketName: ${self:service}-${self:provider.stage}-webapp
         AccessControl: Private
         CorsConfiguration:
           CorsRules:
@@ -454,15 +852,49 @@ resources:
               ResponsePagePath: /index.html
           DefaultCacheBehavior:
             AllowedMethods: [GET, HEAD, OPTIONS]
+            CachePolicyId: 658327ea-f89d-4fab-a63d-7e88639e58f6  # Managed-CachingOptimized
+            OriginRequestPolicyId: 88a5eaf4-2fd4-4709-b370-b4c650ea3fcf  # Managed-CORS-S3Origin
             TargetOriginId: S3Origin
-            ForwardedValues:
-              QueryString: false
-              Cookies:
-                Forward: none
             ViewerProtocolPolicy: redirect-to-https
+            FunctionAssociations:
+              - EventType: viewer-request
+                FunctionARN: !GetAtt CloudFrontUrlRewriteFunction.FunctionARN
           PriceClass: PriceClass_100
           ViewerCertificate:
             CloudFrontDefaultCertificate: true
+
+    CloudFrontUrlRewriteFunction:
+      Type: AWS::CloudFront::Function
+      Properties:
+        Name: ${self:service}-${self:provider.stage}-url-rewrite
+        AutoPublish: true
+        FunctionConfig:
+          Comment: Rewrites URLs without extensions to add .html
+          Runtime: cloudfront-js-1.0
+        FunctionCode: |
+          function handler(event) {
+            var request = event.request;
+            var uri = request.uri;
+            
+            // Handle root path explicitly
+            if (uri === '/') {
+              request.uri = '/index.html';
+              return request;
+            }
+            
+            // Handle directory paths (ending with /)
+            if (uri.endsWith('/')) {
+              request.uri = uri + 'index.html';
+              return request;
+            }
+            
+            // Handle direct file access (no extension)
+            if (!uri.includes('.')) {
+              request.uri = uri + '/index.html';
+            }
+            
+            return request;
+          }
 
   Outputs:
     CloudFrontDistributionDomainName:
@@ -471,4 +903,4 @@ resources:
 
     WebAppBucketName:
       Description: The name of the S3 bucket for the web app
-      Value: !Ref WebAppBucket 
+      Value: !Ref WebAppBucket

@@ -2,112 +2,122 @@ import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import {
-  Box,
-  Button,
   Container,
-  Paper,
   Typography,
-  Stack,
-  Divider,
+  Button,
+  Box,
+  Card,
+  CardContent,
+  Paper,
+  CircularProgress,
 } from '@mui/material';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 
-import { AppDispatch } from '../../store/store';
-import { fetchUserSubscription, selectSubscription, selectSubscriptionLoading } from './subscriptionSlice';
+import { RootState } from '../../store';
+import { fetchUserSubscription } from './subscriptionSlice';
+import { SubscriptionPlan } from '../../api/subscriptionService';
 
 const SubscriptionSuccess: React.FC = () => {
+  const dispatch = useDispatch();
   const navigate = useNavigate();
-  const dispatch = useDispatch<AppDispatch>();
-  
-  const subscription = useSelector(selectSubscription);
-  const isLoading = useSelector(selectSubscriptionLoading);
-  
-  // Fetch subscription data on component mount
+  const { subscription, loading, error } = useSelector(
+    (state: RootState) => state.subscription
+  );
+
   useEffect(() => {
+    // Fetch the updated subscription data
     dispatch(fetchUserSubscription());
   }, [dispatch]);
-  
+
+  if (loading) {
+    return (
+      <Container maxWidth="md" sx={{ mt: 4, textAlign: 'center' }}>
+        <CircularProgress />
+        <Typography variant="h6" sx={{ mt: 2 }}>
+          Finalizing your subscription...
+        </Typography>
+      </Container>
+    );
+  }
+
+  if (error) {
+    return (
+      <Container maxWidth="md" sx={{ mt: 4 }}>
+        <Paper sx={{ p: 3, textAlign: 'center', bgcolor: '#fff8f8' }}>
+          <Typography variant="h5" color="error" gutterBottom>
+            Subscription Error
+          </Typography>
+          <Typography variant="body1" paragraph>
+            There was an issue confirming your subscription: {error}
+          </Typography>
+          <Button 
+            variant="contained" 
+            onClick={() => navigate('/subscription')}
+          >
+            Return to Subscription Page
+          </Button>
+        </Paper>
+      </Container>
+    );
+  }
+
   return (
-    <Container maxWidth="md" sx={{ py: 8 }}>
-      <Paper 
-        elevation={3} 
-        sx={{
-          p: 5,
-          textAlign: 'center',
-          borderRadius: 2,
-          maxWidth: 700,
-          mx: 'auto',
-        }}
-      >
-        <CheckCircleIcon
-          color="success"
-          sx={{ fontSize: 72, mb: 2 }}
-        />
-        
-        <Typography variant="h4" gutterBottom fontWeight="bold">
-          Subscription Activated!
-        </Typography>
-        
-        <Typography variant="h6" color="text.secondary" paragraph>
-          Thank you for subscribing to Keyboard Dojo Premium
-        </Typography>
-        
-        <Divider sx={{ my: 3 }} />
-        
-        <Box sx={{ textAlign: 'left', mb: 4 }}>
-          <Typography variant="body1" paragraph>
-            Your premium subscription is now active, which gives you:
+    <Container maxWidth="md" sx={{ py: 6 }}>
+      <Card sx={{ boxShadow: 3 }}>
+        <CardContent sx={{ textAlign: 'center', py: 6 }}>
+          <CheckCircleIcon sx={{ fontSize: 80, color: 'success.main', mb: 2 }} />
+          
+          <Typography variant="h4" component="h1" gutterBottom>
+            Thank You for Your Subscription!
           </Typography>
           
-          <Stack spacing={2} sx={{ ml: 2 }}>
-            <Typography variant="body1" display="flex" alignItems="center">
-              <CheckCircleIcon color="success" fontSize="small" sx={{ mr: 1 }} />
-              Access to all premium lessons and shortcuts
-            </Typography>
-            <Typography variant="body1" display="flex" alignItems="center">
-              <CheckCircleIcon color="success" fontSize="small" sx={{ mr: 1 }} />
-              Advanced progress tracking and analytics
-            </Typography>
-            <Typography variant="body1" display="flex" alignItems="center">
-              <CheckCircleIcon color="success" fontSize="small" sx={{ mr: 1 }} />
-              Custom practice sessions for your specific needs
-            </Typography>
-            <Typography variant="body1" display="flex" alignItems="center">
-              <CheckCircleIcon color="success" fontSize="small" sx={{ mr: 1 }} />
-              Priority support from our team
-            </Typography>
-          </Stack>
-        </Box>
-        
-        <Box>
-          <Typography variant="body1" paragraph>
-            You can manage your subscription at any time in your account settings.
+          <Typography variant="body1" paragraph sx={{ maxWidth: '600px', mx: 'auto', mb: 4 }}>
+            Your subscription has been successfully processed. You now have full 
+            access to all premium content and features on Keyboard Dojo.
           </Typography>
-        </Box>
-        
-        <Stack 
-          direction={{ xs: 'column', sm: 'row' }}
-          spacing={2}
-          justifyContent="center"
-          sx={{ mt: 4 }}
-        >
-          <Button
-            variant="contained"
-            size="large"
-            onClick={() => navigate('/lessons')}
-          >
-            Explore Premium Lessons
-          </Button>
           
-          <Button
-            variant="outlined"
-            size="large"
-            onClick={() => navigate('/subscription/management')}
-          >
-            Manage Subscription
-          </Button>
-        </Stack>
-      </Paper>
+          {subscription && (
+            <Paper sx={{ p: 3, maxWidth: '500px', mx: 'auto', mb: 4, bgcolor: '#f9f9f9' }}>
+              <Typography variant="h6" gutterBottom>
+                Subscription Details
+              </Typography>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                <Typography variant="body2" color="text.secondary">
+                  Plan:
+                </Typography>
+                <Typography variant="body2" fontWeight="bold">
+                  {subscription.plan === SubscriptionPlan.MONTHLY ? 'Monthly Plan' : 'Annual Plan'}
+                </Typography>
+              </Box>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                <Typography variant="body2" color="text.secondary">
+                  Next Billing Date:
+                </Typography>
+                <Typography variant="body2" fontWeight="bold">
+                  {new Date(subscription.currentPeriodEnd * 1000).toLocaleDateString()}
+                </Typography>
+              </Box>
+            </Paper>
+          )}
+          
+          <Box sx={{ mt: 2, display: 'flex', justifyContent: 'center', gap: 2 }}>
+            <Button 
+              variant="contained" 
+              color="primary" 
+              size="large"
+              onClick={() => navigate('/lessons')}
+            >
+              Explore Premium Lessons
+            </Button>
+            <Button 
+              variant="outlined" 
+              onClick={() => navigate('/')}
+            >
+              Go to Dashboard
+            </Button>
+          </Box>
+        </CardContent>
+      </Card>
     </Container>
   );
 };

@@ -12,14 +12,18 @@ import {
 // Types
 interface ProgressState {
   data: Progress | null;
+  progress: any[]; // Add progress property for backward compatibility
   isLoading: boolean;
+  loading: boolean; // Add loading property for backward compatibility
   error: string | null;
 }
 
 // Initial state
 const initialState: ProgressState = {
   data: null,
+  progress: [],
   isLoading: false,
+  loading: false,
   error: null,
 };
 

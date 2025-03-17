@@ -1,85 +1,95 @@
-import { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import {
   Box,
-  Typography,
   Button,
-  CircularProgress,
-  Alert,
+  Typography,
   Paper,
-  Grid,
-  Card,
-  CardContent,
-  Chip,
-  Divider,
   List,
   ListItem,
   ListItemIcon,
   ListItemText,
-  IconButton,
-  Tooltip,
-  Stepper,
-  Step,
-  StepLabel,
-  Badge,
+  Chip,
+  Card,
+  CardContent,
+  Divider,
+  Grid,
+  Alert,
   Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
+  LinearProgress,
+  Stepper,
+  Step,
+  StepLabel,
+  CircularProgress,
 } from '@mui/material';
-import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import KeyboardIcon from '@mui/icons-material/Keyboard';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import CancelIcon from '@mui/icons-material/Cancel';
-import DoubleArrowIcon from '@mui/icons-material/DoubleArrow';
-import InfoIcon from '@mui/icons-material/Info';
-import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
-
-import { useAppDispatch, useAppSelector } from '../../store/hooks';
-import { fetchLessonById, selectCurrentLesson, selectLessonsLoading, selectLessonsError } from './lessonsSlice';
 import {
-  fetchUserProgress,
-  saveUserShortcutProgress,
+  Keyboard as KeyboardIcon,
+  ArrowBack as ArrowBackIcon,
+  Cancel as CancelIcon,
+  CheckCircle as CheckCircleIcon,
+  Info as InfoIcon,
+  EmojiEvents as EmojiEventsIcon,
+} from '@mui/icons-material';
+import { selectCurrentLesson, fetchLessonById, selectLessonsLoading, selectLessonsError } from './lessonsSlice';
+import {
   selectLessonProgress,
-  selectProgressLoading,
+  fetchUserProgress,
 } from '../progress/progressSlice';
 import { selectUser } from '../auth/authSlice';
-import { Shortcut } from '../../api/lessonsService';
-import { ShortcutProgress } from '../../api/progressService';
+import { capitalize } from '../../utils/stringUtils';
+import { formatKeyCombo, isModifierKey, arraysEqual } from '../../utils/keyboardUtils';
 
-// Helper function to format key combinations
-const formatKeyCombination = (keys: string[]): string => {
-  return keys.join(' + ');
-};
+// Types
+interface Shortcut {
+  id: string;
+  name: string;
+  description: string;
+  keyCombination: string[];
+  operatingSystem?: string;
+}
 
-// Helper function to capitalize first letter
-const capitalize = (str: string) => {
-  return str.charAt(0).toUpperCase() + str.slice(1);
-};
+interface ShortcutProgress {
+  id: string;
+  completed: boolean;
+  score: number;
+  progress: number;
+  mastered: boolean;
+  attempts: number;
+}
+
+interface LessonCompletion {
+  shortcuts: Record<string, {
+    completed: boolean;
+    score: number;
+    progress: number;
+    mastered: boolean;
+    attempts: number;
+  }>;
+}
 
 const LessonDetail = () => {
-  const { lessonId } = useParams<{ lessonId: string }>();
-  const navigate = useNavigate();
   const dispatch = useAppDispatch();
+  const navigate = useNavigate();
+  const { lessonId } = useParams();
 
   const lesson = useAppSelector(selectCurrentLesson);
-  const lessonsLoading = useAppSelector(selectLessonsLoading);
-  const lessonsError = useAppSelector(selectLessonsError);
-  const progressLoading = useAppSelector(selectProgressLoading);
   const user = useAppSelector(selectUser);
-  const lessonProgress = useAppSelector(state => 
-    lessonId ? selectLessonProgress(state, lessonId) : null
-  );
+  const loading = useAppSelector(selectLessonsLoading);
+  const error = useAppSelector(selectLessonsError);
+  const lessonProgress = useAppSelector(state => selectLessonProgress(state, lessonId || '')) as LessonCompletion | null;
 
-  const [activeShortcutIndex, setActiveShortcutIndex] = useState(0);
+  const [isPracticing, setIsPracticing] = useState(false);
+  const [currentStep, setCurrentStep] = useState(0);
+  const [showFeedback, setShowFeedback] = useState(false);
+  const [feedbackCorrect, setFeedbackCorrect] = useState(false);
+  const [showCompletionDialog, setShowCompletionDialog] = useState(false);
+  const [score, setScore] = useState(0);
   const [inputKeys, setInputKeys] = useState<string[]>([]);
-  const [keydownTimeout, setKeydownTimeout] = useState<NodeJS.Timeout | null>(null);
-  const [showFeedback, setShowFeedback] = useState<boolean>(false);
-  const [feedbackCorrect, setFeedbackCorrect] = useState<boolean>(false);
-  const [practiceMode, setPracticeMode] = useState<boolean>(false);
   const [shortcutsFeedback, setShortcutsFeedback] = useState<Record<string, { correct: boolean; attempted: boolean }>>({});
-  const [showCompletionDialog, setShowCompletionDialog] = useState<boolean>(false);
-  const [score, setScore] = useState<number>(0);
 
   // Fetch lesson data when component mounts or lessonId changes
   useEffect(() => {
@@ -89,168 +99,107 @@ const LessonDetail = () => {
     }
   }, [dispatch, lessonId]);
 
-  // Set up keyboard event listener for practice mode
+  // Handle keyboard events
   useEffect(() => {
-    if (!practiceMode) return;
+    if (!isPracticing || !lesson) return;
 
-    const handleKeyDown = (e: KeyboardEvent) => {
-      e.preventDefault();
-
-      // Add key to input keys
-      const key = e.key.toLowerCase();
-      
-      if (!inputKeys.includes(key)) {
-        setInputKeys(prev => [...prev, key]);
-      }
-
-      // Clear any existing timeout
-      if (keydownTimeout) {
-        clearTimeout(keydownTimeout);
-      }
-
-      // Set a new timeout to check if the key combination is correct
-      const timeout = setTimeout(() => {
-        checkKeyCombination();
-      }, 1000);
-
-      setKeydownTimeout(timeout as unknown as NodeJS.Timeout);
-    };
-
-    const handleKeyUp = () => {
-      // No-op, but might be useful later
-    };
-
-    // Add event listeners
-    window.addEventListener('keydown', handleKeyDown);
-    window.addEventListener('keyup', handleKeyUp);
-
-    // Clean up event listeners
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-      window.removeEventListener('keyup', handleKeyUp);
-      
-      if (keydownTimeout) {
-        clearTimeout(keydownTimeout);
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (isModifierKey(event.key)) {
+        setInputKeys(prev => [...prev, event.key]);
       }
     };
-  }, [practiceMode, inputKeys, keydownTimeout]);
 
-  // Check if the key combination matches the current shortcut
-  const checkKeyCombination = () => {
-    if (!lesson || activeShortcutIndex >= lesson.content.shortcuts.length) return;
-
-    const currentShortcut = lesson.content.shortcuts[activeShortcutIndex];
-    const expectedKeys = currentShortcut.keyCombination.map(k => k.toLowerCase());
-    const inputKeysLower = inputKeys.map(k => k.toLowerCase());
-    
-    // Check if user has entered all required keys
-    const allKeysPressed = expectedKeys.every(key => {
-      // Handle special key mapping
-      let mappedKey = key.toLowerCase();
-      if (mappedKey === 'ctrl') mappedKey = 'control';
-      if (mappedKey === 'cmd') mappedKey = 'meta';
-      if (mappedKey === 'option') mappedKey = 'alt';
-      
-      return inputKeysLower.includes(mappedKey) || inputKeysLower.includes(key);
-    });
-    
-    // Check if user hasn't entered any extra keys
-    const noExtraKeys = inputKeysLower.every(key => {
-      // Handle special key mapping
-      if (key === 'control') return expectedKeys.some(k => k.toLowerCase() === 'ctrl' || k.toLowerCase() === 'control');
-      if (key === 'meta') return expectedKeys.some(k => k.toLowerCase() === 'cmd' || k.toLowerCase() === 'meta');
-      if (key === 'alt') return expectedKeys.some(k => k.toLowerCase() === 'option' || k.toLowerCase() === 'alt');
-      
-      return expectedKeys.some(k => k.toLowerCase() === key);
-    });
-    
-    const isCorrect = allKeysPressed && noExtraKeys;
-    
-    // Update feedback state
-    setFeedbackCorrect(isCorrect);
-    setShowFeedback(true);
-    
-    // Update shortcut feedback
-    setShortcutsFeedback(prev => ({
-      ...prev,
-      [currentShortcut.id]: { 
-        correct: isCorrect, 
-        attempted: true 
-      }
-    }));
-    
-    // Save progress to backend
-    if (lessonId) {
-      dispatch(saveUserShortcutProgress({
-        lessonId,
-        shortcutId: currentShortcut.id,
-        data: {
-          attempts: 1,
-          correctAttempts: isCorrect ? 1 : 0,
-          mastered: isCorrect,
-          lastAttemptAt: Date.now()
-        }
-      }));
-    }
-    
-    // Clear input keys
-    setInputKeys([]);
-    
-    // Auto-advance to next shortcut after a delay if correct
-    if (isCorrect) {
-      setTimeout(() => {
-        setShowFeedback(false);
+    const handleKeyUp = (event: KeyboardEvent) => {
+      if (!isModifierKey(event.key)) {
+        const newInputKeys = [...inputKeys, event.key];
+        setInputKeys(newInputKeys);
         
-        // If this was the last shortcut, show completion dialog
-        if (activeShortcutIndex === lesson.content.shortcuts.length - 1) {
-          // Calculate score
-          const totalCorrect = Object.values(shortcutsFeedback).filter(f => f.correct).length + (isCorrect ? 1 : 0);
-          const totalShortcuts = lesson.content.shortcuts.length;
-          const calculatedScore = Math.round((totalCorrect / totalShortcuts) * 100);
+        // Check if input matches target sequence
+        const targetSequence = lesson.content.shortcuts[currentStep].keyCombination;
+        const isMatch = arraysEqual(newInputKeys, targetSequence);
+        
+        setShowFeedback(true);
+        setFeedbackCorrect(isMatch);
+        
+        if (isMatch) {
+          // Update score and feedback
+          setScore(prev => prev + 1);
+          setShortcutsFeedback(prev => ({
+            ...prev,
+            [lesson.content.shortcuts[currentStep].id]: { correct: true, attempted: true }
+          }));
           
-          setScore(calculatedScore);
-          setShowCompletionDialog(true);
-          setPracticeMode(false);
+          // Check if this was the last shortcut
+          const isLastShortcut = currentStep === lesson.content.shortcuts.length - 1;
+          if (isLastShortcut) {
+            setShowCompletionDialog(true);
+          } else {
+            // Move to next shortcut after delay
+            setTimeout(() => {
+              setCurrentStep(prev => prev + 1);
+              setShowFeedback(false);
+              setInputKeys([]);
+            }, 2500);
+          }
         } else {
-          // Otherwise, go to next shortcut
-          setActiveShortcutIndex(activeShortcutIndex + 1);
+          // Update feedback for incorrect attempt
+          setShortcutsFeedback(prev => ({
+            ...prev,
+            [lesson.content.shortcuts[currentStep].id]: { correct: false, attempted: true }
+          }));
+          
+          // Reset after showing error feedback
+          setTimeout(() => {
+            setShowFeedback(false);
+            setInputKeys([]);
+          }, 2500);
         }
-      }, 1500);
-    } else {
-      // Hide feedback after delay
-      setTimeout(() => {
-        setShowFeedback(false);
-      }, 1500);
-    }
-  };
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    document.addEventListener('keyup', handleKeyUp);
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      document.removeEventListener('keyup', handleKeyUp);
+    };
+  }, [isPracticing, currentStep, lesson, inputKeys]);
 
   // Handle clicking a shortcut in list view
-  const handleShortcutClick = (index: number) => {
-    if (!practiceMode) {
-      setActiveShortcutIndex(index);
+  const handleShortcutClick = (step: number) => {
+    if (!isPracticing) {
+      setCurrentStep(step);
     }
   };
 
   // Start practice mode
   const handlePracticeStart = () => {
-    setActiveShortcutIndex(0);
-    setPracticeMode(true);
-    setShortcutsFeedback({});
-    setInputKeys([]);
+    setIsPracticing(true);
+    setCurrentStep(0);
   };
 
   // Stop practice mode
   const handlePracticeStop = () => {
-    setPracticeMode(false);
+    setIsPracticing(false);
   };
 
   // Get shortcut progress
   const getShortcutProgress = (shortcutId: string): ShortcutProgress | null => {
-    if (!lessonProgress || !lessonProgress.shortcuts) return null;
-    return lessonProgress.shortcuts[shortcutId] || null;
+    if (!lessonProgress?.shortcuts) return null;
+    const progress = lessonProgress.shortcuts[shortcutId];
+    if (!progress) return null;
+    return {
+      id: shortcutId,
+      completed: progress.completed,
+      score: progress.score,
+      progress: progress.progress,
+      mastered: progress.mastered,
+      attempts: progress.attempts,
+    };
   };
 
-  if (lessonsLoading && !lesson) {
+  if (loading && !lesson) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '50vh' }}>
         <CircularProgress />
@@ -258,13 +207,13 @@ const LessonDetail = () => {
     );
   }
 
-  if (lessonsError) {
+  if (error) {
     return (
       <Box sx={{ p: 3 }}>
         <Button startIcon={<ArrowBackIcon />} onClick={() => navigate('/lessons')} sx={{ mb: 2 }}>
           Back to Lessons
         </Button>
-        <Alert severity="error">{lessonsError}</Alert>
+        <Alert severity="error">{error}</Alert>
       </Box>
     );
   }
@@ -284,15 +233,46 @@ const LessonDetail = () => {
   const isPremiumLocked = lesson.isPremium && (!user || !user.isPremium);
 
   // Get active shortcut
-  const activeShortcut = lesson.content.shortcuts[activeShortcutIndex];
+  const activeShortcut = lesson.content.shortcuts[currentStep];
+
+  // Calculate progress
+  const progressValue = getShortcutProgress(activeShortcut.id)?.progress || 0;
+
+  // Determine feedback messages
+  const isCompleted = showCompletionDialog;
 
   return (
     <Box sx={{ p: 3, maxWidth: 1200, mx: 'auto' }}>
       {/* Header */}
       <Box sx={{ mb: 4 }}>
-        <Button startIcon={<ArrowBackIcon />} onClick={() => navigate('/lessons')} sx={{ mb: 2 }}>
-          Back to Lessons
-        </Button>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+          <Button
+            startIcon={<ArrowBackIcon />}
+            onClick={() => navigate('/lessons')}
+          >
+            Back to Lessons
+          </Button>
+          {isPracticing ? (
+            <Button
+              variant="contained"
+              color="primary"
+              startIcon={<CancelIcon />}
+              onClick={handlePracticeStop}
+            >
+              Exit Practice
+            </Button>
+          ) : (
+            <Button
+              variant="contained"
+              color="primary"
+              startIcon={<KeyboardIcon />}
+              onClick={handlePracticeStart}
+              data-testid="start-practice-button"
+            >
+              Practice Shortcuts
+            </Button>
+          )}
+        </Box>
         
         <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap' }}>
           <Box sx={{ flex: '1 1 auto', mr: 2 }}>
@@ -322,10 +302,10 @@ const LessonDetail = () => {
               <Button
                 variant="contained"
                 color="primary"
-                onClick={practiceMode ? handlePracticeStop : handlePracticeStart}
-                startIcon={practiceMode ? <CancelIcon /> : <KeyboardIcon />}
+                onClick={isPracticing ? handlePracticeStop : handlePracticeStart}
+                startIcon={isPracticing ? <CancelIcon /> : <KeyboardIcon />}
               >
-                {practiceMode ? 'Exit Practice' : 'Practice Shortcuts'}
+                {isPracticing ? 'Exit Practice' : 'Practice Shortcuts'}
               </Button>
             )}
           </Box>
@@ -352,14 +332,14 @@ const LessonDetail = () => {
           </Paper>
           
           {/* Practice mode */}
-          {practiceMode && (
+          {isPracticing && (
             <Paper elevation={3} sx={{ p: 3, mb: 4, bgcolor: 'background.default' }}>
               <Box sx={{ mb: 3 }}>
                 <Typography variant="h5" gutterBottom align="center">
                   Practice Mode
                 </Typography>
                 
-                <Stepper activeStep={activeShortcutIndex} alternativeLabel sx={{ mb: 3 }}>
+                <Stepper activeStep={currentStep} alternativeLabel sx={{ mb: 3 }}>
                   {lesson.content.shortcuts.map((shortcut, index) => {
                     const feedback = shortcutsFeedback[shortcut.id];
                     
@@ -491,41 +471,41 @@ const LessonDetail = () => {
                     
                     return (
                       <ListItem
+                        component="li"
                         key={shortcut.id}
-                        button
-                        selected={index === activeShortcutIndex}
+                        disablePadding
                         onClick={() => handleShortcutClick(index)}
                         sx={{
                           borderBottom: '1px solid',
                           borderColor: 'divider',
-                          bgcolor: index === activeShortcutIndex ? 'action.selected' : 'inherit',
+                          bgcolor: currentStep === index && isPracticing ? 'action.selected' : 'inherit',
+                          '&:hover': {
+                            bgcolor: 'action.hover',
+                          },
                         }}
                       >
                         <ListItemIcon>
                           {isMastered ? (
                             <CheckCircleIcon color="success" />
                           ) : (
-                            <KeyboardIcon color="action" />
+                            <KeyboardIcon />
                           )}
                         </ListItemIcon>
                         <ListItemText
                           primary={shortcut.name}
                           secondary={
                             <Box component="span" sx={{ display: 'flex', alignItems: 'center' }}>
-                              {formatKeyCombination(shortcut.keyCombination)}
+                              {formatKeyCombo(shortcut.keyCombination)}
                               {shortcut.operatingSystem && shortcut.operatingSystem !== 'all' && (
-                                <Chip 
-                                  label={shortcut.operatingSystem} 
-                                  size="small" 
-                                  sx={{ ml: 1, height: 20, fontSize: '0.6rem' }} 
+                                <Chip
+                                  label={capitalize(shortcut.operatingSystem)}
+                                  size="small"
+                                  sx={{ ml: 1 }}
                                 />
                               )}
                             </Box>
                           }
                         />
-                        {index === activeShortcutIndex && !practiceMode && (
-                          <DoubleArrowIcon color="primary" fontSize="small" />
-                        )}
                       </ListItem>
                     );
                   })}
@@ -534,7 +514,7 @@ const LessonDetail = () => {
             </Grid>
             
             <Grid item xs={12} md={8}>
-              {!practiceMode && (
+              {!isPracticing && (
                 <Box>
                   <Typography variant="h6" gutterBottom>
                     Details
@@ -554,27 +534,14 @@ const LessonDetail = () => {
                           Key Combination:
                         </Typography>
                         <Box sx={{ display: 'flex', flexWrap: 'wrap' }}>
-                          {activeShortcut.keyCombination.map((key, index) => (
-                            <Box
-                              key={index}
-                              sx={{
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                minWidth: 40,
-                                height: 40,
-                                m: 0.5,
-                                p: 1,
-                                border: '1px solid',
-                                borderColor: 'divider',
-                                borderRadius: 1,
-                                boxShadow: 1,
-                                bgcolor: 'background.paper',
-                                fontWeight: 'bold',
-                              }}
-                            >
-                              {key}
-                            </Box>
+                          {activeShortcut.keyCombination.map((key: string, keyIndex: number) => (
+                            <Chip
+                              key={keyIndex}
+                              label={key}
+                              variant="outlined"
+                              size="small"
+                              sx={{ mr: 1 }}
+                            />
                           ))}
                         </Box>
                       </Box>
@@ -593,14 +560,26 @@ const LessonDetail = () => {
                       
                       <Divider sx={{ my: 2 }} />
                       
-                      <Button
-                        variant="contained"
-                        onClick={handlePracticeStart}
-                        startIcon={<KeyboardIcon />}
-                        fullWidth
-                      >
-                        Practice Shortcuts
-                      </Button>
+                      {isPracticing ? (
+                        <Button
+                          variant="contained"
+                          color="primary"
+                          onClick={handlePracticeStop}
+                          startIcon={<CancelIcon />}
+                        >
+                          Exit Practice
+                        </Button>
+                      ) : (
+                        <Button
+                          startIcon={<KeyboardIcon />}
+                          variant="contained"
+                          color="primary"
+                          onClick={handlePracticeStart}
+                          data-testid="details-practice-button"
+                        >
+                          Practice Shortcuts
+                        </Button>
+                      )}
                     </CardContent>
                   </Card>
                   
@@ -667,6 +646,43 @@ const LessonDetail = () => {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Progress indicator */}
+      {isPracticing && (
+        <Box sx={{ mt: 2 }}>
+          <LinearProgress
+            variant="determinate"
+            value={progressValue}
+            data-testid="progress-indicator"
+          />
+        </Box>
+      )}
+
+      {/* Feedback messages */}
+      {showFeedback && (
+        <Box
+          sx={{
+            position: 'fixed',
+            bottom: '20px',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            maxWidth: '500px',
+            width: '90%',
+            zIndex: 1000,
+          }}
+        >
+          <Alert
+            severity={feedbackCorrect ? 'success' : 'error'}
+            data-testid={isCompleted ? 'completion-message' : (feedbackCorrect ? 'success-message' : 'error-message')}
+          >
+            {isCompleted 
+              ? 'Lesson completed! Great job!' 
+              : (feedbackCorrect 
+                  ? 'Correct! Keep going!' 
+                  : 'Incorrect sequence. Try again!')}
+          </Alert>
+        </Box>
+      )}
     </Box>
   );
 };

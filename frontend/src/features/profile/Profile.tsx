@@ -201,7 +201,7 @@ const Profile = () => {
             <Card>
               <CardContent sx={{ textAlign: 'center' }}>
                 <Typography variant="h5" color="primary">
-                  {user.premium ? 'Premium' : 'Free'}
+                  {user.isPremium ? 'Premium' : 'Free'}
                 </Typography>
                 <Typography variant="body2">
                   Account Type

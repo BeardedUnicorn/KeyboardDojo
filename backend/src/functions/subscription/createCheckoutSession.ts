@@ -1,15 +1,22 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
 import Stripe from 'stripe';
+import { User, SubscriptionPlan } from '../../types';
 import { getUserByEmail } from '../../utils/dynamodb';
 import { verifyToken } from '../../utils/auth';
+import { v4 as uuidv4 } from 'uuid';
+import { SubscriptionStatus } from '../../types';
+import { dynamoDb } from '../../utils/dynamodb';
 
 // Initialize Stripe with API key
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
   apiVersion: '2023-10-16',
 });
 
+// Subscription table name
+const subscriptionsTable = process.env.SUBSCRIPTIONS_TABLE || '';
+
 // Price IDs for the different subscription plans (to be created in Stripe dashboard)
-const PLAN_PRICE_IDS = {
+const PLAN_PRICE_IDS: Record<string, string> = {
   MONTHLY: process.env.STRIPE_MONTHLY_PRICE_ID || '',
   ANNUAL: process.env.STRIPE_ANNUAL_PRICE_ID || '',
 };
@@ -88,7 +95,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         email: user.email,
         name: user.name || user.email,
         metadata: {
-          userId: user.id,
+          userId: user.userId,
         },
       });
       
@@ -119,10 +126,28 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       success_url: successUrl,
       cancel_url: cancelUrl,
       metadata: {
-        userId: user.id,
+        userId: user.userId,
         plan,
       },
     });
+    
+    // Create the subscription record in DynamoDB
+    await dynamoDb.put({
+      TableName: subscriptionsTable,
+      Item: {
+        id: uuidv4(),
+        userId: user.userId,
+        stripeCustomerId,
+        stripeSubscriptionId: '',
+        plan: plan === 'monthly' ? SubscriptionPlan.MONTHLY : SubscriptionPlan.ANNUAL,
+        status: SubscriptionStatus.INCOMPLETE,
+        currentPeriodStart: Date.now(),
+        currentPeriodEnd: Date.now() + (plan === 'monthly' ? 30 : 365) * 24 * 60 * 60 * 1000,
+        cancelAtPeriodEnd: false,
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      },
+    }).promise();
     
     // Return the checkout session URL
     return {

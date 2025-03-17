@@ -1,16 +1,17 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
 import Stripe from 'stripe';
 import { DynamoDB } from 'aws-sdk';
+import { User } from '../../types';
 import { verifyToken } from '../../utils/auth';
-import { getUserByEmail } from '../../utils/dynamodb';
+import { getUserByEmail, dynamoDb } from '../../utils/dynamodb';
 
 // Initialize Stripe with API key
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
   apiVersion: '2023-10-16',
 });
 
-// Initialize DynamoDB client
-const dynamoDB = new DynamoDB.DocumentClient();
+// Initialize DynamoDB client if not imported
+// const dynamoDb = new DynamoDB.DocumentClient();
 const subscriptionsTable = process.env.SUBSCRIPTIONS_TABLE || '';
 
 /**
@@ -59,12 +60,12 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     const { immediateCancel = false } = requestBody;
     
     // Get user's subscription from the Subscriptions table
-    const { Items: subscriptions } = await dynamoDB.query({
+    const { Items: subscriptions } = await dynamoDb.query({
       TableName: subscriptionsTable,
       IndexName: 'UserIdIndex',
       KeyConditionExpression: 'userId = :userId',
       ExpressionAttributeValues: {
-        ':userId': user.id,
+        ':userId': user.userId,
       },
     }).promise();
     
@@ -117,7 +118,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       
       // Update the subscription in the database
       const timestamp = new Date().toISOString();
-      const updatedSubscription = await dynamoDB.update({
+      const updatedSubscription = await dynamoDb.update({
         TableName: subscriptionsTable,
         Key: { id: subscription.id },
         UpdateExpression: 'SET cancelAtPeriodEnd = :cancelAtPeriodEnd, updatedAt = :updatedAt, status = :status',

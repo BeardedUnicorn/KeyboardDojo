@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="200px" height="200px" viewBox="0 0 200 200" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>Confetti Effect</title>
+    <g id="confetti-effect" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <!-- Confetti Pieces -->
+        <!-- Row 1 -->
+        <rect fill="#FF5252" transform="rotate(15)" x="10" y="10" width="10" height="5" rx="1"></rect>
+        <rect fill="#536DFE" transform="rotate(45)" x="30" y="-10" width="8" height="4" rx="1"></rect>
+        <rect fill="#FFD54F" transform="rotate(-20)" x="0" y="60" width="12" height="6" rx="1"></rect>
+        <rect fill="#4CAF50" transform="rotate(60)" x="60" y="-30" width="10" height="5" rx="1"></rect>
+        <rect fill="#9C27B0" transform="rotate(-45)" x="-40" y="100" width="8" height="4" rx="1"></rect>
+        
+        <!-- Row 2 -->
+        <circle fill="#FF5252" cx="40" cy="40" r="3"></circle>
+        <circle fill="#536DFE" cx="70" cy="30" r="4"></circle>
+        <circle fill="#FFD54F" cx="100" cy="20" r="5"></circle>
+        <circle fill="#4CAF50" cx="130" cy="40" r="3"></circle>
+        <circle fill="#9C27B0" cx="160" cy="30" r="4"></circle>
+        
+        <!-- Row 3 -->
+        <rect fill="#FF5252" transform="rotate(30)" x="50" y="30" width="10" height="5" rx="1"></rect>
+        <rect fill="#536DFE" transform="rotate(-60)" x="-80" y="120" width="8" height="4" rx="1"></rect>
+        <rect fill="#FFD54F" transform="rotate(15)" x="90" y="50" width="12" height="6" rx="1"></rect>
+        <rect fill="#4CAF50" transform="rotate(-30)" x="30" y="150" width="10" height="5" rx="1"></rect>
+        <rect fill="#9C27B0" transform="rotate(75)" x="130" y="-60" width="8" height="4" rx="1"></rect>
+        
+        <!-- Row 4 -->
+        <circle fill="#FF5252" cx="40" cy="100" r="4"></circle>
+        <circle fill="#536DFE" cx="70" cy="110" r="5"></circle>
+        <circle fill="#FFD54F" cx="100" cy="90" r="3"></circle>
+        <circle fill="#4CAF50" cx="130" cy="110" r="4"></circle>
+        <circle fill="#9C27B0" cx="160" cy="100" r="5"></circle>
+        
+        <!-- Row 5 -->
+        <rect fill="#FF5252" transform="rotate(-15)" x="20" y="150" width="10" height="5" rx="1"></rect>
+        <rect fill="#536DFE" transform="rotate(30)" x="100" y="80" width="8" height="4" rx="1"></rect>
+        <rect fill="#FFD54F" transform="rotate(-45)" x="-50" y="180" width="12" height="6" rx="1"></rect>
+        <rect fill="#4CAF50" transform="rotate(60)" x="150" y="0" width="10" height="5" rx="1"></rect>
+        <rect fill="#9C27B0" transform="rotate(-30)" x="50" y="200" width="8" height="4" rx="1"></rect>
+        
+        <!-- Row 6 -->
+        <circle fill="#FF5252" cx="40" cy="160" r="5"></circle>
+        <circle fill="#536DFE" cx="70" cy="170" r="3"></circle>
+        <circle fill="#FFD54F" cx="100" cy="160" r="4"></circle>
+        <circle fill="#4CAF50" cx="130" cy="170" r="5"></circle>
+        <circle fill="#9C27B0" cx="160" cy="160" r="3"></circle>
+        
+        <!-- Streamer 1 -->
+        <path d="M20,20 C40,40 60,30 80,50 C100,70 120,60 140,80 C160,100 180,90 190,110" stroke="#FF5252" stroke-width="2" stroke-dasharray="5,5" fill="none"></path>
+        
+        <!-- Streamer 2 -->
+        <path d="M10,80 C30,70 50,90 70,80 C90,70 110,90 130,80 C150,70 170,90 190,80" stroke="#536DFE" stroke-width="2" stroke-dasharray="5,5" fill="none"></path>
+        
+        <!-- Streamer 3 -->
+        <path d="M10,140 C30,160 50,150 70,170 C90,190 110,180 130,190 C150,180 170,190 190,170" stroke="#FFD54F" stroke-width="2" stroke-dasharray="5,5" fill="none"></path>
+    </g>
+</svg> 

@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="100px" height="100px" viewBox="0 0 100 100" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>Terminal Logo</title>
+    <defs>
+        <linearGradient x1="0%" y1="0%" x2="100%" y2="100%" id="terminalGradient">
+            <stop stop-color="#2D3748" offset="0%"></stop>
+            <stop stop-color="#1A202C" offset="100%"></stop>
+        </linearGradient>
+    </defs>
+    <g id="terminal-logo" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <!-- Terminal Window -->
+        <rect id="terminal-bg" fill="url(#terminalGradient)" x="5" y="5" width="90" height="90" rx="6"></rect>
+        
+        <!-- Window Controls -->
+        <circle id="close-btn" fill="#FF5F56" cx="15" cy="15" r="4"></circle>
+        <circle id="minimize-btn" fill="#FFBD2E" cx="30" cy="15" r="4"></circle>
+        <circle id="maximize-btn" fill="#27C93F" cx="45" cy="15" r="4"></circle>
+        
+        <!-- Terminal Header -->
+        <rect id="header" fill="#1A202C" x="5" y="5" width="90" height="20" rx="6 6 0 0"></rect>
+        
+        <!-- Command Prompt -->
+        <text id="prompt" font-family="Menlo, Monaco, monospace" font-size="12" font-weight="400" fill="#A0AEC0">
+            <tspan x="15" y="45">$</tspan>
+        </text>
+        
+        <!-- Command Text -->
+        <text id="command" font-family="Menlo, Monaco, monospace" font-size="12" font-weight="400" fill="#FFFFFF">
+            <tspan x="25" y="45">cd ~/projects</tspan>
+        </text>
+        
+        <!-- Output Line 1 -->
+        <text id="output-1" font-family="Menlo, Monaco, monospace" font-size="12" font-weight="400" fill="#A0AEC0">
+            <tspan x="15" y="65">$</tspan>
+        </text>
+        
+        <!-- Output Line 1 Command -->
+        <text id="output-1-cmd" font-family="Menlo, Monaco, monospace" font-size="12" font-weight="400" fill="#FFFFFF">
+            <tspan x="25" y="65">ls</tspan>
+        </text>
+        
+        <!-- Output Line 2 -->
+        <text id="output-2" font-family="Menlo, Monaco, monospace" font-size="12" font-weight="400" fill="#38B2AC">
+            <tspan x="15" y="85">keyboard-dojo</tspan>
+        </text>
+        
+        <!-- Cursor -->
+        <rect id="cursor" fill="#FFFFFF" x="25" y="87" width="6" height="2"></rect>
+    </g>
+</svg> 

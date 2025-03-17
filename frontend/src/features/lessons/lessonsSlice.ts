@@ -9,6 +9,7 @@ interface LessonsState {
   filteredLessons: Lesson[];
   categories: string[];
   isLoading: boolean;
+  loading: boolean;
   error: string | null;
 }
 
@@ -19,6 +20,7 @@ const initialState: LessonsState = {
   filteredLessons: [],
   categories: [],
   isLoading: false,
+  loading: false,
   error: null,
 };
 

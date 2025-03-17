@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="100px" height="100px" viewBox="0 0 100 100" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>Navigation Icon</title>
+    <defs>
+        <linearGradient x1="0%" y1="0%" x2="100%" y2="100%" id="arrowGradient">
+            <stop stop-color="#4A148C" offset="0%"></stop>
+            <stop stop-color="#7B1FA2" offset="100%"></stop>
+        </linearGradient>
+        <linearGradient x1="0%" y1="0%" x2="100%" y2="100%" id="keyGradient">
+            <stop stop-color="#1A237E" offset="0%"></stop>
+            <stop stop-color="#3949AB" offset="100%"></stop>
+        </linearGradient>
+    </defs>
+    <g id="navigation-icon" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <!-- Arrow Keys -->
+        <rect id="up-key" fill="url(#keyGradient)" x="40" y="20" width="20" height="20" rx="3"></rect>
+        <rect id="left-key" fill="url(#keyGradient)" x="15" y="45" width="20" height="20" rx="3"></rect>
+        <rect id="down-key" fill="url(#keyGradient)" x="40" y="45" width="20" height="20" rx="3"></rect>
+        <rect id="right-key" fill="url(#keyGradient)" x="65" y="45" width="20" height="20" rx="3"></rect>
+        
+        <!-- Arrow Symbols -->
+        <path d="M50,25 L45,35 L55,35 Z" id="up-arrow" fill="#FFFFFF"></path>
+        <path d="M20,55 L30,50 L30,60 Z" id="left-arrow" fill="#FFFFFF"></path>
+        <path d="M50,60 L55,50 L45,50 Z" id="down-arrow" fill="#FFFFFF"></path>
+        <path d="M80,55 L70,60 L70,50 Z" id="right-arrow" fill="#FFFFFF"></path>
+        
+        <!-- Cursor -->
+        <path d="M50,75 L60,85 L65,75 Z" id="cursor" fill="url(#arrowGradient)" transform="rotate(45, 57.5, 80)"></path>
+        
+        <!-- Movement Lines -->
+        <path d="M50,30 L50,15 M25,55 L10,55 M50,55 L50,70 M75,55 L90,55" id="movement-lines" stroke="#FF5722" stroke-width="2" stroke-dasharray="2,2"></path>
+    </g>
+</svg> 

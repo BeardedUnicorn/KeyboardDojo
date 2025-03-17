@@ -1,6 +1,7 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
 import Stripe from 'stripe';
 import { DynamoDB } from 'aws-sdk';
+import { Subscription } from '../../types';
 
 // Initialize Stripe with API key
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
@@ -30,7 +31,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     const payload = event.body || '';
     
     // Verify the event with Stripe
-    let stripeEvent;
+    let stripeEvent: Stripe.Event;
     try {
       stripeEvent = stripe.webhooks.constructEvent(
         payload,

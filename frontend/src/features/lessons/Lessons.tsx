@@ -13,7 +13,6 @@ import {
   Tabs,
   Tab,
   Button,
-  Divider,
 } from '@mui/material';
 import SchoolIcon from '@mui/icons-material/School';
 import LockIcon from '@mui/icons-material/Lock';
@@ -28,18 +27,15 @@ import {
 } from './lessonsSlice';
 import { selectIsAuthenticated, selectUser } from '../auth/authSlice';
 import { 
-  selectLessonProgress, 
   selectProgressLoading, 
-  selectTotalLessonsCompleted
+  selectTotalLessonsCompleted,
+  selectProgress
 } from '../progress/progressSlice';
-
-// Helper function to capitalize first letter
-const capitalize = (str: string) => {
-  return str.charAt(0).toUpperCase() + str.slice(1);
-};
+import { type Progress } from '../../api/progressService';
+import { capitalize } from '../../utils/stringUtils';
 
 // Color mapping for difficulty levels
-const difficultyColors = {
+const difficultyColors: Record<string, 'success' | 'warning' | 'error'> = {
   beginner: 'success',
   intermediate: 'warning',
   advanced: 'error',
@@ -57,13 +53,16 @@ const Lessons = () => {
   const lessonsError = useAppSelector(selectLessonsError);
   const progressLoading = useAppSelector(selectProgressLoading);
   const totalLessonsCompleted = useAppSelector(selectTotalLessonsCompleted);
+  const progress = useAppSelector(selectProgress) as Progress | null;
   
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
 
   useEffect(() => {
-    // Fetch lessons when component mounts
-    dispatch(fetchAllLessons());
-  }, [dispatch]);
+    // Fetch lessons when component mounts, but only if there's no error and no lessons
+    if (!lessonsError && filteredLessons.length === 0) {
+      dispatch(fetchAllLessons());
+    }
+  }, [dispatch, lessonsError, filteredLessons.length]);
 
   const handleCategoryChange = (_: React.SyntheticEvent, newValue: string) => {
     setSelectedCategory(newValue);
@@ -74,10 +73,10 @@ const Lessons = () => {
     navigate(`/lessons/${lessonId}`);
   };
 
-  const getLessonProgressInfo = (lessonId: string) => {
-    const progress = useAppSelector(state => selectLessonProgress(state, lessonId));
+  const getLessonProgress = (lessonId: string) => {
+    const lessonProgress = progress?.completedLessons?.[lessonId];
     
-    if (!progress) {
+    if (!lessonProgress) {
       return {
         completed: false,
         score: 0,
@@ -87,15 +86,26 @@ const Lessons = () => {
     
     return {
       completed: true,
-      score: progress.score,
-      attempts: progress.attempts,
+      score: lessonProgress.score,
+      attempts: lessonProgress.attempts,
     };
   };
 
-  if (lessonsLoading && filteredLessons.length === 0) {
+  // Check for error first, then loading
+  if (lessonsError) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '50vh' }}>
-        <CircularProgress />
+        <Alert severity="error" data-testid="error-message">
+          {lessonsError}
+        </Alert>
+      </Box>
+    );
+  }
+
+  if (lessonsLoading) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '50vh' }}>
+        <CircularProgress data-testid="loading-indicator" />
       </Box>
     );
   }
@@ -119,12 +129,6 @@ const Lessons = () => {
               You've completed {totalLessonsCompleted} lessons. Keep going!
             </Typography>
           </Box>
-        )}
-        
-        {lessonsError && (
-          <Alert severity="error" sx={{ mt: 2 }}>
-            {lessonsError}
-          </Alert>
         )}
       </Box>
       
@@ -150,7 +154,7 @@ const Lessons = () => {
       {/* Lessons grid */}
       <Grid container spacing={3}>
         {filteredLessons.map((lesson) => {
-          const { completed, score } = getLessonProgressInfo(lesson.lessonId);
+          const { completed, score } = getLessonProgress(lesson.lessonId);
           const isPremiumLocked = lesson.isPremium && (!user || !user.isPremium);
           
           return (
@@ -202,7 +206,7 @@ const Lessons = () => {
                       <Chip
                         label={capitalize(lesson.difficulty)}
                         size="small"
-                        color={difficultyColors[lesson.difficulty] as any}
+                        color={difficultyColors[lesson.difficulty]}
                       />
                       {lesson.isPremium && (
                         <Chip

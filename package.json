@@ -3,18 +3,43 @@
   "private": true,
   "workspaces": [
     "frontend",
-    "backend"
+    "backend",
+    "shared",
+    "desktop"
   ],
   "version": "1.0.0",
   "description": "Keyboard Dojo - Learn keyboard shortcuts effectively",
   "scripts": {
     "start:frontend": "yarn workspace @keyboard-dojo/frontend dev",
     "start:backend": "yarn workspace @keyboard-dojo/backend dev",
+    "start:desktop": "yarn workspace @keyboard-dojo/desktop dev",
+    "deploy:backend": "yarn workspace @keyboard-dojo/backend deploy",
     "build:frontend": "yarn workspace @keyboard-dojo/frontend build",
     "build:backend": "yarn workspace @keyboard-dojo/backend build",
-    "test": "yarn workspaces run test"
+    "build:desktop": "yarn workspace @keyboard-dojo/desktop build",
+    "build:shared": "yarn workspace @keyboard-dojo/shared build",
+    "build:desktop:macos": "yarn workspace @keyboard-dojo/desktop build:macos",
+    "build:desktop:windows": "yarn workspace @keyboard-dojo/desktop build:windows",
+    "build:desktop:linux": "yarn workspace @keyboard-dojo/desktop build:linux",
+    "build:desktop:all": "yarn workspace @keyboard-dojo/desktop build:all",
+    "sign:desktop:macos": "yarn workspace @keyboard-dojo/desktop sign:macos",
+    "sign:desktop:windows": "yarn workspace @keyboard-dojo/desktop sign:windows",
+    "sign:desktop:linux": "yarn workspace @keyboard-dojo/desktop sign:linux",
+    "sign:desktop:all": "yarn workspace @keyboard-dojo/desktop sign:all",
+    "deploy:desktop": "yarn workspace @keyboard-dojo/desktop deploy",
+    "deploy:all": "yarn build:frontend && yarn deploy:backend",
+    "deploy:all:desktop": "yarn build:shared && yarn build:desktop:all && yarn sign:desktop:all && yarn deploy:desktop",
+    "test": "yarn workspaces run test",
+    "migration:inventory": "node scripts/component-inventory.js",
+    "migration:test": "node scripts/test-migration.js",
+    "migration:batch": "node scripts/batch-migrate.js",
+    "migration:single": "node scripts/migrate-imports.js",
+    "migration:make-executable": "bash scripts/make-executable.sh"
   },
   "author": "",
   "license": "ISC",
-  "packageManager": "yarn@1.22.19"
-} 
+  "packageManager": "yarn@1.22.19",
+  "dependencies": {
+    "html2canvas": "^1.4.1"
+  }
+}

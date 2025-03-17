@@ -6,6 +6,7 @@ import {
   cancelSubscription,
   Subscription,
   SubscriptionPlan,
+  SubscriptionResponse,
 } from '../../api/subscriptionService';
 
 // Types
@@ -14,6 +15,7 @@ interface SubscriptionState {
   isPremium: boolean;
   checkoutUrl: string | null;
   isLoading: boolean;
+  loading: boolean;
   error: string | null;
 }
 
@@ -23,11 +25,16 @@ const initialState: SubscriptionState = {
   isPremium: false,
   checkoutUrl: null,
   isLoading: false,
+  loading: false,
   error: null,
 };
 
 // Async thunks
-export const fetchUserSubscription = createAsyncThunk(
+export const fetchUserSubscription = createAsyncThunk<
+  SubscriptionResponse,
+  void, 
+  { rejectValue: string }
+>(
   'subscription/fetchUserSubscription',
   async (_, { rejectWithValue }) => {
     try {
@@ -39,17 +46,21 @@ export const fetchUserSubscription = createAsyncThunk(
   }
 );
 
-export const createStripeCheckoutSession = createAsyncThunk(
+export const createStripeCheckoutSession = createAsyncThunk<
+  { url: string },
+  {
+    plan: SubscriptionPlan;
+    successUrl: string;
+    cancelUrl: string;
+  },
+  { rejectValue: string }
+>(
   'subscription/createCheckoutSession',
   async (
     {
       plan,
       successUrl,
       cancelUrl,
-    }: {
-      plan: SubscriptionPlan;
-      successUrl: string;
-      cancelUrl: string;
     },
     { rejectWithValue }
   ) => {
@@ -62,10 +73,14 @@ export const createStripeCheckoutSession = createAsyncThunk(
   }
 );
 
-export const cancelUserSubscription = createAsyncThunk(
+export const cancelUserSubscription = createAsyncThunk<
+  { subscription: Subscription; message: string },
+  { immediateCancel?: boolean },
+  { rejectValue: string }
+>(
   'subscription/cancelSubscription',
   async (
-    { immediateCancel = false }: { immediateCancel?: boolean },
+    { immediateCancel = false },
     { rejectWithValue }
   ) => {
     try {
@@ -103,7 +118,7 @@ const subscriptionSlice = createSlice({
       })
       .addCase(fetchUserSubscription.rejected, (state, action) => {
         state.isLoading = false;
-        state.error = action.payload as string || 'Failed to fetch subscription';
+        state.error = action.payload || 'Failed to fetch subscription';
       })
       
       // Create checkout session
@@ -118,7 +133,7 @@ const subscriptionSlice = createSlice({
       })
       .addCase(createStripeCheckoutSession.rejected, (state, action) => {
         state.isLoading = false;
-        state.error = action.payload as string || 'Failed to create checkout session';
+        state.error = action.payload || 'Failed to create checkout session';
       })
       
       // Cancel subscription
@@ -136,7 +151,7 @@ const subscriptionSlice = createSlice({
       })
       .addCase(cancelUserSubscription.rejected, (state, action) => {
         state.isLoading = false;
-        state.error = action.payload as string || 'Failed to cancel subscription';
+        state.error = action.payload || 'Failed to cancel subscription';
       });
   },
 });

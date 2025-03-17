@@ -15,6 +15,7 @@ import {
   Chip,
   CircularProgress,
   Alert,
+  ChipProps,
 } from '@mui/material';
 import SchoolIcon from '@mui/icons-material/School';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
@@ -23,6 +24,8 @@ import FitnessCenterIcon from '@mui/icons-material/FitnessCenter';
 import { RootState } from '../../store/store';
 import { fetchAllLessons } from '../lessons/lessonsSlice';
 import { fetchUserProgress } from '../progress/progressSlice';
+import { AppDispatch } from '../../store/store';
+import DesktopAppBanner from '../../components/DesktopAppBanner';
 
 // Helper function to capitalize first letter
 const capitalize = (str: string): string => {
@@ -30,15 +33,22 @@ const capitalize = (str: string): string => {
 };
 
 // Map difficulty levels to colors
-const difficultyColors: Record<string, string> = {
+const difficultyColors: Record<string, ChipProps['color']> = {
   beginner: 'success',
   intermediate: 'warning',
   advanced: 'error',
 };
 
+// Define a type for our derived progress item
+interface ProgressItem {
+  lessonId: string;
+  completedShortcuts: number;
+  lastPracticed: number;
+}
+
 const Dashboard = () => {
   const navigate = useNavigate();
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
   
   const { user } = useSelector((state: RootState) => state.auth);
   const { 
@@ -47,54 +57,69 @@ const Dashboard = () => {
     error: lessonsError 
   } = useSelector((state: RootState) => state.lessons);
   const { 
-    progress, 
+    data: progressData,
     loading: progressLoading 
   } = useSelector((state: RootState) => state.progress);
 
   useEffect(() => {
-    dispatch(fetchAllLessons() as any);
+    dispatch(fetchAllLessons());
     if (user?.id) {
-      dispatch(fetchUserProgress(user.id) as any);
+      dispatch(fetchUserProgress());
     }
   }, [dispatch, user?.id]);
 
+  // Create a derived array of lesson progress for easier processing
+  const progressArray: ProgressItem[] = progressData && lessons ? Object.entries(progressData.completedLessons || {})
+    .map(([lessonId, lessonData]) => {
+      const lesson = lessons.find(l => l.id === lessonId);
+      if (!lesson) return null;
+      
+      const shortcutsCompleted = Object.values(lessonData.shortcuts || {}).filter(s => s.mastered).length;
+      
+      return {
+        lessonId,
+        completedShortcuts: shortcutsCompleted,
+        lastPracticed: lessonData.completedAt || Date.now(),
+      };
+    })
+    .filter((item): item is ProgressItem => item !== null) : [];
+
   // Calculate overall progress
-  const totalLessons = lessons.length;
-  const completedLessons = progress ? progress.filter(p => p.completedShortcuts > 0).length : 0;
+  const totalLessons = lessons?.length || 0;
+  const completedLessons = progressData ? progressData.totalLessonsCompleted || 0 : 0;
   const completionPercentage = totalLessons ? Math.round((completedLessons / totalLessons) * 100) : 0;
 
   // Get in-progress lessons
-  const inProgressLessons = progress 
-    ? progress
-        .filter(p => p.completedShortcuts > 0 && p.completedShortcuts < lessons.find(l => l.id === p.lessonId)?.shortcuts.length)
-        .sort((a, b) => new Date(b.lastPracticed).getTime() - new Date(a.lastPracticed).getTime())
-        .slice(0, 3)
-    : [];
+  const inProgressLessons = progressArray
+    .filter(p => {
+      const lesson = lessons?.find(l => l.id === p.lessonId);
+      return p.completedShortcuts > 0 && lesson && p.completedShortcuts < (lesson.shortcuts?.length || 0);
+    })
+    .sort((a, b) => new Date(b.lastPracticed).getTime() - new Date(a.lastPracticed).getTime())
+    .slice(0, 3);
 
   // Get recommended lessons
-  const recommendedLessons = lessons
+  const recommendedLessons = lessons ? lessons
     .filter(lesson => {
       // If user has no progress, recommend beginner lessons
-      if (!progress || progress.length === 0) {
+      if (!progressData || Object.keys(progressData.completedLessons || {}).length === 0) {
         return lesson.difficulty === 'beginner';
       }
       
       // Otherwise, recommend lessons not started yet, prioritizing by user's level
-      const userProgress = progress.find(p => p.lessonId === lesson.id);
-      return !userProgress || userProgress.completedShortcuts === 0;
+      const lessonProgress = progressData.completedLessons[lesson.id];
+      return !lessonProgress || Object.values(lessonProgress.shortcuts || {}).filter(s => s.mastered).length === 0;
     })
-    .slice(0, 3);
+    .slice(0, 3) : [];
   
   // Get recent completed lessons
-  const recentCompletedLessons = progress 
-    ? progress
-        .filter(p => {
-          const lesson = lessons.find(l => l.id === p.lessonId);
-          return lesson && p.completedShortcuts === lesson.shortcuts.length;
-        })
-        .sort((a, b) => new Date(b.lastPracticed).getTime() - new Date(a.lastPracticed).getTime())
-        .slice(0, 3)
-    : [];
+  const recentCompletedLessons = progressArray
+    .filter(p => {
+      const lesson = lessons?.find(l => l.id === p.lessonId);
+      return lesson && p.completedShortcuts === (lesson.shortcuts?.length || 0);
+    })
+    .sort((a, b) => new Date(b.lastPracticed).getTime() - new Date(a.lastPracticed).getTime())
+    .slice(0, 3);
 
   const handleNavigateToLesson = (lessonId: string) => {
     navigate(`/lessons/${lessonId}`);
@@ -136,6 +161,8 @@ const Dashboard = () => {
 
   return (
     <Box>
+      <DesktopAppBanner />
+      
       <Typography variant="h4" component="h1" gutterBottom>
         Welcome, {user.name || 'Keyboard Ninja'}!
       </Typography>
@@ -148,7 +175,7 @@ const Dashboard = () => {
         </Box>
         
         <Grid container spacing={3}>
-          <Grid item xs={12} sm={4}>
+          <Grid item xs={12} sm={4} key="completed-lessons">
             <Card>
               <CardContent sx={{ textAlign: 'center' }}>
                 <Typography variant="h5" color="primary">
@@ -161,7 +188,7 @@ const Dashboard = () => {
             </Card>
           </Grid>
           
-          <Grid item xs={12} sm={4}>
+          <Grid item xs={12} sm={4} key="completion-rate">
             <Card>
               <CardContent sx={{ textAlign: 'center' }}>
                 <Typography variant="h5" color="primary">
@@ -174,7 +201,7 @@ const Dashboard = () => {
             </Card>
           </Grid>
           
-          <Grid item xs={12} sm={4}>
+          <Grid item xs={12} sm={4} key="lessons-remaining">
             <Card>
               <CardContent sx={{ textAlign: 'center' }}>
                 <Typography variant="h5" color="primary">
@@ -213,7 +240,8 @@ const Dashboard = () => {
               const lesson = lessons.find(l => l.id === progressItem.lessonId);
               if (!lesson) return null;
               
-              const completionPercentage = Math.round((progressItem.completedShortcuts / lesson.shortcuts.length) * 100);
+              const lessonShortcutsLength = lesson.shortcuts?.length || 1; // Prevent division by zero
+              const completionPercentage = Math.round((progressItem.completedShortcuts / lessonShortcutsLength) * 100);
               
               return (
                 <Grid item xs={12} sm={6} md={4} key={lesson.id}>
@@ -225,20 +253,22 @@ const Dashboard = () => {
                       
                       <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
                         <Chip 
+                          key={`category-${lesson.category}`}
                           label={capitalize(lesson.category)} 
                           size="small" 
                           color="primary" 
                           variant="outlined"
                         />
                         <Chip 
+                          key={`difficulty-${lesson.difficulty}`}
                           label={capitalize(lesson.difficulty)} 
                           size="small" 
-                          color={difficultyColors[lesson.difficulty] as any} 
+                          color={difficultyColors[lesson.difficulty]} 
                         />
                       </Box>
                       
                       <Typography variant="body2" sx={{ mb: 1 }}>
-                        {progressItem.completedShortcuts} of {lesson.shortcuts.length} shortcuts completed
+                        {progressItem.completedShortcuts} of {lesson.shortcuts?.length || 0} shortcuts completed
                       </Typography>
                       
                       <LinearProgress 
@@ -255,7 +285,7 @@ const Dashboard = () => {
                       <Button 
                         size="small" 
                         color="primary"
-                        onClick={() => handleNavigateToLesson(lesson.id)}
+                        onClick={() => handleNavigateToLesson(lesson.lessonId)}
                       >
                         Continue
                       </Button>
@@ -291,15 +321,17 @@ const Dashboard = () => {
                     
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
                       <Chip 
+                        key={`category-${lesson.category}`}
                         label={capitalize(lesson.category)} 
                         size="small" 
                         color="primary" 
                         variant="outlined"
                       />
                       <Chip 
+                        key={`difficulty-${lesson.difficulty}`}
                         label={capitalize(lesson.difficulty)} 
                         size="small" 
-                        color={difficultyColors[lesson.difficulty] as any} 
+                        color={difficultyColors[lesson.difficulty]} 
                       />
                     </Box>
                     
@@ -308,14 +340,14 @@ const Dashboard = () => {
                     </Typography>
                     
                     <Typography variant="body2">
-                      {lesson.shortcuts.length} shortcuts to learn
+                      {lesson.shortcuts?.length || 0} shortcuts to learn
                     </Typography>
                   </CardContent>
                   <CardActions>
                     <Button 
                       size="small" 
                       color="primary"
-                      onClick={() => handleNavigateToLesson(lesson.id)}
+                      onClick={() => handleNavigateToLesson(lesson.lessonId)}
                     >
                       Start Lesson
                     </Button>
@@ -360,15 +392,17 @@ const Dashboard = () => {
                       
                       <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
                         <Chip 
+                          key={`category-${lesson.category}`}
                           label={capitalize(lesson.category)} 
                           size="small" 
                           color="primary" 
                           variant="outlined"
                         />
                         <Chip 
+                          key={`difficulty-${lesson.difficulty}`}
                           label={capitalize(lesson.difficulty)} 
                           size="small" 
-                          color={difficultyColors[lesson.difficulty] as any} 
+                          color={difficultyColors[lesson.difficulty]} 
                         />
                       </Box>
                       
@@ -379,14 +413,14 @@ const Dashboard = () => {
                       <Divider sx={{ my: 1 }} />
                       
                       <Typography variant="body2">
-                        Mastered all {lesson.shortcuts.length} shortcuts!
+                        Mastered all {lesson.shortcuts?.length || 0} shortcuts!
                       </Typography>
                     </CardContent>
                     <CardActions>
                       <Button 
                         size="small" 
                         color="primary"
-                        onClick={() => handleNavigateToLesson(lesson.id)}
+                        onClick={() => handleNavigateToLesson(lesson.lessonId)}
                       >
                         Practice Again
                       </Button>

@@ -22,8 +22,8 @@ import {
 import FilterListIcon from '@mui/icons-material/FilterList';
 import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
 import { RootState } from '../../store/store';
-import { fetchLessons } from '../lessons/lessonsSlice';
-import { fetchUserProgress, updateUserProgress } from '../progress/progressSlice';
+import { fetchAllLessons } from '../lessons/lessonsSlice';
+import { fetchUserProgress } from '../progress/progressSlice';
 
 // Helper function to capitalize first letter
 const capitalize = (str: string) => str.charAt(0).toUpperCase() + str.slice(1);
@@ -59,7 +59,7 @@ const Practice = () => {
   const difficulties = ['all', ...new Set(lessons.map(lesson => lesson.difficulty))];
 
   useEffect(() => {
-    dispatch(fetchLessons() as any);
+    dispatch(fetchAllLessons() as any);
     if (user?.id) {
       dispatch(fetchUserProgress(user.id) as any);
     }

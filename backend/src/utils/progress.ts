@@ -85,13 +85,13 @@ export const updateLessonProgress = async (
     
     const now = Date.now();
     const lessonCompletionData: LessonCompletion = {
-      completedAt: now,
-      score: 0,
-      attempts: 1,
-      timeSpent: 0,
-      shortcuts: {},
       ...(progress.completedLessons[lessonId] || {}),
       ...lessonData,
+      completedAt: lessonData.completedAt || now,
+      score: lessonData.score !== undefined ? lessonData.score : (progress.completedLessons[lessonId]?.score || 0),
+      attempts: lessonData.attempts !== undefined ? lessonData.attempts : ((progress.completedLessons[lessonId]?.attempts || 0) + 1),
+      timeSpent: lessonData.timeSpent !== undefined ? lessonData.timeSpent : (progress.completedLessons[lessonId]?.timeSpent || 0),
+      shortcuts: lessonData.shortcuts || progress.completedLessons[lessonId]?.shortcuts || {},
     };
     
     // Check if this is a new completion

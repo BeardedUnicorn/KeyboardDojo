@@ -1,4 +1,5 @@
 import { AuthProvider, User } from '../features/auth/authSlice';
+import { captureException } from '../utils/sentry';
 
 interface LoginResponse {
   token: string;
@@ -9,9 +10,7 @@ interface ErrorResponse {
   message: string;
 }
 
-const API_BASE_URL = process.env.NODE_ENV === 'production' 
-  ? 'https://api.keyboarddojo.com' // Replace with actual API URL in production
-  : 'http://localhost:3000'; // Local development API URL
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 /**
  * Email/Password Login
@@ -20,20 +19,43 @@ export const loginWithEmail = async (
   email: string, 
   password: string
 ): Promise<LoginResponse> => {
-  const response = await fetch(`${API_BASE_URL}/auth/login`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ email, password }),
-  });
+  try {
+    const response = await fetch(`${API_BASE_URL}/auth/login`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ email, password }),
+    });
 
-  if (!response.ok) {
-    const errorData: ErrorResponse = await response.json();
-    throw new Error(errorData.message || 'Login failed');
+    if (!response.ok) {
+      let errorMessage = 'Login failed';
+      let errorData;
+      try {
+        errorData = await response.json() as ErrorResponse;
+        errorMessage = errorData.message || errorMessage;
+      } catch (parseError) {
+        console.error('Error parsing error response:', parseError);
+      }
+      const error = new Error(errorMessage);
+      captureException(error, { 
+        statusCode: response.status,
+        endpoint: '/auth/login',
+        email
+      });
+      throw error;
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Error in loginWithEmail:', error);
+    captureException(error instanceof Error ? error : new Error(String(error)), {
+      context: 'loginWithEmail',
+      email,
+      apiUrl: API_BASE_URL
+    });
+    throw error;
   }
-
-  return await response.json();
 };
 
 /**
@@ -44,42 +66,72 @@ export const registerWithEmail = async (
   email: string,
   password: string
 ): Promise<LoginResponse> => {
-  const response = await fetch(`${API_BASE_URL}/auth/register`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ name, email, password }),
-  });
+  try {
+    const response = await fetch(`${API_BASE_URL}/auth/register`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ name, email, password }),
+    });
 
-  if (!response.ok) {
-    const errorData: ErrorResponse = await response.json();
-    throw new Error(errorData.message || 'Registration failed');
+    if (!response.ok) {
+      let errorMessage = 'Registration failed';
+      let errorData;
+      try {
+        errorData = await response.json() as ErrorResponse;
+        errorMessage = errorData.message || errorMessage;
+      } catch (parseError) {
+        console.error('Error parsing error response:', parseError);
+      }
+      const error = new Error(errorMessage);
+      captureException(error, { 
+        statusCode: response.status,
+        endpoint: '/auth/register',
+        email
+      });
+      throw error;
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Error in registerWithEmail:', error);
+    captureException(error instanceof Error ? error : new Error(String(error)), {
+      context: 'registerWithEmail',
+      email,
+      apiUrl: API_BASE_URL
+    });
+    throw error;
   }
-
-  return await response.json();
 };
 
 /**
- * OAuth Login - Step 1: Redirect to Provider
+ * Get OAuth redirect URL for the specified provider
  */
 export const getOAuthRedirectUrl = (provider: AuthProvider): string => {
-  const redirectUri = encodeURIComponent(
-    `${window.location.origin}/auth/callback/${provider}`
-  );
-  
-  switch (provider) {
-    case 'google':
-      return `https://accounts.google.com/o/oauth2/v2/auth?client_id=${process.env.REACT_APP_GOOGLE_CLIENT_ID}&redirect_uri=${redirectUri}&response_type=code&scope=profile email&prompt=select_account`;
+  try {
+    // Use environment variable for redirect URI if available
+    const redirectUri = import.meta.env.VITE_OAUTH_REDIRECT_URI || 
+      `${import.meta.env.VITE_APP_URL || 'http://localhost:5173'}/auth/callback/${provider}`;
     
-    case 'github':
-      return `https://github.com/login/oauth/authorize?client_id=${process.env.REACT_APP_GITHUB_CLIENT_ID}&redirect_uri=${redirectUri}&scope=user:email`;
-    
-    case 'apple':
-      return `https://appleid.apple.com/auth/authorize?client_id=${process.env.REACT_APP_APPLE_CLIENT_ID}&redirect_uri=${redirectUri}&response_type=code&scope=name email&response_mode=form_post`;
-    
-    default:
-      throw new Error(`Unsupported OAuth provider: ${provider}`);
+    if (provider === 'google') {
+      return `https://accounts.google.com/o/oauth2/v2/auth?client_id=${import.meta.env.VITE_GOOGLE_CLIENT_ID}&redirect_uri=${redirectUri}&response_type=code&scope=profile email&prompt=select_account`;
+    } else if (provider === 'github') {
+      return `https://github.com/login/oauth/authorize?client_id=${import.meta.env.VITE_GITHUB_CLIENT_ID}&redirect_uri=${redirectUri}&scope=user:email`;
+    } else if (provider === 'apple') {
+      return `https://appleid.apple.com/auth/authorize?client_id=${import.meta.env.VITE_APPLE_CLIENT_ID}&redirect_uri=${redirectUri}&response_type=code&scope=name email&response_mode=form_post`;
+    } else {
+      const error = new Error(`Unsupported auth provider: ${provider}`);
+      captureException(error, { provider });
+      throw error;
+    }
+  } catch (error) {
+    console.error('Error in getOAuthRedirectUrl:', error);
+    captureException(error instanceof Error ? error : new Error(String(error)), {
+      context: 'getOAuthRedirectUrl',
+      provider
+    });
+    throw error;
   }
 };
 
@@ -90,39 +142,73 @@ export const processOAuthCallback = async (
   provider: AuthProvider, 
   code: string
 ): Promise<LoginResponse> => {
-  const response = await fetch(`${API_BASE_URL}/auth/${provider}/callback`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ code }),
-  });
+  try {
+    const response = await fetch(`${API_BASE_URL}/auth/${provider}/callback`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ code }),
+    });
 
-  if (!response.ok) {
-    const errorData: ErrorResponse = await response.json();
-    throw new Error(errorData.message || `${provider} login failed`);
+    if (!response.ok) {
+      let errorMessage = `${provider} login failed`;
+      let errorData;
+      try {
+        errorData = await response.json() as ErrorResponse;
+        errorMessage = errorData.message || errorMessage;
+      } catch (parseError) {
+        console.error('Error parsing error response:', parseError);
+      }
+      const error = new Error(errorMessage);
+      captureException(error, { 
+        statusCode: response.status,
+        endpoint: `/auth/${provider}/callback`,
+        provider
+      });
+      throw error;
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Error in processOAuthCallback:', error);
+    captureException(error instanceof Error ? error : new Error(String(error)), {
+      context: 'processOAuthCallback',
+      provider,
+      apiUrl: API_BASE_URL
+    });
+    throw error;
   }
-
-  return await response.json();
 };
 
 /**
  * Verify JWT token with the backend
  */
 export const verifyToken = async (token: string): Promise<{ valid: boolean; user?: User }> => {
-  const response = await fetch(`${API_BASE_URL}/auth/verify`, {
-    method: 'GET',
-    headers: {
-      'Authorization': `Bearer ${token}`,
-    },
-  });
+  try {
+    const response = await fetch(`${API_BASE_URL}/auth/verify`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
 
-  if (!response.ok) {
+    if (!response.ok) {
+      // Don't throw an error here, just return invalid
+      return { valid: false };
+    }
+
+    const data = await response.json();
+    return { valid: true, user: data.user };
+  } catch (error) {
+    console.error('Error in verifyToken:', error);
+    captureException(error instanceof Error ? error : new Error(String(error)), {
+      context: 'verifyToken',
+      apiUrl: API_BASE_URL
+    });
+    // Return invalid on error
     return { valid: false };
   }
-
-  const data = await response.json();
-  return { valid: true, user: data.user };
 };
 
 /**

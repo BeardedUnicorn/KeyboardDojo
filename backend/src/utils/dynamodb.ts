@@ -1,5 +1,6 @@
 import { DynamoDB } from 'aws-sdk';
 import { User } from './auth';
+import { captureException } from './sentry';
 
 // Initialize DynamoDB client
 const dynamoDb = new DynamoDB.DocumentClient();
@@ -120,9 +121,8 @@ export const updateUser = async (
 /**
  * Check if user exists by email
  */
-export const userExistsByEmail = async (email: string): Promise<boolean> => {
-  const user = await getUserByEmail(email);
-  return !!user;
+export const userExistsByEmail = async (email: string): Promise<User | null> => {
+  return await getUserByEmail(email);
 };
 
 /**
@@ -152,6 +152,26 @@ export const userExistsByProviderId = async (
   } catch (error) {
     console.error('Error checking user by provider ID:', error);
     return null;
+  }
+};
+
+/**
+ * Get all users from the database
+ */
+export const getAllUsers = async (): Promise<any[]> => {
+  const params = {
+    TableName: process.env.USERS_TABLE || '',
+  };
+
+  try {
+    const result = await dynamoDb.scan(params).promise();
+    return result.Items || [];
+  } catch (error) {
+    console.error('Error scanning users table:', error);
+    captureException(error instanceof Error ? error : new Error('Error scanning users table'), {
+      context: 'dynamodb.getAllUsers',
+    });
+    throw error;
   }
 };
 

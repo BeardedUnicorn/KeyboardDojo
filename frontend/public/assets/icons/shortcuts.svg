@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="100px" height="100px" viewBox="0 0 100 100" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>Keyboard Shortcuts Icon</title>
+    <defs>
+        <linearGradient x1="0%" y1="0%" x2="100%" y2="100%" id="keyboardGradient">
+            <stop stop-color="#4A148C" offset="0%"></stop>
+            <stop stop-color="#7B1FA2" offset="100%"></stop>
+        </linearGradient>
+        <linearGradient x1="0%" y1="0%" x2="100%" y2="100%" id="lightningGradient">
+            <stop stop-color="#FFC107" offset="0%"></stop>
+            <stop stop-color="#FF9800" offset="100%"></stop>
+        </linearGradient>
+    </defs>
+    <g id="keyboard-shortcuts-icon" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <!-- Keyboard Base -->
+        <rect id="keyboard" fill="#E0E0E0" stroke="#9E9E9E" stroke-width="2" x="10" y="40" width="80" height="40" rx="5"></rect>
+        
+        <!-- Keys -->
+        <rect id="key1" fill="#FFFFFF" stroke="#9E9E9E" x="15" y="45" width="15" height="15" rx="2"></rect>
+        <rect id="key2" fill="#FFFFFF" stroke="#9E9E9E" x="35" y="45" width="15" height="15" rx="2"></rect>
+        <rect id="key3" fill="url(#keyboardGradient)" stroke="#9E9E9E" x="55" y="45" width="15" height="15" rx="2"></rect>
+        <rect id="key4" fill="url(#keyboardGradient)" stroke="#9E9E9E" x="75" y="45" width="10" height="15" rx="2"></rect>
+        
+        <rect id="key5" fill="#FFFFFF" stroke="#9E9E9E" x="15" y="65" width="15" height="10" rx="2"></rect>
+        <rect id="key6" fill="#FFFFFF" stroke="#9E9E9E" x="35" y="65" width="35" height="10" rx="2"></rect>
+        <rect id="key7" fill="#FFFFFF" stroke="#9E9E9E" x="75" y="65" width="10" height="10" rx="2"></rect>
+        
+        <!-- Lightning Bolt (Shortcut Symbol) -->
+        <path d="M30,20 L20,35 L30,35 L25,50" id="lightning" stroke="url(#lightningGradient)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"></path>
+        
+        <!-- Connecting Lines -->
+        <path d="M30,35 C40,35 45,40 45,45" id="connect1" stroke="#FF5722" stroke-width="2" stroke-dasharray="2,2"></path>
+        <path d="M60,35 C65,35 70,40 70,45" id="connect2" stroke="#FF5722" stroke-width="2" stroke-dasharray="2,2"></path>
+        
+        <!-- Shortcut Label -->
+        <rect id="shortcut-label" fill="#E8EAF6" x="50" y="15" width="30" height="20" rx="3"></rect>
+        <path d="M55,25 L75,25" id="label-line1" stroke="#9FA8DA" stroke-width="2" stroke-linecap="round"></path>
+        <path d="M55,20 L70,20" id="label-line2" stroke="#9FA8DA" stroke-width="2" stroke-linecap="round"></path>
+    </g>
+</svg> 
