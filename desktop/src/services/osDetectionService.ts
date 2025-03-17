@@ -1,205 +1,132 @@
 /**
  * OS Detection Service
  * 
- * This service provides functionality for detecting the operating system
- * and providing platform-specific behavior and UI adjustments.
+ * This service provides utilities for detecting the user's operating system
+ * and handling OS-specific features like keyboard shortcuts.
  */
 
-import { getVersion } from '@tauri-apps/api/app';
-// Mock the OS detection functions since they're not available in Tauri v2 yet
-// In a real implementation, these would be imported from a Tauri plugin
-const platform = async () => 'darwin';
-const arch = async () => 'x86_64';
-const type = async () => 'Darwin';
-
 export type OperatingSystem = 'windows' | 'macos' | 'linux' | 'unknown';
-export type Architecture = 'x86' | 'x86_64' | 'arm' | 'arm64' | 'unknown';
 
-interface OSInfo {
+export interface OSInfo {
   os: OperatingSystem;
-  arch: Architecture;
-  version: string;
-  isMac: boolean;
-  isWindows: boolean;
-  isLinux: boolean;
+  version?: string;
+  arch?: string;
 }
 
+type OSChangeListener = () => void;
+
 class OSDetectionService {
-  private _osInfo: OSInfo | null = null;
-  private _isInitialized = false;
-  private _initPromise: Promise<OSInfo> | null = null;
-  private _osChangeListeners: Set<(osInfo: OSInfo) => void> = new Set();
+  private _os: OperatingSystem = 'unknown';
+  private _initialized: boolean = false;
+  private _osChangeListeners: OSChangeListener[] = [];
 
   /**
-   * Initialize the OS detection service
-   * This detects the operating system and architecture
+   * Initialize the OS detection
    */
-  async initialize(): Promise<OSInfo> {
-    if (this._initPromise) {
-      return this._initPromise;
-    }
+  public async initialize(): Promise<void> {
+    if (this._initialized) return;
 
-    this._initPromise = this.detectOS();
-    this._osInfo = await this._initPromise;
-    this._isInitialized = true;
-    return this._osInfo;
-  }
-
-  /**
-   * Detect the operating system and architecture
-   */
-  private async detectOS(): Promise<OSInfo> {
     try {
-      const osType = await type();
-      const osArch = await arch();
-      const appVersion = await getVersion();
-      const osPlatform = await platform();
-
-      let detectedOS: OperatingSystem = 'unknown';
-      let detectedArch: Architecture = 'unknown';
-
-      // Determine OS
-      if (osType === 'Darwin') {
-        detectedOS = 'macos';
-      } else if (osType === 'Windows_NT') {
-        detectedOS = 'windows';
-      } else if (osType === 'Linux') {
-        detectedOS = 'linux';
+      // Detect OS
+      const platform = navigator.platform.toLowerCase();
+      
+      if (platform.includes('win')) {
+        this._os = 'windows';
+      } else if (platform.includes('mac')) {
+        this._os = 'macos';
+      } else if (platform.includes('linux')) {
+        this._os = 'linux';
       }
 
-      // Determine architecture
-      if (osArch === 'x86_64') {
-        detectedArch = 'x86_64';
-      } else if (osArch === 'x86') {
-        detectedArch = 'x86';
-      } else if (osArch === 'aarch64') {
-        detectedArch = 'arm64';
-      } else if (osArch === 'arm') {
-        detectedArch = 'arm';
+      // Alternative detection using user agent if platform is not reliable
+      if (this._os === 'unknown') {
+        const userAgent = navigator.userAgent.toLowerCase();
+        
+        if (userAgent.includes('windows')) {
+          this._os = 'windows';
+        } else if (userAgent.includes('mac os x') || userAgent.includes('macintosh')) {
+          this._os = 'macos';
+        } else if (userAgent.includes('linux')) {
+          this._os = 'linux';
+        }
       }
 
-      const osInfo: OSInfo = {
-        os: detectedOS,
-        arch: detectedArch,
-        version: appVersion,
-        isMac: detectedOS === 'macos',
-        isWindows: detectedOS === 'windows',
-        isLinux: detectedOS === 'linux',
-      };
+      // Try to get more accurate info from Tauri if available
+      try {
+        // This would be replaced with actual Tauri API call in a real implementation
+        // const os = await invoke('get_os');
+        // this._os = os as OperatingSystem;
+      } catch (error) {
+        console.warn('Could not get OS information from Tauri:', error);
+      }
 
-      console.log('Detected OS:', osInfo);
-      return osInfo;
+      this._initialized = true;
+      console.log(`Detected operating system: ${this._os}`);
     } catch (error) {
-      console.error('Error detecting OS:', error);
-      // Fallback to browser detection if Tauri API fails
-      const fallbackInfo = this.detectOSFallback();
-      console.log('Using fallback OS detection:', fallbackInfo);
-      return fallbackInfo;
+      console.error('Error detecting operating system:', error);
     }
   }
 
   /**
-   * Fallback method to detect OS using browser APIs
-   * This is used if the Tauri API fails
+   * Get the detected operating system
    */
-  private detectOSFallback(): OSInfo {
-    const userAgent = navigator.userAgent;
-    let os: OperatingSystem = 'unknown';
-    let detectedArch: Architecture = 'unknown';
-
-    if (userAgent.indexOf('Win') !== -1) {
-      os = 'windows';
-    } else if (userAgent.indexOf('Mac') !== -1) {
-      os = 'macos';
-    } else if (userAgent.indexOf('Linux') !== -1) {
-      os = 'linux';
+  public getOS(): OperatingSystem {
+    if (!this._initialized) {
+      console.warn('OS detection not initialized, initializing now...');
+      this.initialize();
     }
+    return this._os;
+  }
 
-    // Try to detect architecture from user agent
-    if (userAgent.indexOf('x86_64') !== -1 || userAgent.indexOf('x64') !== -1) {
-      detectedArch = 'x86_64';
-    } else if (userAgent.indexOf('x86') !== -1 || userAgent.indexOf('i386') !== -1) {
-      detectedArch = 'x86';
-    } else if (userAgent.indexOf('arm64') !== -1 || userAgent.indexOf('aarch64') !== -1) {
-      detectedArch = 'arm64';
-    } else if (userAgent.indexOf('arm') !== -1) {
-      detectedArch = 'arm';
-    }
-
+  /**
+   * Get detailed OS information
+   */
+  public getOSInfo(): OSInfo {
     return {
-      os,
-      arch: detectedArch,
-      version: '0.0.0', // Unknown version in fallback mode
-      isMac: os === 'macos',
-      isWindows: os === 'windows',
-      isLinux: os === 'linux',
+      os: this.getOS(),
+      // Additional properties would be populated from Tauri in a real implementation
     };
   }
 
   /**
-   * Get the detected OS information
+   * Check if the current OS is macOS
    */
-  getOSInfo(): OSInfo {
-    if (!this._isInitialized) {
-      console.warn('OS detection service not initialized. Call initialize() first.');
-      return this.detectOSFallback();
+  public isMacOS(): boolean {
+    return this.getOS() === 'macos';
+  }
+
+  /**
+   * Check if the current OS is Windows
+   */
+  public isWindows(): boolean {
+    return this.getOS() === 'windows';
+  }
+
+  /**
+   * Check if the current OS is Linux
+   */
+  public isLinux(): boolean {
+    return this.getOS() === 'linux';
+  }
+
+  /**
+   * Format a shortcut string based on the current OS
+   * @param windowsShortcut The Windows version of the shortcut
+   * @param macShortcut The macOS version of the shortcut
+   * @param linuxShortcut The Linux version of the shortcut (defaults to Windows shortcut)
+   */
+  public formatShortcut(windowsShortcut: string, macShortcut: string, linuxShortcut?: string): string {
+    const os = this.getOS();
+    
+    switch (os) {
+      case 'macos':
+        return macShortcut;
+      case 'linux':
+        return linuxShortcut || windowsShortcut;
+      case 'windows':
+      default:
+        return windowsShortcut;
     }
-    return this._osInfo!;
-  }
-
-  /**
-   * Add a listener for OS changes
-   * @param listener The listener function
-   */
-  addOSChangeListener(listener: (osInfo: OSInfo) => void): void {
-    this._osChangeListeners.add(listener);
-    
-    // Call the listener immediately with the current OS info
-    if (this._isInitialized && this._osInfo) {
-      listener(this._osInfo);
-    }
-  }
-
-  /**
-   * Remove a listener for OS changes
-   * @param listener The listener function
-   */
-  removeOSChangeListener(listener: (osInfo: OSInfo) => void): void {
-    this._osChangeListeners.delete(listener);
-  }
-
-  /**
-   * Notify all listeners of an OS change
-   * @param osInfo The new OS info
-   */
-  private notifyOSChangeListeners(osInfo: OSInfo): void {
-    this._osChangeListeners.forEach(listener => listener(osInfo));
-  }
-
-  /**
-   * Force a re-detection of the OS
-   * This is useful for testing or if the OS might have changed
-   */
-  async refreshOSInfo(): Promise<OSInfo> {
-    const previousOS = this._osInfo?.os;
-    
-    this._osInfo = await this.detectOS();
-    
-    // Notify listeners if the OS has changed
-    if (previousOS !== this._osInfo.os) {
-      this.notifyOSChangeListeners(this._osInfo);
-    }
-    
-    return this._osInfo;
-  }
-
-  /**
-   * Get the command key symbol based on the OS
-   * Returns ⌘ for macOS and Ctrl for other platforms
-   */
-  getCommandKeySymbol(): string {
-    const osInfo = this.getOSInfo();
-    return osInfo.isMac ? '⌘' : 'Ctrl';
   }
 
   /**
@@ -207,33 +134,94 @@ class OSDetectionService {
    * @param shortcut The shortcut to format (e.g., 'Ctrl+Shift+P')
    * @returns Formatted shortcut for the current OS
    */
-  formatShortcutForOS(shortcut: string): string {
-    const osInfo = this.getOSInfo();
+  public formatShortcutForOS(shortcut: string): string {
+    return this.convertShortcut(shortcut);
+  }
+
+  /**
+   * Get the appropriate modifier key name based on the current OS
+   * @param windowsKey The Windows key name
+   * @param macKey The macOS key name
+   * @param linuxKey The Linux key name (defaults to Windows key)
+   */
+  public getModifierKeyName(windowsKey: string, macKey: string, linuxKey?: string): string {
+    const os = this.getOS();
     
-    if (osInfo.isMac) {
-      // Replace Ctrl with ⌘, Alt with ⌥, Shift with ⇧, Meta with ⌃
-      return shortcut
-        .replace(/Ctrl\+/g, '⌘+')
-        .replace(/Alt\+/g, '⌥+')
-        .replace(/Shift\+/g, '⇧+')
-        .replace(/Meta\+/g, '⌃+')
-        .replace(/\+/g, ' '); // Replace + with space for better readability
-    } else {
-      // Keep as is, just replace + with space for better readability
-      return shortcut.replace(/\+/g, ' ');
+    switch (os) {
+      case 'macos':
+        return macKey;
+      case 'linux':
+        return linuxKey || windowsKey;
+      case 'windows':
+      default:
+        return windowsKey;
     }
   }
 
   /**
-   * Check if the app is running on a specific OS
-   * @param os The OS to check
-   * @returns Whether the app is running on the specified OS
+   * Convert a shortcut string to the appropriate format for the current OS
+   * @param shortcut The shortcut string to convert
    */
-  isRunningOn(os: OperatingSystem): boolean {
-    const osInfo = this.getOSInfo();
-    return osInfo.os === os;
+  public convertShortcut(shortcut: string): string {
+    if (this.isMacOS()) {
+      // Convert Windows/Linux format to macOS format
+      return shortcut
+        .replace(/Ctrl\+/g, '⌘+')
+        .replace(/Alt\+/g, '⌥+')
+        .replace(/Shift\+/g, '⇧+')
+        .replace(/Win\+/g, '⌃+')
+        .replace(/Meta\+/g, '⌘+')
+        .replace(/Command\+/g, '⌘+')
+        .replace(/Cmd\+/g, '⌘+');
+    } else if (this.isLinux()) {
+      // Linux typically uses the same format as Windows
+      return shortcut
+        .replace(/Meta\+/g, 'Super+')
+        .replace(/Command\+/g, 'Super+')
+        .replace(/Cmd\+/g, 'Super+');
+    } else {
+      // Windows format (default)
+      return shortcut
+        .replace(/Meta\+/g, 'Win+')
+        .replace(/Command\+/g, 'Win+')
+        .replace(/Cmd\+/g, 'Win+');
+    }
+  }
+
+  /**
+   * Add a listener for OS changes
+   * @param listener The callback function to call when OS changes
+   */
+  public addOSChangeListener(listener: OSChangeListener): void {
+    this._osChangeListeners.push(listener);
+  }
+
+  /**
+   * Remove a listener for OS changes
+   * @param listener The callback function to remove
+   */
+  public removeOSChangeListener(listener: OSChangeListener): void {
+    const index = this._osChangeListeners.indexOf(listener);
+    if (index !== -1) {
+      this._osChangeListeners.splice(index, 1);
+    }
+  }
+
+  /**
+   * Notify all listeners about an OS change
+   * @private
+   */
+  private _notifyOSChange(): void {
+    for (const listener of this._osChangeListeners) {
+      listener();
+    }
   }
 }
 
-// Export a singleton instance
-export const osDetectionService = new OSDetectionService(); 
+// Create and export a singleton instance
+export const osDetectionService = new OSDetectionService();
+
+// Initialize the service
+osDetectionService.initialize();
+
+export default osDetectionService; 

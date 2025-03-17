@@ -70,4 +70,29 @@ button:active {
 input,
 button {
   outline: none;
+}
+
+/* Add styles for the draggable area */
+.draggable-area {
+  cursor: move;
+  -webkit-app-region: drag;
+}
+
+.draggable-area * {
+  -webkit-app-region: drag;
+}
+
+.draggable-area button,
+.draggable-area a,
+.draggable-area [role="button"],
+.draggable-area input,
+.draggable-area select,
+.draggable-area [data-tauri-drag-region="false"] {
+  -webkit-app-region: no-drag;
+  cursor: pointer;
+}
+
+/* Add a subtle indicator when hovering over draggable areas */
+.draggable-area:hover {
+  background-color: rgba(255, 255, 255, 0.05);
 } 

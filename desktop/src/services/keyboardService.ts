@@ -13,12 +13,16 @@ import { Window } from '@tauri-apps/api/window';
 
 // Platform-specific key mappings
 const macKeyMappings: KeyMapping[] = [
-  { from: 'Meta', to: 'Ctrl' },
+  { from: 'Command', to: 'Meta' },
+  { from: 'Cmd', to: 'Meta' },
+  { from: '⌘', to: 'Meta' },
   { from: 'Option', to: 'Alt' },
+  { from: '⌥', to: 'Alt' },
 ];
 
 const windowsKeyMappings: KeyMapping[] = [
   { from: 'Windows', to: 'Meta' },
+  { from: 'Win', to: 'Meta' },
 ];
 
 const linuxKeyMappings: KeyMapping[] = [

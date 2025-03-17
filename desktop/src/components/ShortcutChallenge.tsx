@@ -18,9 +18,12 @@ import {
   Lightbulb as HintIcon
 } from '@mui/icons-material';
 import { shortcutDetector, formatShortcut, parseShortcut, matchesShortcut, getActiveModifiers } from '../utils/shortcutDetector';
+import { osDetectionService } from '../services/osDetectionService';
 
 export interface ShortcutChallengeProps {
   shortcut: string;
+  shortcutMac?: string;
+  shortcutLinux?: string;
   description: string;
   context?: string;
   application?: 'vscode' | 'intellij' | 'cursor';
@@ -32,6 +35,8 @@ export interface ShortcutChallengeProps {
 
 const ShortcutChallenge: React.FC<ShortcutChallengeProps> = ({
   shortcut,
+  shortcutMac,
+  shortcutLinux,
   description,
   context = '',
   application = 'vscode',
@@ -49,8 +54,15 @@ const ShortcutChallenge: React.FC<ShortcutChallengeProps> = ({
   const [startTime] = useState(Date.now());
   const successHandled = useRef(false);
   
+  // Get OS-specific shortcut
+  const osSpecificShortcut = osDetectionService.formatShortcut(
+    shortcut,
+    shortcutMac || shortcut.replace(/Ctrl\+/g, '⌘+').replace(/Alt\+/g, '⌥+'),
+    shortcutLinux
+  );
+  
   // Parse the shortcut
-  const parsedShortcut = parseShortcut(shortcut);
+  const parsedShortcut = parseShortcut(osSpecificShortcut);
   
   // Update time elapsed
   useEffect(() => {
@@ -68,7 +80,7 @@ const ShortcutChallenge: React.FC<ShortcutChallengeProps> = ({
     setLastAttempt('');
     setShowHint(false);
     successHandled.current = false;
-  }, [shortcut]);
+  }, [shortcut, shortcutMac, shortcutLinux]);
   
   // Set up keyboard event listeners
   useEffect(() => {
@@ -121,23 +133,30 @@ const ShortcutChallenge: React.FC<ShortcutChallengeProps> = ({
       window.removeEventListener('keydown', handleKeyDown);
       shortcutDetector.cleanup();
     };
-  }, [shortcut, status, onSuccess, parsedShortcut]);
+  }, [shortcut, shortcutMac, shortcutLinux, status, onSuccess, parsedShortcut]);
   
   // Format shortcut for display
   const formatShortcutForDisplay = (shortcutStr: string) => {
     const parts = shortcutStr.split('+');
     
     return parts.map(part => {
-      // Format special keys
+      // Format special keys based on OS
       switch (part.toLowerCase()) {
         case 'ctrl':
-          return <Chip key={part} label="Ctrl" size="small" sx={{ mr: 0.5 }} />;
+          return <Chip key={part} label={osDetectionService.isMacOS() ? '⌘' : 'Ctrl'} size="small" sx={{ mr: 0.5 }} />;
         case 'alt':
-          return <Chip key={part} label="Alt" size="small" sx={{ mr: 0.5 }} />;
+          return <Chip key={part} label={osDetectionService.isMacOS() ? '⌥' : 'Alt'} size="small" sx={{ mr: 0.5 }} />;
         case 'shift':
-          return <Chip key={part} label="Shift" size="small" sx={{ mr: 0.5 }} />;
+          return <Chip key={part} label={osDetectionService.isMacOS() ? '⇧' : 'Shift'} size="small" sx={{ mr: 0.5 }} />;
         case 'meta':
-          return <Chip key={part} label="⌘" size="small" sx={{ mr: 0.5 }} />;
+        case 'command':
+        case 'cmd':
+        case '⌘':
+          return <Chip key={part} label={osDetectionService.isMacOS() ? '⌘' : 'Win'} size="small" sx={{ mr: 0.5 }} />;
+        case '⌥':
+          return <Chip key={part} label={osDetectionService.isMacOS() ? '⌥' : 'Alt'} size="small" sx={{ mr: 0.5 }} />;
+        case '⇧':
+          return <Chip key={part} label={osDetectionService.isMacOS() ? '⇧' : 'Shift'} size="small" sx={{ mr: 0.5 }} />;
         default:
           return <Chip key={part} label={part} size="small" sx={{ mr: 0.5 }} />;
       }
@@ -223,7 +242,7 @@ const ShortcutChallenge: React.FC<ShortcutChallengeProps> = ({
           Press the shortcut:
         </Typography>
         <Box sx={{ display: 'flex', justifyContent: 'center', flexWrap: 'wrap' }}>
-          {formatShortcutForDisplay(shortcut)}
+          {formatShortcutForDisplay(osSpecificShortcut)}
         </Box>
       </Box>
       
@@ -304,7 +323,7 @@ const ShortcutChallenge: React.FC<ShortcutChallengeProps> = ({
         >
           <HintIcon sx={{ mr: 1 }} />
           <Typography variant="body2">
-            Hint: Make sure to press {shortcut.split('+').join(' + ')} exactly in that order.
+            Hint: Make sure to press {osSpecificShortcut.split('+').join(' + ')} exactly in that order.
           </Typography>
         </Box>
       )}

@@ -232,6 +232,8 @@ body {
             <ShortcutChallenge
               key={`shortcut-${currentShortcut.id}-${activeShortcutIndex}`}
               shortcut={currentShortcut.shortcutWindows}
+              shortcutMac={currentShortcut.shortcutMac}
+              shortcutLinux={currentShortcut.shortcutLinux}
               description={currentShortcut.name}
               context={currentShortcut.context}
               application={trackId}

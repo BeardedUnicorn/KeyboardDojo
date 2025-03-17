@@ -31,6 +31,7 @@ export interface Shortcut {
   description: string;
   shortcutWindows: string;
   shortcutMac?: string;
+  shortcutLinux?: string;
   category: ShortcutCategory;
   context?: string;
   difficulty: DifficultyLevel;

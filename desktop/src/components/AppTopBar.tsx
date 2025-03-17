@@ -9,16 +9,14 @@ import {
   Tooltip
 } from '@mui/material';
 import {
-  Minimize as MinimizeIcon,
-  CropSquare as MaximizeIcon,
-  Close as CloseIcon,
   SettingsOutlined as SettingsIcon,
   Keyboard as KeyboardIcon,
   DarkMode as DarkModeIcon,
   LightMode as LightModeIcon
 } from '@mui/icons-material';
-import { windowManager } from '../../../shared/src/utils';
+import { windowManager } from '../utils/windowManager';
 import { useThemeContext } from '../contexts/ThemeContext';
+import { osDetectionService } from '../services/osDetectionService';
 
 interface AppTopBarProps {
   title?: string;
@@ -32,6 +30,7 @@ const AppTopBar: React.FC<AppTopBarProps> = ({
   const theme = useTheme();
   const { mode, toggleTheme } = useThemeContext();
   const [isMaximized, setIsMaximized] = useState(false);
+  const isMacOS = osDetectionService.isMacOS();
 
   useEffect(() => {
     // Set the window title
@@ -71,6 +70,173 @@ const AppTopBar: React.FC<AppTopBarProps> = ({
     windowManager.close();
   };
 
+  // Add a data attribute to help users understand the draggable area
+  const dragAreaProps = {
+    'data-tauri-drag-region': true,
+    className: 'draggable-area'
+  };
+
+  // macOS-style traffic light controls
+  const MacOSWindowControls = () => (
+    <Box 
+      sx={{ 
+        display: 'flex', 
+        WebkitAppRegion: 'no-drag',
+        ml: 1.5,
+        mr: 2
+      }}
+    >
+      <Box
+        onClick={handleClose}
+        sx={{
+          width: 12,
+          height: 12,
+          borderRadius: '50%',
+          bgcolor: '#ff5f57',
+          mx: 0.5,
+          cursor: 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          '&:hover': {
+            '&::before': {
+              content: '"×"',
+              fontSize: '10px',
+              color: '#450000',
+              fontWeight: 'bold',
+            }
+          }
+        }}
+      />
+      <Box
+        onClick={handleMinimize}
+        sx={{
+          width: 12,
+          height: 12,
+          borderRadius: '50%',
+          bgcolor: '#ffbd2e',
+          mx: 0.5,
+          cursor: 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          '&:hover': {
+            '&::before': {
+              content: '"−"',
+              fontSize: '10px',
+              color: '#5a3c00',
+              fontWeight: 'bold',
+            }
+          }
+        }}
+      />
+      <Box
+        onClick={handleMaximizeRestore}
+        sx={{
+          width: 12,
+          height: 12,
+          borderRadius: '50%',
+          bgcolor: '#28c940',
+          mx: 0.5,
+          cursor: 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          '&:hover': {
+            '&::before': {
+              content: '"+"',
+              fontSize: '10px',
+              color: '#003600',
+              fontWeight: 'bold',
+            }
+          }
+        }}
+      />
+    </Box>
+  );
+
+  // Windows-style window controls
+  const WindowsWindowControls = () => (
+    <Box sx={{ display: 'flex', WebkitAppRegion: 'no-drag', ml: 1 }}>
+      <IconButton
+        size="small"
+        onClick={handleMinimize}
+        sx={{
+          color: 'inherit',
+          borderRadius: 0,
+          width: 40,
+          height: 40,
+          '&:hover': {
+            backgroundColor: 'rgba(255, 255, 255, 0.1)',
+          },
+        }}
+      >
+        <Box sx={{ width: 10, height: 1, bgcolor: 'currentColor' }} />
+      </IconButton>
+      
+      <IconButton
+        size="small"
+        onClick={handleMaximizeRestore}
+        sx={{
+          color: 'inherit',
+          borderRadius: 0,
+          width: 40,
+          height: 40,
+          '&:hover': {
+            backgroundColor: 'rgba(255, 255, 255, 0.1)',
+          },
+        }}
+      >
+        <Box 
+          sx={{ 
+            width: 10, 
+            height: 10, 
+            border: 1, 
+            borderColor: 'currentColor' 
+          }} 
+        />
+      </IconButton>
+      
+      <IconButton
+        size="small"
+        onClick={handleClose}
+        sx={{
+          color: 'inherit',
+          borderRadius: 0,
+          width: 40,
+          height: 40,
+          '&:hover': {
+            backgroundColor: theme.palette.error.main,
+          },
+        }}
+      >
+        <Box 
+          sx={{ 
+            width: 12, 
+            height: 12, 
+            position: 'relative',
+            '&::before, &::after': {
+              content: '""',
+              position: 'absolute',
+              width: 1,
+              height: '100%',
+              bgcolor: 'currentColor',
+              top: 0,
+              left: '50%',
+              transform: 'translateX(-50%)',
+            },
+            '&::before': {
+              transform: 'translateX(-50%) rotate(45deg)',
+            },
+            '&::after': {
+              transform: 'translateX(-50%) rotate(-45deg)',
+            }
+          }} 
+        />
+      </IconButton>
+    </Box>
+  );
+
   return (
     <AppBar 
       position="static" 
@@ -80,12 +246,24 @@ const AppTopBar: React.FC<AppTopBarProps> = ({
         WebkitAppRegion: 'drag',
         userSelect: 'none',
         height: 48,
-        zIndex: theme.zIndex.drawer + 1
+        zIndex: theme.zIndex.drawer + 1,
+        cursor: 'move', // Visual indicator that this area is draggable
       }}
+      {...dragAreaProps}
     >
-      <Toolbar variant="dense" sx={{ minHeight: 48, px: 1 }}>
+      <Toolbar 
+        variant="dense" 
+        sx={{ minHeight: 48, px: 1 }}
+        {...dragAreaProps}
+      >
+        {/* macOS traffic light controls (left side) */}
+        {isMacOS && <MacOSWindowControls />}
+
         {/* App Logo and Title */}
-        <Box sx={{ display: 'flex', alignItems: 'center', mr: 2 }}>
+        <Box 
+          sx={{ display: 'flex', alignItems: 'center', mr: 2 }}
+          {...dragAreaProps}
+        >
           <KeyboardIcon sx={{ mr: 1 }} />
           <Typography variant="h6" component="div">
             {title}
@@ -93,7 +271,7 @@ const AppTopBar: React.FC<AppTopBarProps> = ({
         </Box>
 
         {/* Spacer */}
-        <Box sx={{ flexGrow: 1 }} />
+        <Box sx={{ flexGrow: 1 }} {...dragAreaProps} />
 
         {/* App Actions - Not draggable */}
         <Box sx={{ display: 'flex', WebkitAppRegion: 'no-drag' }}>
@@ -124,56 +302,8 @@ const AppTopBar: React.FC<AppTopBarProps> = ({
           )}
         </Box>
 
-        {/* Window Controls - Not draggable */}
-        <Box sx={{ display: 'flex', WebkitAppRegion: 'no-drag', ml: 1 }}>
-          <IconButton
-            size="small"
-            onClick={handleMinimize}
-            sx={{
-              color: 'inherit',
-              borderRadius: 0,
-              width: 40,
-              height: 40,
-              '&:hover': {
-                backgroundColor: 'rgba(255, 255, 255, 0.1)',
-              },
-            }}
-          >
-            <MinimizeIcon fontSize="small" />
-          </IconButton>
-          
-          <IconButton
-            size="small"
-            onClick={handleMaximizeRestore}
-            sx={{
-              color: 'inherit',
-              borderRadius: 0,
-              width: 40,
-              height: 40,
-              '&:hover': {
-                backgroundColor: 'rgba(255, 255, 255, 0.1)',
-              },
-            }}
-          >
-            <MaximizeIcon fontSize="small" />
-          </IconButton>
-          
-          <IconButton
-            size="small"
-            onClick={handleClose}
-            sx={{
-              color: 'inherit',
-              borderRadius: 0,
-              width: 40,
-              height: 40,
-              '&:hover': {
-                backgroundColor: theme.palette.error.main,
-              },
-            }}
-          >
-            <CloseIcon fontSize="small" />
-          </IconButton>
-        </Box>
+        {/* Windows-style window controls (right side) */}
+        {!isMacOS && <WindowsWindowControls />}
       </Toolbar>
     </AppBar>
   );

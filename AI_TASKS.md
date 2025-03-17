@@ -99,7 +99,7 @@
 ## User Management
 - [ ] Implement user profiles and progress tracking
 - [ ] Create settings for keyboard layout preferences
-- [ ] Add OS detection for appropriate shortcut display (Windows/Mac)
+- [x] Add OS detection for appropriate shortcut display (Windows/Mac)
 - [ ] Implement data synchronization between web and desktop
 
 ## Monetization Features
@@ -138,10 +138,25 @@
   - [x] Implement update progress tracking
 
 ## Content Development
-- [ ] Compile comprehensive shortcut lists for each supported application
-- [ ] Organize shortcuts into logical lesson groups
-- [ ] Create contextual examples for each shortcut
-- [ ] Design progressive difficulty curve across lessons
+- [x] Compile comprehensive shortcut lists for each supported application
+  - [x] Create VSCodeShortcutsLesson.ts with organized shortcut categories
+  - [x] Create IntelliJShortcutsLesson.ts with organized shortcut categories
+  - [x] Create CursorShortcutsLesson.ts with organized shortcut categories
+  - [x] Ensure all shortcuts have proper OS-specific variants (Windows, macOS, Linux)
+- [x] Organize shortcuts into logical lesson groups
+  - [x] Group VS Code shortcuts by functionality (navigation, editing, debugging, etc.)
+  - [x] Group IntelliJ shortcuts by functionality (navigation, editing, refactoring, etc.)
+  - [x] Group Cursor shortcuts by functionality (general, chat, code, terminal, etc.)
+  - [x] Create progressive difficulty levels within each application
+- [x] Create contextual examples for each shortcut
+  - [x] Add real-world usage scenarios for VS Code shortcuts
+  - [x] Add real-world usage scenarios for IntelliJ shortcuts
+  - [x] Add real-world usage scenarios for Cursor shortcuts
+  - [x] Include visual cues and mnemonics for easier learning
+- [x] Design progressive difficulty curve across lessons
+  - [x] Create beginner, intermediate, and advanced lesson tracks
+  - [x] Implement spaced repetition for shortcut mastery
+  - [x] Design challenges that combine multiple shortcuts
 
 - [x] Fix TypeScript errors related to unused imports in the codebase
   - [x] Removed unused React import in App.tsx
@@ -165,4 +180,37 @@
   - [x] Add draggable region for moving the window
   - [x] Integrate theme toggle in the app bar
   - [x] Add settings button for quick access to settings
-  - [x] Adjust navigation drawer to work with the top app bar 
+  - [x] Adjust navigation drawer to work with the top app bar
+
+- [x] Implement OS-specific shortcuts and window dragging
+  - [x] Create OS detection service to identify the user's operating system
+  - [x] Update Shortcut interface to include Linux-specific shortcuts
+  - [x] Modify ShortcutChallenge component to display OS-specific shortcuts
+  - [x] Enhance window dragging functionality with Tauri data attributes
+  - [x] Add visual indicators for draggable regions
+
+- [x] Fix macOS desktop build issues
+  - [x] Add missing methods to OSDetectionService: getOSInfo, addOSChangeListener, removeOSChangeListener, formatShortcutForOS
+  - [x] Fix TypeScript errors in keyboardService.ts related to OSDetectionService methods
+  - [x] Successfully build macOS desktop application with yarn build:desktop:macos
+
+- [x] Fix inconsistencies between Meta key detection and CMD display
+  - [x] Update OSDetectionService.convertShortcut to properly handle Meta key for macOS (⌘)
+  - [x] Update ShortcutChallenge.formatShortcutForDisplay to consistently display ⌘ for Command/Meta key
+  - [x] Update keyboardService.ts key mappings for consistent handling of Command/Meta key
+  - [x] Update shortcutDetector.normalizeKey to properly normalize ⌘, ⌥, and ⇧ symbols
+
+- [x] Implement window border with traffic light controls
+  - [x] Create windowManager utility to handle window operations using Tauri APIs
+  - [x] Update AppTopBar component with macOS-style traffic light controls (red, yellow, green)
+  - [x] Add Windows-style window controls for non-macOS platforms
+  - [x] Ensure proper OS detection for displaying appropriate controls
+
+## Content Development
+- [x] Create mastery curriculum for each supported application
+  - [x] Create VSCodeMasteryCurriculum.ts with advanced shortcuts and techniques
+  - [x] Create IntelliJMasteryCurriculum.ts with advanced shortcuts and techniques
+  - [x] Create CursorMasteryCurriculum.ts with AI-powered features and advanced shortcuts
+  - [x] Organize shortcuts into logical categories for each application
+  - [x] Include detailed descriptions and context for each shortcut
+  - [x] Add helpful tips for mastering each application 

@@ -68,12 +68,15 @@ export const normalizeKey = (key: string): string => {
       return 'Ctrl';
     case 'alt':
     case 'option':
+    case '⌥':
       return 'Alt';
     case 'shift':
+    case '⇧':
       return 'Shift';
     case 'meta':
     case 'command':
     case 'cmd':
+    case '⌘':
     case 'super':
     case 'win':
     case 'windows':
