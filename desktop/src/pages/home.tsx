@@ -24,29 +24,6 @@ const Home = () => {
           <Card sx={{ height: '100%' }}>
             <CardContent>
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                <KeyboardIcon color="primary" sx={{ mr: 1 }} />
-                <Typography variant="h6">Quick Practice</Typography>
-              </Box>
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                Start a quick typing practice session to improve your speed and accuracy.
-              </Typography>
-              <Button
-                component={Link}
-                to="/practice"
-                variant="contained"
-                color="primary"
-                fullWidth
-              >
-                Start Practice
-              </Button>
-            </CardContent>
-          </Card>
-        </Grid>
-
-        <Grid item xs={12} md={6}>
-          <Card sx={{ height: '100%' }}>
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
                 <CodeIcon color="primary" sx={{ mr: 1 }} />
                 <Typography variant="h6">Shortcut Challenge</Typography>
               </Box>
@@ -93,43 +70,20 @@ const Home = () => {
           <Card sx={{ height: '100%' }}>
             <CardContent>
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                <SpeedIcon color="primary" sx={{ mr: 1 }} />
-                <Typography variant="h6">Speed Test</Typography>
-              </Box>
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                Test your typing speed and get detailed metrics on your performance.
-              </Typography>
-              <Button
-                component={Link}
-                to="/practice?mode=speed"
-                variant="contained"
-                color="secondary"
-                fullWidth
-              >
-                Take Speed Test
-              </Button>
-            </CardContent>
-          </Card>
-        </Grid>
-
-        <Grid item xs={12} md={6}>
-          <Card sx={{ height: '100%' }}>
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
                 <BarChartIcon color="primary" sx={{ mr: 1 }} />
-                <Typography variant="h6">Your Progress</Typography>
+                <Typography variant="h6">Progress</Typography>
               </Box>
               <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
                 View your typing statistics and track your improvement over time.
               </Typography>
               <Button
                 component={Link}
-                to="/profile"
-                variant="outlined"
+                to="/progress-dashboard"
+                variant="contained"
                 color="primary"
                 fullWidth
               >
-                View Stats
+                View Progress
               </Button>
             </CardContent>
           </Card>
@@ -147,8 +101,8 @@ const Home = () => {
               </Typography>
               <Button
                 component={Link}
-                to="/profile?tab=achievements"
-                variant="outlined"
+                to="/achievements"
+                variant="contained"
                 color="secondary"
                 fullWidth
               >

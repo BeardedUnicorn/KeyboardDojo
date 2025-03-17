@@ -13,10 +13,12 @@ import {
   Stack,
   Paper,
   IconButton,
-  useTheme,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
+import DarkModeIcon from '@mui/icons-material/DarkMode';
+import LightModeIcon from '@mui/icons-material/LightMode';
 import { storageService } from '../../../shared/src/utils';
+import { useThemeContext } from '../contexts/ThemeContext';
 
 interface SettingsPanelProps {
   open: boolean;
@@ -24,7 +26,6 @@ interface SettingsPanelProps {
 }
 
 interface Settings {
-  theme: 'light' | 'dark' | 'system';
   startWithSystem: boolean;
   minimizeToTray: boolean;
   showNotifications: boolean;
@@ -35,7 +36,6 @@ interface Settings {
 }
 
 const defaultSettings: Settings = {
-  theme: 'system',
   startWithSystem: false,
   minimizeToTray: true,
   showNotifications: true,
@@ -46,7 +46,7 @@ const defaultSettings: Settings = {
 };
 
 const SettingsPanel = ({ open, onClose }: SettingsPanelProps) => {
-  const theme = useTheme();
+  const { theme, mode, toggleTheme } = useThemeContext();
   const [settings, setSettings] = useState<Settings>(defaultSettings);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -135,19 +135,19 @@ const SettingsPanel = ({ open, onClose }: SettingsPanelProps) => {
                 <Typography variant="subtitle1" gutterBottom>
                   Appearance
                 </Typography>
-                <FormControl fullWidth margin="normal">
-                  <InputLabel id="theme-label">Theme</InputLabel>
-                  <Select
-                    labelId="theme-label"
-                    value={settings.theme}
-                    label="Theme"
-                    onChange={e => handleChange('theme', e.target.value)}
-                  >
-                    <MenuItem value="light">Light</MenuItem>
-                    <MenuItem value="dark">Dark</MenuItem>
-                    <MenuItem value="system">System</MenuItem>
-                  </Select>
-                </FormControl>
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mt: 2 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                    {mode === 'dark' ? <DarkModeIcon sx={{ mr: 1 }} /> : <LightModeIcon sx={{ mr: 1 }} />}
+                    <Typography>
+                      {mode === 'dark' ? 'Dark Mode' : 'Light Mode'}
+                    </Typography>
+                  </Box>
+                  <Switch
+                    checked={mode === 'dark'}
+                    onChange={toggleTheme}
+                    color="primary"
+                  />
+                </Box>
 
                 <Box sx={{ mt: 2 }}>
                   <Typography gutterBottom>Font Size: {settings.fontSize}px</Typography>
@@ -249,7 +249,7 @@ const SettingsPanel = ({ open, onClose }: SettingsPanelProps) => {
               Reset to Defaults
             </Button>
             <Button variant="contained" onClick={handleSave}>
-              Save
+              Save Changes
             </Button>
           </Box>
         </>

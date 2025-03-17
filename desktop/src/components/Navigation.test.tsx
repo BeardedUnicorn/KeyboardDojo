@@ -35,7 +35,7 @@ describe('Navigation Component', () => {
     
     // Check if the drawer is open by looking for navigation items
     expect(screen.getByText('Home')).toBeInTheDocument();
-    expect(screen.getByText('Practice')).toBeInTheDocument();
+    expect(screen.getByText('Shortcuts')).toBeInTheDocument();
     expect(screen.getByText('Profile')).toBeInTheDocument();
     expect(screen.getByText('Settings')).toBeInTheDocument();
   });
@@ -45,9 +45,9 @@ describe('Navigation Component', () => {
     const button = screen.getByLabelText('open drawer');
     fireEvent.click(button);
     
-    const practiceLink = screen.getByText('Practice');
-    fireEvent.click(practiceLink);
+    const shortcutsLink = screen.getByText('Shortcuts');
+    fireEvent.click(shortcutsLink);
     
-    expect(mockNavigate).toHaveBeenCalledWith('/practice');
+    expect(mockNavigate).toHaveBeenCalledWith('/shortcuts');
   });
 }); 

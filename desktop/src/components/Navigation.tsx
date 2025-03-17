@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Box,
@@ -11,7 +11,6 @@ import {
   Divider,
   IconButton,
   Tooltip,
-  useTheme,
   Badge
 } from '@mui/material';
 import {
@@ -28,8 +27,11 @@ import {
   Assessment as AssessmentIcon
 } from '@mui/icons-material';
 import { useSubscription } from '../contexts/SubscriptionContext';
+import { useThemeContext } from '../contexts/ThemeContext';
 
+// Drawer widths
 const drawerWidth = 240;
+const miniDrawerWidth = 56;
 
 interface NavigationItem {
   text: string;
@@ -38,18 +40,23 @@ interface NavigationItem {
 }
 
 const Navigation = () => {
-  const theme = useTheme();
+  const { theme } = useThemeContext();
   const navigate = useNavigate();
   const location = useLocation();
-  const [open, setOpen] = useState(false);
   const { hasPremium } = useSubscription();
-
-  const handleDrawerOpen = () => {
-    setOpen(true);
+  
+  // Get saved drawer state from localStorage or default to mini
+  const getSavedDrawerState = (): boolean => {
+    const savedState = localStorage.getItem('drawerOpen');
+    return savedState ? savedState === 'true' : false; // Default to mini/collapsed
   };
+  
+  const [open, setOpen] = useState(getSavedDrawerState());
 
-  const handleDrawerClose = () => {
-    setOpen(false);
+  const handleDrawerToggle = () => {
+    const newState = !open;
+    setOpen(newState);
+    localStorage.setItem('drawerOpen', String(newState));
   };
 
   const navigationItems: NavigationItem[] = [
@@ -57,11 +64,6 @@ const Navigation = () => {
       text: 'Home',
       path: '/',
       icon: <HomeIcon />
-    },
-    {
-      text: 'Practice',
-      path: '/practice',
-      icon: <KeyboardIcon />
     },
     {
       text: 'Shortcuts',
@@ -111,73 +113,76 @@ const Navigation = () => {
   };
 
   return (
-    <>
-      <Box sx={{ position: 'fixed', left: 0, top: '50%', transform: 'translateY(-50%)', zIndex: 1100 }}>
-        <Tooltip title="Open Navigation" placement="right">
-          <IconButton
-            color="inherit"
-            aria-label="open drawer"
-            onClick={handleDrawerOpen}
-            edge="start"
-            sx={{
-              ml: 0.5,
-              backgroundColor: theme.palette.background.paper,
-              boxShadow: 1,
-              '&:hover': {
-                backgroundColor: theme.palette.action.hover
-              },
-              ...(open && { display: 'none' })
-            }}
-          >
-            <MenuIcon />
-          </IconButton>
-        </Tooltip>
+    <Drawer
+      variant="permanent"
+      sx={{
+        width: open ? drawerWidth : miniDrawerWidth,
+        flexShrink: 0,
+        '& .MuiDrawer-paper': {
+          width: open ? drawerWidth : miniDrawerWidth,
+          boxSizing: 'border-box',
+          overflowX: 'hidden',
+          transition: theme.transitions.create('width', {
+            easing: theme.transitions.easing.sharp,
+            duration: theme.transitions.duration.enteringScreen,
+          }),
+        },
+      }}
+    >
+      <Box sx={{ 
+        display: 'flex', 
+        alignItems: 'center', 
+        justifyContent: open ? 'flex-end' : 'center', 
+        p: 1 
+      }}>
+        <IconButton onClick={handleDrawerToggle}>
+          {open ? <ChevronLeftIcon /> : <MenuIcon />}
+        </IconButton>
       </Box>
-      <Drawer
-        sx={{
-          width: drawerWidth,
-          flexShrink: 0,
-          '& .MuiDrawer-paper': {
-            width: drawerWidth,
-            boxSizing: 'border-box'
-          }
-        }}
-        variant="persistent"
-        anchor="left"
-        open={open}
-      >
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', p: 1 }}>
-          <IconButton onClick={handleDrawerClose}>
-            {theme.direction === 'ltr' ? <ChevronLeftIcon /> : <ChevronRightIcon />}
-          </IconButton>
-        </Box>
-        <Divider />
-        <List>
-          {navigationItems.map((item) => (
-            <ListItem key={item.text} disablePadding>
+      <Divider />
+      <List>
+        {navigationItems.map((item) => (
+          <ListItem key={item.text} disablePadding>
+            <Tooltip title={open ? '' : item.text} placement="right">
               <ListItemButton
                 selected={isActive(item.path)}
                 onClick={() => {
                   navigate(item.path);
                   if (window.innerWidth < 600) {
-                    handleDrawerClose();
+                    setOpen(false);
                   }
+                }}
+                sx={{
+                  minHeight: 48,
+                  justifyContent: open ? 'initial' : 'center',
+                  px: 2.5,
                 }}
               >
                 <ListItemIcon
                   sx={{
+                    minWidth: 0,
+                    mr: open ? 3 : 'auto',
+                    justifyContent: 'center',
                     color: isActive(item.path) ? 'primary.main' : 'inherit'
                   }}
                 >
                   {item.icon}
                 </ListItemIcon>
-                <ListItemText primary={item.text} />
+                <ListItemText 
+                  primary={item.text} 
+                  sx={{ 
+                    opacity: open ? 1 : 0,
+                    transition: theme.transitions.create('opacity', {
+                      duration: theme.transitions.duration.shorter,
+                    })
+                  }} 
+                />
               </ListItemButton>
-            </ListItem>
-          ))}
-        </List>
-      </Drawer>
-    </>
+            </Tooltip>
+          </ListItem>
+        ))}
+      </List>
+    </Drawer>
   );
 };
 

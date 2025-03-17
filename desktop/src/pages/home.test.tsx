@@ -14,28 +14,6 @@ describe('Home Component', () => {
     expect(screen.getByText(/Welcome to Keyboard Dojo/i)).toBeInTheDocument();
   });
 
-  it('renders practice card', () => {
-    render(
-      <MemoryRouter>
-        <Home />
-      </MemoryRouter>
-    );
-    
-    expect(screen.getByText(/Quick Practice/i)).toBeInTheDocument();
-    expect(screen.getByText(/Start a quick typing practice session/i)).toBeInTheDocument();
-  });
-
-  it('renders speed test card', () => {
-    render(
-      <MemoryRouter>
-        <Home />
-      </MemoryRouter>
-    );
-    
-    expect(screen.getByText(/Speed Test/i)).toBeInTheDocument();
-    expect(screen.getByText(/Test your typing speed and accuracy/i)).toBeInTheDocument();
-  });
-
   it('renders progress card', () => {
     render(
       <MemoryRouter>
@@ -43,8 +21,12 @@ describe('Home Component', () => {
       </MemoryRouter>
     );
     
-    expect(screen.getByText(/Progress/i)).toBeInTheDocument();
-    expect(screen.getByText(/Track your improvement over time/i)).toBeInTheDocument();
+    const progressHeading = screen.getAllByRole('heading').find(
+      heading => heading.textContent === 'Progress'
+    );
+    expect(progressHeading).toBeInTheDocument();
+    
+    expect(screen.getByText(/track your improvement over time/i)).toBeInTheDocument();
   });
 
   it('renders achievements card', () => {
@@ -54,7 +36,11 @@ describe('Home Component', () => {
       </MemoryRouter>
     );
     
-    expect(screen.getByText(/Achievements/i)).toBeInTheDocument();
-    expect(screen.getByText(/View your earned achievements/i)).toBeInTheDocument();
+    const achievementsHeading = screen.getAllByRole('heading').find(
+      heading => heading.textContent === 'Achievements'
+    );
+    expect(achievementsHeading).toBeInTheDocument();
+    
+    expect(screen.getByText(/Unlock achievements as you improve/i)).toBeInTheDocument();
   });
 }); 

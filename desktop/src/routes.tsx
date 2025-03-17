@@ -4,7 +4,6 @@ import { Box, CircularProgress } from '@mui/material';
 
 // Lazy-loaded components
 const Home = lazy(() => import('./pages/home'));
-const Practice = lazy(() => import('./pages/practice'));
 const Settings = lazy(() => import('./pages/settings'));
 const Profile = lazy(() => import('./pages/profile'));
 const ShortcutChallenge = lazy(() => import('./pages/shortcut-challenge'));
@@ -38,7 +37,6 @@ const AppRoutes = () => {
     <Suspense fallback={<Loading />}>
       <Routes>
         <Route path="/" element={<Home />} />
-        <Route path="/practice" element={<Practice />} />
         <Route path="/settings" element={<Settings />} />
         <Route path="/profile" element={<Profile />} />
         <Route path="/shortcuts" element={<ShortcutChallenge />} />

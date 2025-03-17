@@ -7,7 +7,6 @@ export { default as Navigation } from './Navigation';
 export { default as MainLayout } from './MainLayout';
 export { default as Footer } from './Footer';
 export { default as ResponsiveLayout } from './ResponsiveLayout';
-export { default as KeyboardVisualizer } from './KeyboardVisualizer';
 export { default as ShortcutChallenge } from './ShortcutChallenge';
 export { default as IDESimulator } from './IDESimulator';
 export { default as CurriculumView } from './CurriculumView';

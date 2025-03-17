@@ -5,7 +5,6 @@ import LoadingScreen from '../components/LoadingScreen';
 
 // Lazy load page components
 const Home = lazy(() => import('../pages/home'));
-const Practice = lazy(() => import('../pages/practice'));
 const ShortcutChallenge = lazy(() => import('../pages/shortcut-challenge'));
 const Settings = lazy(() => import('../pages/settings'));
 const Subscription = lazy(() => import('../pages/subscription'));
@@ -32,7 +31,6 @@ const AppRoutes = () => {
     <Suspense fallback={<LoadingScreen />}>
       <Routes>
         <Route path="/" element={<Home />} />
-        <Route path="/practice" element={<Practice />} />
         <Route path="/shortcut-challenge" element={<ShortcutChallenge />} />
         <Route path="/settings" element={<Settings />} />
         <Route path="/subscription" element={<Subscription />} />

@@ -17,8 +17,7 @@ import {
   EmojiEvents as TrophyIcon,
   Lightbulb as HintIcon
 } from '@mui/icons-material';
-import KeyboardVisualizer from './KeyboardVisualizer';
-import { shortcutDetector, formatShortcut, parseShortcut } from '../utils/shortcutDetector';
+import { shortcutDetector, formatShortcut, parseShortcut, matchesShortcut, getActiveModifiers } from '../utils/shortcutDetector';
 
 export interface ShortcutChallengeProps {
   shortcut: string;
@@ -49,95 +48,85 @@ const ShortcutChallenge: React.FC<ShortcutChallengeProps> = ({
   const [timeElapsed, setTimeElapsed] = useState(0);
   const [startTime] = useState(Date.now());
   
-  // Parse the shortcut to get individual keys
+  // Parse the shortcut
   const parsedShortcut = parseShortcut(shortcut);
   
-  // Set up the shortcut detector
+  // Update time elapsed
   useEffect(() => {
-    // Register the shortcut
-    const shortcutId = `challenge-${shortcut}`;
+    const timer = setInterval(() => {
+      setTimeElapsed(Math.floor((Date.now() - startTime) / 1000));
+    }, 1000);
     
-    shortcutDetector.registerShortcut(shortcutId, shortcut, (event) => {
-      // Prevent default browser behavior
-      event.event.preventDefault();
-      
-      // Mark as success
-      setStatus('success');
-      setTimeElapsed((Date.now() - startTime) / 1000);
-      
-      // Call the success callback
-      if (onSuccess) {
-        setTimeout(() => {
-          onSuccess();
-        }, 1000); // Delay to show success state
-      }
-    });
+    return () => clearInterval(timer);
+  }, [startTime]);
+  
+  // Set up keyboard event listeners
+  useEffect(() => {
+    // Initialize the shortcut detector
+    shortcutDetector.initialize();
     
-    // Set up a listener for any key press to track attempts
     const handleKeyDown = (event: KeyboardEvent) => {
+      // Ignore if already successful
       if (status === 'success') return;
       
-      // Get active modifiers
-      const modifiers = [];
-      if (event.ctrlKey) modifiers.push('Ctrl');
-      if (event.altKey) modifiers.push('Alt');
-      if (event.shiftKey) modifiers.push('Shift');
-      if (event.metaKey) modifiers.push('Meta');
-      
-      // Create a string representation of the pressed shortcut
-      const pressedShortcut = [...modifiers, event.key].join('+');
-      
-      // If it's not the correct shortcut, show error
-      if (pressedShortcut !== shortcut && !isModifierOnly(event)) {
+      // Check if the shortcut matches
+      if (matchesShortcut(event, parsedShortcut)) {
+        setStatus('success');
+        setAttempts(prev => prev + 1);
+        onSuccess?.();
+        
+        // Prevent default browser behavior
+        event.preventDefault();
+      } else if (!isModifierOnly(event)) {
+        // Only count non-modifier keys as attempts
         setStatus('error');
         setAttempts(prev => prev + 1);
-        setLastAttempt(pressedShortcut);
+        setLastAttempt(formatShortcut({
+          key: event.key,
+          modifiers: getActiveModifiers(event)
+        }));
         
-        // Reset after a short delay
+        // Reset status after a delay
         setTimeout(() => {
           setStatus('waiting');
-        }, 1000);
+        }, 1500);
       }
     };
     
     // Helper to check if only modifier keys are pressed
     const isModifierOnly = (event: KeyboardEvent) => {
-      return (
-        (event.key === 'Control' || 
-         event.key === 'Alt' || 
-         event.key === 'Shift' || 
-         event.key === 'Meta' || 
-         event.key === 'OS')
-      );
+      return ['Control', 'Alt', 'Shift', 'Meta'].includes(event.key);
     };
     
-    document.addEventListener('keydown', handleKeyDown);
+    // Add event listener
+    window.addEventListener('keydown', handleKeyDown);
     
+    // Clean up
     return () => {
-      // Clean up
-      shortcutDetector.unregisterShortcut(shortcutId);
-      document.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keydown', handleKeyDown);
+      shortcutDetector.cleanup();
     };
-  }, [shortcut, onSuccess, status, startTime]);
+  }, [shortcut, status, onSuccess, parsedShortcut]);
   
-  // Format the shortcut for display
+  // Format shortcut for display
   const formatShortcutForDisplay = (shortcutStr: string) => {
-    return shortcutStr.split('+').map(key => (
-      <Chip 
-        key={key} 
-        label={key} 
-        size="small" 
-        color="primary" 
-        variant="outlined" 
-        sx={{ 
-          mx: 0.5, 
-          fontWeight: 'bold',
-          border: '1px solid',
-          borderColor: theme.palette.primary.main,
-          backgroundColor: theme.palette.background.paper,
-        }} 
-      />
-    ));
+    const parts = shortcutStr.split('+');
+    
+    return parts.map(part => {
+      // Format special keys
+      switch (part.toLowerCase()) {
+        case 'ctrl':
+          return <Chip key={part} label="Ctrl" size="small" sx={{ mr: 0.5 }} />;
+        case 'alt':
+          return <Chip key={part} label="Alt" size="small" sx={{ mr: 0.5 }} />;
+        case 'shift':
+          return <Chip key={part} label="Shift" size="small" sx={{ mr: 0.5 }} />;
+        case 'meta':
+          return <Chip key={part} label="⌘" size="small" sx={{ mr: 0.5 }} />;
+        default:
+          return <Chip key={part} label={part} size="small" sx={{ mr: 0.5 }} />;
+      }
+    });
   };
   
   // Get application-specific styling
@@ -145,42 +134,36 @@ const ShortcutChallenge: React.FC<ShortcutChallengeProps> = ({
     switch (application) {
       case 'vscode':
         return {
-          color: '#0078D7',
-          logo: '🔵 VS Code'
+          bgcolor: '#1e1e1e',
+          color: '#d4d4d4',
+          borderColor: '#007acc'
         };
       case 'intellij':
         return {
-          color: '#FC801D',
-          logo: '🟠 IntelliJ'
+          bgcolor: '#2b2b2b',
+          color: '#a9b7c6',
+          borderColor: '#ff5370'
         };
       case 'cursor':
         return {
-          color: '#9B57B6',
-          logo: '🟣 Cursor'
+          bgcolor: '#1a1a1a',
+          color: '#e0e0e0',
+          borderColor: '#6c38bb'
         };
       default:
-        return {
-          color: theme.palette.primary.main,
-          logo: '⌨️ Editor'
-        };
+        return {};
     }
   };
-  
-  const appStyle = getApplicationStyle();
   
   // Handle hint button click
   const handleHintClick = () => {
     setShowHint(true);
-    if (onHint) {
-      onHint();
-    }
+    onHint?.();
   };
   
   // Handle skip button click
   const handleSkipClick = () => {
-    if (onSkip) {
-      onSkip();
-    }
+    onSkip?.();
   };
   
   return (
@@ -189,114 +172,126 @@ const ShortcutChallenge: React.FC<ShortcutChallengeProps> = ({
       sx={{ 
         p: 3, 
         borderRadius: 2,
-        border: '1px solid',
-        borderColor: status === 'success' 
-          ? theme.palette.success.main 
-          : status === 'error' 
-            ? theme.palette.error.main 
-            : theme.palette.divider,
-        transition: 'all 0.3s ease',
-        position: 'relative',
-        overflow: 'hidden',
+        border: 1,
+        borderColor: 'divider'
       }}
     >
-      {/* Application badge */}
-      <Chip 
-        label={appStyle.logo}
-        size="small"
-        sx={{ 
-          position: 'absolute',
-          top: 10,
-          right: 10,
-          fontWeight: 'bold',
-          backgroundColor: 'rgba(255,255,255,0.9)',
-        }}
-      />
-      
       {/* Challenge header */}
-      <Typography variant="h5" gutterBottom sx={{ mb: 2, color: appStyle.color }}>
+      <Typography variant="h6" gutterBottom>
         Shortcut Challenge
       </Typography>
       
-      {/* Challenge description */}
-      <Typography variant="h6" gutterBottom>
-        {description}
-      </Typography>
-      
-      {/* Context (if provided) */}
+      {/* Application context */}
       {context && (
-        <Typography 
-          variant="body2" 
-          sx={{ 
-            mb: 3, 
-            fontStyle: 'italic',
-            color: theme.palette.text.secondary,
-          }}
-        >
-          {context}
-        </Typography>
-      )}
-      
-      {/* Status indicator */}
-      <Box sx={{ mb: 3, mt: 3, textAlign: 'center' }}>
-        {status === 'success' ? (
-          <Fade in={true}>
-            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-              <CheckIcon 
-                color="success" 
-                sx={{ fontSize: 60, mb: 1 }} 
-              />
-              <Typography variant="h6" color="success.main">
-                Correct! Well done!
-              </Typography>
-              <Typography variant="body2" sx={{ mt: 1 }}>
-                Time: {timeElapsed.toFixed(2)} seconds
-              </Typography>
-              <Typography variant="body2">
-                Attempts: {attempts + 1}
-              </Typography>
-            </Box>
-          </Fade>
-        ) : status === 'error' ? (
-          <Fade in={true}>
-            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-              <ErrorIcon 
-                color="error" 
-                sx={{ fontSize: 60, mb: 1 }} 
-              />
-              <Typography variant="h6" color="error.main">
-                Not quite right
-              </Typography>
-              <Typography variant="body2" sx={{ mt: 1 }}>
-                You pressed: {formatShortcutForDisplay(lastAttempt)}
-              </Typography>
-            </Box>
-          </Fade>
-        ) : (
-          <Typography variant="body1" sx={{ fontWeight: 'bold' }}>
-            Press the shortcut: {formatShortcutForDisplay(shortcut)}
-          </Typography>
-        )}
-      </Box>
-      
-      {/* Hint section */}
-      {showHint && (
-        <Paper 
-          variant="outlined" 
+        <Box 
           sx={{ 
             p: 2, 
             mb: 3, 
-            backgroundColor: theme.palette.background.default,
-            borderColor: theme.palette.warning.main,
+            borderRadius: 1,
+            ...getApplicationStyle()
           }}
         >
-          <Typography variant="body2" sx={{ display: 'flex', alignItems: 'center' }}>
-            <HintIcon sx={{ mr: 1, color: theme.palette.warning.main }} />
-            <span>
-              Press {parsedShortcut.modifiers.join(' + ')} keys together, then press the {parsedShortcut.key} key while holding the modifiers.
-            </span>
+          <Typography variant="body2" sx={{ fontFamily: 'monospace' }}>
+            {context}
           </Typography>
-        </Paper>
+        </Box>
+      )}
+      
+      {/* Challenge description */}
+      <Typography variant="body1" gutterBottom>
+        {description}
+      </Typography>
+      
+      {/* Shortcut to press */}
+      <Box sx={{ my: 3, textAlign: 'center' }}>
+        <Typography variant="subtitle2" gutterBottom>
+          Press the shortcut:
+        </Typography>
+        <Box sx={{ display: 'flex', justifyContent: 'center', flexWrap: 'wrap' }}>
+          {formatShortcutForDisplay(shortcut)}
+        </Box>
+      </Box>
+      
+      {/* Progress and status */}
+      <Box sx={{ mb: 3 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+          <Typography variant="caption" color="text.secondary">
+            Attempts: {attempts}
+          </Typography>
+          <Typography variant="caption" color="text.secondary">
+            Time: {timeElapsed}s
+          </Typography>
+        </Box>
+        <LinearProgress 
+          variant="determinate" 
+          value={status === 'success' ? 100 : 0} 
+          color={status === 'error' ? 'error' : 'primary'}
+          sx={{ height: 8, borderRadius: 4 }}
+        />
+      </Box>
+      
+      {/* Success message */}
+      {status === 'success' && (
+        <Fade in={true}>
+          <Box 
+            sx={{ 
+              p: 2, 
+              mb: 3, 
+              bgcolor: 'success.light', 
+              color: 'success.contrastText',
+              borderRadius: 2,
+              display: 'flex',
+              alignItems: 'center'
+            }}
+          >
+            <CheckIcon sx={{ mr: 1 }} />
+            <Typography variant="body2">
+              Great job! You pressed the correct shortcut.
+            </Typography>
+          </Box>
+        </Fade>
+      )}
+      
+      {/* Error message */}
+      {status === 'error' && (
+        <Fade in={true}>
+          <Box 
+            sx={{ 
+              p: 2, 
+              mb: 3, 
+              bgcolor: 'error.light', 
+              color: 'error.contrastText',
+              borderRadius: 2,
+              display: 'flex',
+              alignItems: 'center'
+            }}
+          >
+            <ErrorIcon sx={{ mr: 1 }} />
+            <Typography variant="body2">
+              Not quite. You pressed: {lastAttempt}
+            </Typography>
+          </Box>
+        </Fade>
+      )}
+      
+      {/* Hint */}
+      {showHint && (
+        <Box 
+          sx={{ 
+            p: 2, 
+            mb: 3, 
+            bgcolor: 'warning.light', 
+            color: 'warning.contrastText',
+            borderRadius: 2,
+            display: 'flex',
+            alignItems: 'center'
+          }}
+        >
+          <HintIcon sx={{ mr: 1 }} />
+          <Typography variant="body2">
+            Hint: Make sure to press {shortcut.split('+').join(' + ')} exactly in that order.
+          </Typography>
+        </Box>
       )}
       
       {/* Action buttons */}
@@ -321,20 +316,6 @@ const ShortcutChallenge: React.FC<ShortcutChallengeProps> = ({
           Skip
         </Button>
       </Stack>
-      
-      {/* Keyboard visualizer */}
-      {showKeyboard && (
-        <Box sx={{ mt: 3 }}>
-          <Typography variant="body2" gutterBottom>
-            Keyboard Preview:
-          </Typography>
-          <KeyboardVisualizer 
-            targetKey={parsedShortcut.key} 
-            showPressed={true}
-            highlightTarget={true}
-          />
-        </Box>
-      )}
     </Paper>
   );
 };
