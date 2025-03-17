@@ -12,7 +12,6 @@ import CloseIcon from '@mui/icons-material/Close';
 import FavoriteIcon from '@mui/icons-material/Favorite';
 import { Achievement } from '../services/achievementsService';
 import { AchievementBadge } from './';
-import { useHearts } from '../contexts/HeartsContext';
 import { alpha } from '@mui/material/styles';
 
 interface AchievementNotificationProps {
@@ -28,14 +27,6 @@ const AchievementNotification: React.FC<AchievementNotificationProps> = ({
 }) => {
   const theme = useTheme();
   const [open, setOpen] = useState(true);
-  const { addHearts } = useHearts();
-  
-  useEffect(() => {
-    // If the achievement has a hearts reward, add it
-    if (achievement.heartsReward && achievement.heartsReward > 0) {
-      addHearts(achievement.heartsReward);
-    }
-  }, [achievement, addHearts]);
   
   const handleClose = () => {
     setOpen(false);
@@ -96,8 +87,8 @@ const AchievementNotification: React.FC<AchievementNotificationProps> = ({
           </IconButton>
         </Box>
         
-        {/* Show hearts reward if applicable */}
-        {achievement.heartsReward && achievement.heartsReward > 0 && (
+        {/* Show XP reward if applicable */}
+        {achievement.xpReward && achievement.xpReward > 0 && (
           <Box 
             sx={{ 
               display: 'flex', 
@@ -108,9 +99,8 @@ const AchievementNotification: React.FC<AchievementNotificationProps> = ({
               borderRadius: 1,
             }}
           >
-            <FavoriteIcon color="error" sx={{ mr: 1, fontSize: 18 }} />
             <Typography variant="body2">
-              +{achievement.heartsReward} {achievement.heartsReward === 1 ? 'life' : 'lives'} added!
+              +{achievement.xpReward} XP earned!
             </Typography>
           </Box>
         )}

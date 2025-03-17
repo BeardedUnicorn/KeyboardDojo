@@ -39,6 +39,12 @@ import LinkedInIcon from '@mui/icons-material/LinkedIn';
 import html2canvas from 'html2canvas';
 import { AchievementsList } from '../components';
 import { useAchievements } from '../hooks';
+import FitnessCenterIcon from '@mui/icons-material/FitnessCenter';
+import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
+import DiamondIcon from '@mui/icons-material/Diamond';
+import StarIcon from '@mui/icons-material/Star';
+import StarHalfIcon from '@mui/icons-material/StarHalf';
+import StarOutlineIcon from '@mui/icons-material/StarOutline';
 
 const AchievementsPage: React.FC = () => {
   const theme = useTheme();
@@ -61,91 +67,86 @@ const AchievementsPage: React.FC = () => {
   const totalCompleted = completedAchievements.length;
   const percentComplete = totalAchievements > 0 ? (totalCompleted / totalAchievements) * 100 : 0;
   
-  // Calculate category statistics
+  // Category stats
   const categoryStats = [
     {
-      name: 'practice',
-      displayName: 'Practice',
-      icon: <EmojiEventsIcon />,
-      color: theme.palette.primary.main,
+      title: 'Practice',
       count: completedAchievements.filter(a => a.achievement.category === 'practice').length,
-      total: achievements.filter(a => a.achievement.category === 'practice').length
+      total: achievements.filter(a => a.category === 'practice').length,
+      color: '#4CAF50',
+      icon: <FitnessCenterIcon fontSize="small" />
     },
     {
-      name: 'streak',
-      displayName: 'Streak',
-      icon: <LocalFireDepartmentIcon />,
-      color: theme.palette.error.main,
-      count: completedAchievements.filter(a => a.achievement.category === 'streak').length,
-      total: achievements.filter(a => a.achievement.category === 'streak').length
+      title: 'Streaks',
+      count: completedAchievements.filter(a => a.achievement.category === 'streaks').length,
+      total: achievements.filter(a => a.category === 'streaks').length,
+      color: '#FF9800',
+      icon: <LocalFireDepartmentIcon fontSize="small" />
     },
     {
-      name: 'mastery',
-      displayName: 'Mastery',
-      icon: <SchoolIcon />,
-      color: theme.palette.secondary.main,
+      title: 'Mastery',
       count: completedAchievements.filter(a => a.achievement.category === 'mastery').length,
-      total: achievements.filter(a => a.achievement.category === 'mastery').length
+      total: achievements.filter(a => a.category === 'mastery').length,
+      color: '#2196F3',
+      icon: <EmojiEventsIcon fontSize="small" />
     },
     {
-      name: 'speed',
-      displayName: 'Speed',
-      icon: <SpeedIcon />,
-      color: theme.palette.info.main,
+      title: 'Speed',
       count: completedAchievements.filter(a => a.achievement.category === 'speed').length,
-      total: achievements.filter(a => a.achievement.category === 'speed').length
+      total: achievements.filter(a => a.category === 'speed').length,
+      color: '#F44336',
+      icon: <SpeedIcon fontSize="small" />
     },
     {
-      name: 'exploration',
-      displayName: 'Exploration',
-      icon: <ExploreIcon />,
-      color: theme.palette.success.main,
+      title: 'Exploration',
       count: completedAchievements.filter(a => a.achievement.category === 'exploration').length,
-      total: achievements.filter(a => a.achievement.category === 'exploration').length
+      total: achievements.filter(a => a.category === 'exploration').length,
+      color: '#9C27B0',
+      icon: <ExploreIcon fontSize="small" />
     }
   ];
   
-  // Calculate rarity statistics
+  // Rarity stats
   const rarityStats = [
     {
-      name: 'legendary',
-      displayName: 'Legendary',
-      color: theme.palette.error.main,
+      title: 'Legendary',
       count: completedAchievements.filter(a => a.achievement.rarity === 'legendary').length,
-      total: achievements.filter(a => a.achievement.rarity === 'legendary').length
+      total: achievements.filter(a => a.rarity === 'legendary').length,
+      color: '#FFD700',
+      icon: <AutoAwesomeIcon fontSize="small" />
     },
     {
-      name: 'epic',
-      displayName: 'Epic',
-      color: theme.palette.secondary.main,
+      title: 'Epic',
       count: completedAchievements.filter(a => a.achievement.rarity === 'epic').length,
-      total: achievements.filter(a => a.achievement.rarity === 'epic').length
+      total: achievements.filter(a => a.rarity === 'epic').length,
+      color: '#9C27B0',
+      icon: <DiamondIcon fontSize="small" />
     },
     {
-      name: 'rare',
-      displayName: 'Rare',
-      color: theme.palette.info.main,
+      title: 'Rare',
       count: completedAchievements.filter(a => a.achievement.rarity === 'rare').length,
-      total: achievements.filter(a => a.achievement.rarity === 'rare').length
+      total: achievements.filter(a => a.rarity === 'rare').length,
+      color: '#2196F3',
+      icon: <StarIcon fontSize="small" />
     },
     {
-      name: 'uncommon',
-      displayName: 'Uncommon',
-      color: theme.palette.success.main,
+      title: 'Uncommon',
       count: completedAchievements.filter(a => a.achievement.rarity === 'uncommon').length,
-      total: achievements.filter(a => a.achievement.rarity === 'uncommon').length
+      total: achievements.filter(a => a.rarity === 'uncommon').length,
+      color: '#4CAF50',
+      icon: <StarHalfIcon fontSize="small" />
     },
     {
-      name: 'common',
-      displayName: 'Common',
-      color: theme.palette.primary.main,
+      title: 'Common',
       count: completedAchievements.filter(a => a.achievement.rarity === 'common').length,
-      total: achievements.filter(a => a.achievement.rarity === 'common').length
+      total: achievements.filter(a => a.rarity === 'common').length,
+      color: '#9E9E9E',
+      icon: <StarOutlineIcon fontSize="small" />
     }
   ];
   
   // Calculate total XP earned from achievements
-  const totalXpEarned = completedAchievements.reduce((sum, a) => sum + a.achievement.xpReward, 0);
+  const totalXpEarned = completedAchievements.reduce((sum, a) => sum + (a.achievement.xpReward || 0), 0);
   
   const handleCategoryFilterChange = (
     _event: React.MouseEvent<HTMLElement>,
@@ -348,14 +349,14 @@ const AchievementsPage: React.FC = () => {
               >
                 {categoryStats.map((category) => (
                   <ToggleButton 
-                    key={category.name} 
-                    value={category.name}
+                    key={category.title} 
+                    value={category.title}
                     sx={{ 
                       borderColor: category.color,
-                      color: categoryFilter === category.name ? 'white' : category.color,
-                      bgcolor: categoryFilter === category.name ? category.color : 'transparent',
+                      color: categoryFilter === category.title ? 'white' : category.color,
+                      bgcolor: categoryFilter === category.title ? category.color : 'transparent',
                       '&:hover': {
-                        bgcolor: categoryFilter === category.name 
+                        bgcolor: categoryFilter === category.title 
                           ? category.color 
                           : `${category.color}22`
                       },
@@ -368,23 +369,29 @@ const AchievementsPage: React.FC = () => {
                     }}
                   >
                     <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                      <Box sx={{ mr: 0.5 }}>
+                      <Box sx={{ mr: 1 }}>
                         {category.icon}
                       </Box>
-                      {category.displayName}
+                      <Typography variant="body2">
+                        {category.title}
+                      </Typography>
+                      <Box sx={{ flexGrow: 1 }} />
+                      <Typography variant="body2" color="text.secondary">
+                        {category.count}/{category.total}
+                      </Typography>
                     </Box>
                   </ToggleButton>
                 ))}
               </ToggleButtonGroup>
               
               {categoryStats.map((category) => (
-                <Box key={category.name} sx={{ mb: 2 }}>
+                <Box key={category.title} sx={{ mb: 2 }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', mb: 0.5 }}>
                     <Box sx={{ color: category.color, mr: 1 }}>
                       {category.icon}
                     </Box>
                     <Typography variant="body2">
-                      {category.displayName}
+                      {category.title}
                     </Typography>
                     <Box sx={{ flexGrow: 1 }} />
                     <Typography variant="body2" color="text.secondary">
@@ -424,44 +431,43 @@ const AchievementsPage: React.FC = () => {
               >
                 {rarityStats.map((rarity) => (
                   <ToggleButton 
-                    key={rarity.name} 
-                    value={rarity.name}
+                    key={rarity.title}
+                    value={rarity.title}
                     sx={{ 
                       borderColor: rarity.color,
-                      color: rarityFilter === rarity.name ? 'white' : rarity.color,
-                      bgcolor: rarityFilter === rarity.name ? rarity.color : 'transparent',
+                      color: rarityFilter === rarity.title ? 'white' : rarity.color,
+                      bgcolor: rarityFilter === rarity.title ? rarity.color : 'transparent',
                       '&:hover': {
-                        bgcolor: rarityFilter === rarity.name 
+                        bgcolor: rarityFilter === rarity.title 
                           ? rarity.color 
                           : `${rarity.color}22`
-                      },
-                      '&.Mui-selected': {
-                        bgcolor: rarity.color,
-                        '&:hover': {
-                          bgcolor: rarity.color
-                        }
                       }
                     }}
                   >
-                    {rarity.displayName}
+                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                      <Box sx={{ mr: 1 }}>
+                        {rarity.icon}
+                      </Box>
+                      <Typography variant="body2">
+                        {rarity.title}
+                      </Typography>
+                      <Box sx={{ flexGrow: 1 }} />
+                      <Typography variant="body2" color="text.secondary">
+                        {rarity.count}/{rarity.total}
+                      </Typography>
+                    </Box>
                   </ToggleButton>
                 ))}
               </ToggleButtonGroup>
               
               {rarityStats.map((rarity) => (
-                <Box key={rarity.name} sx={{ mb: 2 }}>
+                <Box key={rarity.title} sx={{ mb: 2 }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', mb: 0.5 }}>
-                    <Box 
-                      sx={{ 
-                        width: 12, 
-                        height: 12, 
-                        borderRadius: '50%', 
-                        bgcolor: rarity.color,
-                        mr: 1
-                      }} 
-                    />
-                    <Typography variant="body2">
-                      {rarity.displayName}
+                    <Box sx={{ color: rarity.color, mr: 1 }}>
+                      {rarity.icon}
+                    </Box>
+                    <Typography variant="subtitle2">
+                      {rarity.title}
                     </Typography>
                     <Box sx={{ flexGrow: 1 }} />
                     <Typography variant="body2" color="text.secondary">

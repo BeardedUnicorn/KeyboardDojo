@@ -13,6 +13,7 @@ import {
   Stack,
   Paper,
   IconButton,
+  useTheme,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import DarkModeIcon from '@mui/icons-material/DarkMode';
@@ -46,7 +47,8 @@ const defaultSettings: Settings = {
 };
 
 const SettingsPanel = ({ open, onClose }: SettingsPanelProps) => {
-  const { theme, mode, toggleTheme } = useThemeContext();
+  const theme = useTheme();
+  const { mode, toggleTheme } = useThemeContext();
   const [settings, setSettings] = useState<Settings>(defaultSettings);
   const [isLoading, setIsLoading] = useState(true);
 

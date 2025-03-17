@@ -1,109 +1,189 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { achievementsService, AchievementProgress } from '../services/achievementsService';
-import { userProgressService } from '../services/userProgressService';
-import { AchievementNotification } from '../components';
 
-export interface AchievementsContextType {
-  achievements: AchievementProgress[];
-  completedAchievements: AchievementProgress[];
+export interface Achievement {
+  id: string;
+  title: string;
+  description: string;
+  icon: string;
+  unlockedAt: string | null;
+  category?: string;
+  rarity?: 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary';
+  secret?: boolean;
+  criteria?: {
+    type: string;
+    value: number;
+  };
+  xpReward?: number;
+}
+
+export interface AchievementWithProgress {
+  achievement: Achievement;
+  completed: boolean;
+  completedDate?: string;
+  progress?: number;
+}
+
+interface AchievementsContextType {
+  achievements: Achievement[];
+  unlockedAchievements: Achievement[];
+  completedAchievements: AchievementWithProgress[];
+  awardAchievement: (achievementId: string) => void;
+  hasAchievement: (achievementId: string) => boolean;
   refreshAchievements: () => void;
   isLoading: boolean;
 }
 
-export const AchievementsContext = createContext<AchievementsContextType | null>(null);
+// Define available achievements
+const availableAchievements: Achievement[] = [
+  {
+    id: 'first_lesson',
+    title: 'First Steps',
+    description: 'Complete your first lesson',
+    icon: '🎓',
+    unlockedAt: null,
+    category: 'practice',
+    rarity: 'common',
+    xpReward: 10,
+  },
+  {
+    id: 'complete_lesson',
+    title: 'Quick Learner',
+    description: 'Complete a lesson without any mistakes',
+    icon: '⚡',
+    unlockedAt: null,
+    category: 'practice',
+    rarity: 'uncommon',
+    xpReward: 20,
+  },
+  {
+    id: 'streak_3',
+    title: 'Consistent Learner',
+    description: 'Maintain a 3-day learning streak',
+    icon: '🔥',
+    unlockedAt: null,
+    category: 'streak',
+    rarity: 'uncommon',
+    xpReward: 30,
+  },
+  {
+    id: 'complete_module',
+    title: 'Module Master',
+    description: 'Complete all lessons in a module',
+    icon: '🏆',
+    unlockedAt: null,
+    category: 'mastery',
+    rarity: 'rare',
+    xpReward: 50,
+  },
+  {
+    id: 'complete_track',
+    title: 'Track Champion',
+    description: 'Complete all modules in a track',
+    icon: '🥇',
+    unlockedAt: null,
+    category: 'mastery',
+    rarity: 'epic',
+    xpReward: 100,
+  },
+  {
+    id: 'perfect_score',
+    title: 'Perfectionist',
+    description: 'Get a perfect score in a challenge',
+    icon: '💯',
+    unlockedAt: null,
+    category: 'mastery',
+    rarity: 'legendary',
+    xpReward: 200,
+  },
+];
 
-export const useAchievements = () => {
-  const context = useContext(AchievementsContext);
-  if (!context) {
-    throw new Error('useAchievements must be used within an AchievementsProvider');
-  }
-  return context;
-};
+export const AchievementsContext = createContext<AchievementsContextType | undefined>(undefined);
 
-interface AchievementsProviderProps {
-  children: ReactNode;
-}
-
-export const AchievementsProvider: React.FC<AchievementsProviderProps> = ({ children }) => {
-  const [achievements, setAchievements] = useState<AchievementProgress[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [unlockedAchievement, setUnlockedAchievement] = useState<AchievementProgress | null>(null);
+export const AchievementsProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  const [achievements, setAchievements] = useState<Achievement[]>(availableAchievements);
+  const [isLoading, setIsLoading] = useState(false);
   
-  const refreshAchievements = () => {
-    // Get current user progress
-    const progress = userProgressService.getProgress();
-    
-    if (progress) {
-      // Check for streak achievements
-      const streakAchievements = achievementsService.checkAchievements(
-        'streak', 
-        progress.streakDays
-      );
-      
-      // Check for practice achievements
-      const practiceAchievements = achievementsService.checkAchievements(
-        'practice', 
-        progress.completedLessons.length
-      );
-      
-      // Check for mastery achievements
-      const masteryAchievements = achievementsService.checkAchievements(
-        'mastery', 
-        progress.completedModules.length
-      );
-      
-      // Set the most recently unlocked achievement for notification
-      const allUnlocked = [...streakAchievements, ...practiceAchievements, ...masteryAchievements];
-      if (allUnlocked.length > 0) {
-        setUnlockedAchievement(allUnlocked[allUnlocked.length - 1]);
-      }
-    }
-    
-    // Update achievements list
-    setAchievements(achievementsService.getAchievements());
-  };
-  
+  // Load achievements from localStorage on mount
   useEffect(() => {
-    // Initialize achievements
-    setIsLoading(true);
-    setAchievements(achievementsService.getAchievements());
-    setIsLoading(false);
-    
-    // Add listener for achievement updates
-    const handleAchievementsUpdate = (updatedAchievements: AchievementProgress[]) => {
-      setAchievements(updatedAchievements);
-    };
-    
-    achievementsService.addListener(handleAchievementsUpdate);
-    
-    // Check for achievements on mount
-    refreshAchievements();
-    
-    return () => {
-      achievementsService.removeListener(handleAchievementsUpdate);
-    };
+    loadAchievements();
   }, []);
   
-  // Filter completed achievements
-  const completedAchievements = achievements.filter(a => a.completed);
+  const loadAchievements = () => {
+    setIsLoading(true);
+    try {
+      const savedAchievements = localStorage.getItem('user-achievements');
+      if (savedAchievements) {
+        setAchievements(JSON.parse(savedAchievements));
+      }
+    } catch (error) {
+      console.error('Failed to load achievements:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
+  // Save achievements to localStorage whenever they change
+  useEffect(() => {
+    localStorage.setItem('user-achievements', JSON.stringify(achievements));
+  }, [achievements]);
+  
+  // Get unlocked achievements
+  const unlockedAchievements = achievements.filter(achievement => achievement.unlockedAt !== null);
+  
+  // Get completed achievements with progress info
+  const completedAchievements: AchievementWithProgress[] = unlockedAchievements.map(achievement => ({
+    achievement,
+    completed: true,
+    completedDate: achievement.unlockedAt || undefined,
+    progress: 100,
+  }));
+  
+  // Award an achievement
+  const awardAchievement = (achievementId: string) => {
+    setAchievements(prev => {
+      return prev.map(achievement => {
+        if (achievement.id === achievementId && achievement.unlockedAt === null) {
+          return {
+            ...achievement,
+            unlockedAt: new Date().toISOString(),
+          };
+        }
+        return achievement;
+      });
+    });
+  };
+  
+  // Check if user has an achievement
+  const hasAchievement = (achievementId: string): boolean => {
+    return achievements.some(achievement => achievement.id === achievementId && achievement.unlockedAt !== null);
+  };
+  
+  // Refresh achievements
+  const refreshAchievements = () => {
+    loadAchievements();
+  };
   
   return (
     <AchievementsContext.Provider
       value={{
         achievements,
+        unlockedAchievements,
         completedAchievements,
+        awardAchievement,
+        hasAchievement,
         refreshAchievements,
-        isLoading
+        isLoading,
       }}
     >
       {children}
-      
-      {unlockedAchievement && (
-        <AchievementNotification
-          achievement={unlockedAchievement.achievement}
-          onClose={() => setUnlockedAchievement(null)}
-        />
-      )}
     </AchievementsContext.Provider>
   );
+};
+
+export const useAchievements = (): AchievementsContextType => {
+  const context = useContext(AchievementsContext);
+  if (context === undefined) {
+    throw new Error('useAchievements must be used within an AchievementsProvider');
+  }
+  return context;
 }; 

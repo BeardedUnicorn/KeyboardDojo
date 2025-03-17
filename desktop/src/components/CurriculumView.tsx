@@ -11,10 +11,13 @@ import {
   ListItemIcon, 
   Collapse, 
   Chip,
-  Button,
   Divider,
-  Grid,
-  useTheme
+  useTheme,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  SelectChangeEvent
 } from '@mui/material';
 import {
   ExpandMore as ExpandMoreIcon,
@@ -22,15 +25,15 @@ import {
   Lock as LockIcon,
   CheckCircle as CheckCircleIcon,
   School as SchoolIcon,
-  PlayArrow as PlayArrowIcon,
-  EmojiEvents as TrophyIcon
+  PlayArrow as PlayArrowIcon
 } from '@mui/icons-material';
 import { 
   ApplicationTrack, 
   ApplicationType, 
   Module, 
   Lesson, 
-  DifficultyLevel 
+  DifficultyLevel,
+  CurriculumMetadata
 } from '../types/curriculum';
 import { curriculumService } from '../services/curriculumService';
 
@@ -47,9 +50,20 @@ const CurriculumView: React.FC<CurriculumViewProps> = ({
   const [selectedTrack, setSelectedTrack] = useState<ApplicationType>('vscode');
   const [expandedModules, setExpandedModules] = useState<string[]>([]);
   const [tracks, setTracks] = useState<ApplicationTrack[]>([]);
+  const [curriculums, setCurriculums] = useState<CurriculumMetadata[]>([]);
+  const [selectedCurriculumId, setSelectedCurriculumId] = useState<string>('');
   
-  // Load tracks on component mount
+  // Load curriculums and tracks on component mount
   useEffect(() => {
+    // Get all available curriculums
+    const availableCurriculums = curriculumService.getCurriculumMetadata();
+    setCurriculums(availableCurriculums);
+    
+    // Set the active curriculum as the selected one
+    const activeCurriculum = curriculumService.getActiveCurriculum();
+    setSelectedCurriculumId(activeCurriculum.id);
+    
+    // Load tracks for the active curriculum
     const loadedTracks = curriculumService.getApplicationTracks();
     setTracks(loadedTracks);
     
@@ -61,6 +75,31 @@ const CurriculumView: React.FC<CurriculumViewProps> = ({
   
   // Get the current track
   const currentTrack = tracks.find(track => track.id === selectedTrack);
+  
+  // Handle curriculum change
+  const handleCurriculumChange = (event: SelectChangeEvent<string>) => {
+    const curriculumId = event.target.value;
+    setSelectedCurriculumId(curriculumId);
+    
+    // Set the active curriculum in the service
+    curriculumService.setActiveCurriculum(curriculumId);
+    
+    // Load tracks for the selected curriculum
+    const loadedTracks = curriculumService.getApplicationTracks();
+    setTracks(loadedTracks);
+    
+    // Reset selected track to the first one if available
+    if (loadedTracks.length > 0) {
+      setSelectedTrack(loadedTracks[0].id);
+      
+      // Expand the first module by default
+      if (loadedTracks[0].modules.length > 0) {
+        setExpandedModules([loadedTracks[0].modules[0].id]);
+      } else {
+        setExpandedModules([]);
+      }
+    }
+  };
   
   // Handle track change
   const handleTrackChange = (_event: React.SyntheticEvent, newValue: ApplicationType) => {
@@ -194,287 +233,210 @@ const CurriculumView: React.FC<CurriculumViewProps> = ({
           <Box 
             sx={{ 
               p: 2, 
-              display: 'flex', 
-              alignItems: 'center',
-              backgroundColor: isUnlocked ? appStyle.backgroundColor : theme.palette.action.disabledBackground,
               cursor: 'pointer',
+              backgroundColor: isExpanded ? appStyle.backgroundColor : 'transparent',
+              transition: 'background-color 0.2s',
+              '&:hover': {
+                backgroundColor: appStyle.backgroundColor,
+              },
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
             }}
             onClick={() => handleModuleToggle(module.id)}
           >
-            <Box sx={{ flex: 1 }}>
-              <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center' }}>
-                {!isUnlocked && <LockIcon sx={{ mr: 1, fontSize: 20 }} />}
-                {module.title}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                {module.description}
-              </Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+              <SchoolIcon sx={{ mr: 1, color: appStyle.color }} />
+              <Box>
+                <Typography variant="h6" component="div">
+                  {module.title}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  {module.lessons.length} lessons • {module.difficulty}
+                </Typography>
+              </Box>
             </Box>
             
             <Box sx={{ display: 'flex', alignItems: 'center' }}>
-              <Chip 
-                label={module.difficulty} 
-                size="small" 
-                sx={{ 
-                  mr: 2,
-                  backgroundColor: getDifficultyColor(module.difficulty) + '22',
-                  color: getDifficultyColor(module.difficulty),
-                  fontWeight: 'bold',
-                }} 
-              />
+              {!isUnlocked && (
+                <LockIcon sx={{ mr: 1, color: theme.palette.text.disabled }} />
+              )}
               {isExpanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
             </Box>
           </Box>
           
           {/* Module content */}
-          <Collapse in={isExpanded && isUnlocked}>
+          <Collapse in={isExpanded} timeout="auto" unmountOnExit>
             <Divider />
-            <List disablePadding>
-              {module.lessons.map((lesson, index) => {
-                const lessonUnlocked = isLessonUnlocked(module.id, lesson.id);
-                const lessonCompleted = isLessonCompleted(lesson.id);
-                const lessonProgress = getLessonProgress(lesson.id);
-                
-                return (
-                  <ListItem 
-                    key={lesson.id}
-                    sx={{ 
-                      pl: 4,
-                      pr: 2,
-                      py: 1.5,
-                      opacity: lessonUnlocked ? 1 : 0.7,
-                      backgroundColor: index % 2 === 0 ? 'transparent' : theme.palette.action.hover,
-                      '&:hover': {
-                        backgroundColor: lessonUnlocked ? theme.palette.action.selected : undefined,
-                      },
-                      cursor: lessonUnlocked ? 'pointer' : 'default',
-                    }}
-                    onClick={() => lessonUnlocked && handleLessonSelect(module.id, lesson.id)}
-                  >
-                    <ListItemIcon sx={{ minWidth: 40 }}>
-                      {lessonCompleted ? (
-                        <CheckCircleIcon color="success" />
-                      ) : !lessonUnlocked ? (
-                        <LockIcon color="disabled" />
-                      ) : (
-                        <SchoolIcon color="primary" />
-                      )}
-                    </ListItemIcon>
-                    
-                    <ListItemText
-                      primary={
-                        <Typography variant="body1" sx={{ fontWeight: lessonCompleted ? 'bold' : 'normal' }}>
-                          {lesson.title}
-                        </Typography>
-                      }
-                      secondary={
-                        <Box>
-                          <Typography variant="body2" color="text.secondary">
-                            {lesson.description}
-                          </Typography>
-                          <Box sx={{ display: 'flex', alignItems: 'center', mt: 0.5 }}>
-                            <Chip 
-                              label={`${lesson.shortcuts.length} shortcuts`} 
-                              size="small" 
-                              sx={{ mr: 1, fontSize: '0.7rem' }} 
-                            />
-                            <Chip 
-                              label={`${lesson.estimatedTime} min`} 
-                              size="small" 
-                              sx={{ mr: 1, fontSize: '0.7rem' }} 
-                            />
-                            <Chip 
-                              label={`${lesson.xpReward} XP`} 
-                              size="small" 
-                              sx={{ fontSize: '0.7rem' }} 
-                            />
-                          </Box>
-                        </Box>
-                      }
-                    />
-                    
-                    {lessonUnlocked && (
-                      <Button
-                        variant="contained"
-                        color="primary"
-                        size="small"
-                        startIcon={<PlayArrowIcon />}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleLessonSelect(module.id, lesson.id);
-                        }}
-                        sx={{ ml: 2 }}
-                      >
-                        {lessonCompleted ? 'Review' : lessonProgress > 0 ? 'Continue' : 'Start'}
-                      </Button>
-                    )}
-                  </ListItem>
-                );
-              })}
-            </List>
-          </Collapse>
-          
-          {/* Locked module message */}
-          {!isUnlocked && (
-            <Box sx={{ p: 2, textAlign: 'center' }}>
-              <Typography variant="body2" color="text.secondary">
-                Complete previous modules to unlock this content.
+            <Box sx={{ p: 2 }}>
+              <Typography variant="body2" paragraph>
+                {module.description}
               </Typography>
+              
+              <Chip 
+                label={module.difficulty} 
+                size="small" 
+                sx={{ 
+                  backgroundColor: getDifficultyColor(module.difficulty) + '22',
+                  color: getDifficultyColor(module.difficulty),
+                  mb: 2,
+                }} 
+              />
+              
+              <List disablePadding>
+                {module.lessons.map((lesson) => {
+                  const lessonUnlocked = isLessonUnlocked(module.id, lesson.id);
+                  const lessonCompleted = isLessonCompleted(lesson.id);
+                  const progress = getLessonProgress(lesson.id);
+                  
+                  return (
+                    <ListItem 
+                      key={lesson.id}
+                      disablePadding
+                      sx={{ 
+                        mb: 1,
+                        opacity: lessonUnlocked ? 1 : 0.7,
+                        borderRadius: 1,
+                        overflow: 'hidden',
+                      }}
+                    >
+                      <Paper 
+                        elevation={1} 
+                        sx={{ 
+                          width: '100%',
+                          borderLeft: '4px solid',
+                          borderColor: lessonCompleted 
+                            ? theme.palette.success.main 
+                            : (lessonUnlocked ? appStyle.color : theme.palette.divider),
+                        }}
+                      >
+                        <Box
+                          sx={{ 
+                            display: 'flex',
+                            alignItems: 'center',
+                            p: 2,
+                            cursor: lessonUnlocked ? 'pointer' : 'default',
+                            opacity: lessonUnlocked ? 1 : 0.7,
+                            '&:hover': {
+                              backgroundColor: lessonUnlocked ? theme.palette.action.hover : 'transparent',
+                            },
+                          }}
+                          onClick={() => lessonUnlocked && handleLessonSelect(module.id, lesson.id)}
+                        >
+                          <ListItemIcon>
+                            {lessonCompleted ? (
+                              <CheckCircleIcon sx={{ color: theme.palette.success.main }} />
+                            ) : (
+                              <PlayArrowIcon sx={{ color: lessonUnlocked ? appStyle.color : theme.palette.text.disabled }} />
+                            )}
+                          </ListItemIcon>
+                          <ListItemText
+                            primary={lesson.title}
+                            secondary={
+                              <Box component="span" sx={{ display: 'flex', alignItems: 'center', mt: 0.5 }}>
+                                <Chip 
+                                  label={lesson.difficulty} 
+                                  size="small" 
+                                  sx={{ 
+                                    height: 20,
+                                    fontSize: '0.7rem',
+                                    backgroundColor: getDifficultyColor(lesson.difficulty) + '22',
+                                    color: getDifficultyColor(lesson.difficulty),
+                                    mr: 1,
+                                  }} 
+                                />
+                                <Typography variant="caption" component="span">
+                                  {lesson.estimatedTime} min • {lesson.xpReward} XP
+                                </Typography>
+                              </Box>
+                            }
+                          />
+                          {!lessonUnlocked && (
+                            <LockIcon sx={{ color: theme.palette.text.disabled, ml: 1 }} />
+                          )}
+                        </Box>
+                      </Paper>
+                    </ListItem>
+                  );
+                })}
+              </List>
             </Box>
-          )}
+          </Collapse>
         </Paper>
       </Box>
     );
   };
   
-  // Render mastery challenges
-  const renderMasteryChallenges = () => {
-    const challenges = curriculumService.getMasteryChallenges(selectedTrack);
-    
-    if (challenges.length === 0) {
-      return (
-        <Paper sx={{ p: 3, textAlign: 'center', mt: 3 }}>
-          <Typography variant="body1" color="text.secondary">
-            No mastery challenges available yet.
-          </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-            Complete more lessons to unlock challenges.
-          </Typography>
-        </Paper>
-      );
-    }
-    
-    return (
-      <Paper sx={{ p: 2, mt: 3 }}>
-        <Typography variant="h6" sx={{ mb: 2, display: 'flex', alignItems: 'center' }}>
-          <TrophyIcon sx={{ mr: 1 }} color="primary" />
-          Mastery Challenges
-        </Typography>
-        
-        <List>
-          {challenges.map(challenge => {
-            const isUnlocked = curriculumService.isMasteryChallengeUnlocked(selectedTrack, challenge.id);
-            
-            return (
-              <ListItem 
-                key={challenge.id}
-                sx={{ 
-                  opacity: isUnlocked ? 1 : 0.7,
-                  '&:hover': {
-                    backgroundColor: isUnlocked ? theme.palette.action.hover : undefined,
-                  },
-                  cursor: isUnlocked ? 'pointer' : 'default',
-                }}
-                onClick={() => isUnlocked && handleChallengeSelect(challenge.id)}
-              >
-                <ListItemIcon>
-                  {isUnlocked ? (
-                    <TrophyIcon color="primary" />
-                  ) : (
-                    <LockIcon color="disabled" />
-                  )}
-                </ListItemIcon>
-                
-                <ListItemText
-                  primary={challenge.title}
-                  secondary={
-                    <Box>
-                      <Typography variant="body2" color="text.secondary">
-                        {challenge.description}
-                      </Typography>
-                      <Box sx={{ display: 'flex', alignItems: 'center', mt: 0.5 }}>
-                        <Chip 
-                          label={`${challenge.shortcuts.length} shortcuts`} 
-                          size="small" 
-                          sx={{ mr: 1, fontSize: '0.7rem' }} 
-                        />
-                        <Chip 
-                          label={`${challenge.timeLimit / 60} min`} 
-                          size="small" 
-                          sx={{ mr: 1, fontSize: '0.7rem' }} 
-                        />
-                        <Chip 
-                          label={`${challenge.xpReward} XP`} 
-                          size="small" 
-                          sx={{ fontSize: '0.7rem' }} 
-                        />
-                      </Box>
-                    </Box>
-                  }
-                />
-                
-                {isUnlocked && (
-                  <Button
-                    variant="contained"
-                    color="secondary"
-                    size="small"
-                    startIcon={<PlayArrowIcon />}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleChallengeSelect(challenge.id);
-                    }}
-                  >
-                    Start Challenge
-                  </Button>
-                )}
-              </ListItem>
-            );
-          })}
-        </List>
-      </Paper>
-    );
-  };
-  
   return (
     <Box>
+      {/* Curriculum selector */}
+      <Box sx={{ mb: 3 }}>
+        <FormControl fullWidth variant="outlined" size="small">
+          <InputLabel id="curriculum-select-label">Curriculum</InputLabel>
+          <Select
+            labelId="curriculum-select-label"
+            id="curriculum-select"
+            value={selectedCurriculumId}
+            onChange={handleCurriculumChange}
+            label="Curriculum"
+          >
+            {curriculums.map((curriculum) => (
+              <MenuItem key={curriculum.id} value={curriculum.id}>
+                {curriculum.name}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+      </Box>
+      
       {/* Track tabs */}
-      <Tabs
-        value={selectedTrack}
-        onChange={handleTrackChange}
-        variant="fullWidth"
-        sx={{ mb: 3 }}
-      >
-        {tracks.map(track => {
-          const appStyle = getApplicationStyle(track.id);
-          
-          return (
-            <Tab 
-              key={track.id}
-              value={track.id}
-              label={
-                <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                  <Typography sx={{ mr: 1 }}>{appStyle.icon}</Typography>
-                  {track.name}
-                </Box>
-              }
-              sx={{ 
-                color: track.id === selectedTrack ? appStyle.color : undefined,
-                '&.Mui-selected': {
-                  color: appStyle.color,
-                },
-              }}
-            />
-          );
-        })}
-      </Tabs>
+      {tracks.length > 0 && (
+        <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
+          <Tabs
+            value={selectedTrack}
+            onChange={handleTrackChange}
+            variant="scrollable"
+            scrollButtons="auto"
+            aria-label="application track tabs"
+          >
+            {tracks.map((track) => (
+              <Tab
+                key={track.id}
+                label={track.name}
+                value={track.id}
+                icon={<Box component="span">{getApplicationStyle(track.id).icon}</Box>}
+                iconPosition="start"
+                sx={{
+                  '&.Mui-selected': {
+                    color: getApplicationStyle(track.id).color,
+                  },
+                }}
+              />
+            ))}
+          </Tabs>
+        </Box>
+      )}
       
       {/* Track description */}
       {currentTrack && (
-        <Paper sx={{ p: 2, mb: 3 }}>
-          <Typography variant="h5" gutterBottom>
-            {currentTrack.name} Shortcuts
-          </Typography>
-          <Typography variant="body1">
+        <Box sx={{ mb: 3 }}>
+          <Typography variant="body1" paragraph>
             {currentTrack.description}
           </Typography>
-        </Paper>
+        </Box>
       )}
       
       {/* Modules */}
-      {currentTrack?.modules.map(renderModule)}
+      {currentTrack && currentTrack.modules.map((module) => renderModule(module))}
       
-      {/* Mastery challenges */}
-      {renderMasteryChallenges()}
+      {/* No tracks message */}
+      {tracks.length === 0 && (
+        <Box sx={{ textAlign: 'center', py: 4 }}>
+          <Typography variant="h6" color="text.secondary">
+            No tracks available for this curriculum.
+          </Typography>
+        </Box>
+      )}
     </Box>
   );
 };

@@ -8,6 +8,22 @@
 // Application types
 export type ApplicationType = 'vscode' | 'intellij' | 'cursor';
 
+// Curriculum types
+export enum CurriculumType {
+  IDE_SHORTCUTS = 'ide_shortcuts',
+  PROGRAMMING_LANGUAGE = 'programming_language',
+  TOOL_MASTERY = 'tool_mastery',
+  FRAMEWORK = 'framework'
+}
+
+// Lesson step types
+export enum LessonStepType {
+  CODE = 'code',
+  SHORTCUT = 'shortcut',
+  QUIZ = 'quiz',
+  TEXT = 'text'
+}
+
 // Difficulty levels
 export type DifficultyLevel = 'beginner' | 'intermediate' | 'advanced' | 'expert';
 
@@ -38,6 +54,31 @@ export interface Shortcut {
   xpValue: number;
 }
 
+// Lesson step definition
+export interface LessonStep {
+  id: string;
+  title: string;
+  type: LessonStepType;
+  description: string;
+  
+  // For CODE type
+  instructions?: string;
+  initialCode?: string;
+  expectedOutput?: string;
+  
+  // For SHORTCUT type
+  shortcut?: {
+    windows: string;
+    mac: string;
+    linux?: string;
+  };
+  
+  // For QUIZ type
+  question?: string;
+  options?: string[];
+  correctAnswer?: number;
+}
+
 // Lesson definition
 export interface Lesson {
   id: string;
@@ -54,6 +95,12 @@ export interface Lesson {
   xpReward: number;
   estimatedTime: number; // in minutes
   order: number;
+  steps: LessonStep[];
+  tips?: {
+    title: string;
+    content: string;
+    link?: string;
+  }[];
 }
 
 // Module definition (group of related lessons)
@@ -84,11 +131,26 @@ export interface ApplicationTrack {
   isDefault?: boolean;
 }
 
-// Curriculum definition (collection of all application tracks)
-export interface Curriculum {
-  tracks: ApplicationTrack[];
+// Curriculum metadata
+export interface CurriculumMetadata {
+  id: string;
+  name: string;
+  description: string;
+  type: CurriculumType;
+  icon: string;
   version: string;
   lastUpdated: string;
+  author: string;
+  tags: string[];
+  isActive: boolean;
+  isDefault?: boolean;
+}
+
+// Curriculum definition (collection of all application tracks)
+export interface Curriculum {
+  id: string;
+  metadata: CurriculumMetadata;
+  tracks: ApplicationTrack[];
 }
 
 // User progress tracking

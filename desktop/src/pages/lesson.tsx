@@ -1,405 +1,305 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Box, 
-  Container, 
-  Typography, 
-  Paper, 
-  Stepper, 
-  Step, 
-  StepLabel, 
-  Button, 
-  Grid, 
-  Card, 
-  CardContent,
-  Divider,
-  useTheme
-} from '@mui/material';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
-  NavigateNext as NextIcon,
-  NavigateBefore as PrevIcon,
-  Check as CheckIcon,
-  EmojiEvents as TrophyIcon
-} from '@mui/icons-material';
-import { ShortcutChallenge, IDESimulator } from '../components';
-import { curriculumService } from '../services/curriculumService';
-import { userProgressService } from '../services/userProgressService';
-import { ApplicationType, Shortcut } from '../types/curriculum';
+  Box,
+  Typography,
+  Button,
+  Paper,
+  Stepper,
+  Step,
+  StepLabel,
+  StepContent,
+  CircularProgress,
+  Alert,
+  Snackbar,
+  Divider,
+  Container,
+  Grid,
+  Card,
+  CardContent,
+  CardActions,
+} from '@mui/material';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import CodeIcon from '@mui/icons-material/Code';
+import KeyboardIcon from '@mui/icons-material/Keyboard';
+import QuizIcon from '@mui/icons-material/Quiz';
 import { useUserProgress } from '../contexts/UserProgressContext';
+import { useAchievements } from '../contexts/AchievementsContext';
+import { Lesson, LessonStep, LessonStepType, ApplicationType } from '../types/curriculum';
+import CodeExercise from '../components/CodeExercise';
+import ShortcutExercise from '../components/ShortcutExercise';
+import QuizExercise from '../components/QuizExercise';
+import { curriculumService } from '../services/curriculumService';
+
+interface LessonParams {
+  lessonId: string;
+  trackId: string;
+  curriculumId: string;
+}
 
 const LessonPage: React.FC = () => {
-  const theme = useTheme();
+  const { lessonId, trackId, curriculumId } = useParams<keyof LessonParams>() as LessonParams;
   const navigate = useNavigate();
-  const { refreshProgress } = useUserProgress();
-  const { trackId = 'vscode', moduleId = '', lessonId = '' } = useParams<{
-    trackId: ApplicationType;
-    moduleId: string;
-    lessonId: string;
-  }>();
+  const { markLessonCompleted, isLessonCompleted } = useUserProgress();
+  const { awardAchievement } = useAchievements();
   
-  const [activeShortcutIndex, setActiveShortcutIndex] = useState(0);
-  const [completedShortcuts, setCompletedShortcuts] = useState<string[]>([]);
+  const [lesson, setLesson] = useState<Lesson | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [activeStep, setActiveStep] = useState(0);
+  const [completed, setCompleted] = useState<{ [k: number]: boolean }>({});
   const [showSuccess, setShowSuccess] = useState(false);
   
-  // Get lesson data
-  const lesson = curriculumService.getLesson(trackId, moduleId, lessonId);
-  const shortcuts = lesson?.shortcuts || [];
-  
-  // Get current shortcut
-  const currentShortcut = shortcuts[activeShortcutIndex];
-  
-  // Handle shortcut success
-  const handleShortcutSuccess = () => {
-    if (!currentShortcut) return;
+  // Load lesson data
+  useEffect(() => {
+    const fetchLesson = async () => {
+      try {
+        setLoading(true);
+        const lessonData = await curriculumService.getLesson(curriculumId, trackId as ApplicationType, lessonId);
+        setLesson(lessonData || null);
+        
+        // If lesson is already completed, mark all steps as completed
+        if (isLessonCompleted(curriculumId, trackId as ApplicationType, lessonId)) {
+          const completedSteps: { [k: number]: boolean } = {};
+          if (lessonData?.steps) {
+            lessonData.steps.forEach((_, index) => {
+              completedSteps[index] = true;
+            });
+          }
+          setCompleted(completedSteps);
+        }
+      } catch (err) {
+        setError('Failed to load lesson. Please try again later.');
+        console.error('Error loading lesson:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
     
-    // Mark the shortcut as completed
-    const updatedCompletedShortcuts = [...completedShortcuts];
-    if (!updatedCompletedShortcuts.includes(currentShortcut.id)) {
-      updatedCompletedShortcuts.push(currentShortcut.id);
-      setCompletedShortcuts(updatedCompletedShortcuts);
-    }
+    fetchLesson();
+  }, [lessonId, trackId, curriculumId, isLessonCompleted]);
+  
+  // Handle step completion
+  const handleStepComplete = (stepIndex: number) => {
+    const newCompleted = { ...completed };
+    newCompleted[stepIndex] = true;
+    setCompleted(newCompleted);
     
-    // Check if all shortcuts are completed
-    if (updatedCompletedShortcuts.length === shortcuts.length) {
+    // Check if all steps are completed
+    const allStepsCompleted = lesson?.steps.every((_, index) => newCompleted[index]) ?? false;
+    
+    if (allStepsCompleted) {
+      // Mark lesson as completed
+      markLessonCompleted(curriculumId, trackId as ApplicationType, lessonId);
+      
+      // Award achievement for completing a lesson
+      awardAchievement('complete_lesson');
+      
       // Show success message
       setShowSuccess(true);
-      
-      // Complete the lesson
-      if (lesson) {
-        userProgressService.completeLesson(
-          trackId,
-          moduleId,
-          lessonId,
-          100, // Score
-          60 // Time spent (seconds)
-        );
-        
-        // Check if all lessons in the module are completed
-        const module = curriculumService.getModule(trackId, moduleId);
-        if (module) {
-          const moduleLessons = module.lessons;
-          const completedLessons = userProgressService.getProgress()?.completedLessons || [];
-          const completedLessonIds = completedLessons.map(cl => cl.lessonId);
-          
-          const allLessonsCompleted = moduleLessons.every(lesson => 
-            completedLessonIds.includes(lesson.id)
-          );
-          
-          if (allLessonsCompleted) {
-            // Complete the module
-            userProgressService.completeModule(trackId, moduleId);
-          }
-        }
-        
-        // Refresh progress in context
-        refreshProgress();
-      }
-      
-      // Navigate back to curriculum after a delay
-      setTimeout(() => {
-        navigate('/curriculum');
-      }, 3000);
     } else {
-      // Move to the next shortcut after a delay
-      setTimeout(() => {
-        setActiveShortcutIndex((prev) => Math.min(prev + 1, shortcuts.length - 1));
-      }, 1000);
+      // Move to next step
+      setActiveStep((prevActiveStep) => prevActiveStep + 1);
     }
   };
   
-  // Handle skip
-  const handleSkip = () => {
-    setActiveShortcutIndex((prev) => Math.min(prev + 1, shortcuts.length - 1));
+  // Handle step failure - just stay on the same step
+  const handleStepFailure = () => {
+    // No hearts deduction, just stay on the same step
   };
   
-  // Handle previous
-  const handlePrevious = () => {
-    setActiveShortcutIndex((prev) => Math.max(prev - 1, 0));
+  // Handle back to curriculum
+  const handleBackToCurriculum = () => {
+    navigate('/curriculum');
   };
   
-  // Handle hint
-  const handleHint = () => {
-    console.log('Hint requested for shortcut:', currentShortcut?.id);
+  // Render step content based on step type
+  const renderStepContent = (step: LessonStep, index: number) => {
+    switch (step.type) {
+      case LessonStepType.CODE:
+        return (
+          <CodeExercise
+            instructions={step.instructions || ''}
+            initialCode={step.initialCode || ''}
+            expectedOutput={step.expectedOutput || ''}
+            onSuccess={() => handleStepComplete(index)}
+            onFailure={handleStepFailure}
+          />
+        );
+      case LessonStepType.SHORTCUT:
+        return (
+          <ShortcutExercise
+            instructions={step.instructions || ''}
+            shortcut={step.shortcut || { windows: '', mac: '' }}
+            onSuccess={() => handleStepComplete(index)}
+            onFailure={handleStepFailure}
+          />
+        );
+      case LessonStepType.QUIZ:
+        return (
+          <QuizExercise
+            question={step.question || ''}
+            options={step.options || []}
+            correctAnswer={step.correctAnswer || 0}
+            onSuccess={() => handleStepComplete(index)}
+            onFailure={handleStepFailure}
+          />
+        );
+      default:
+        return <Typography>Unknown step type</Typography>;
+    }
   };
   
-  // Sample code for IDE simulator
-  const sampleCode = `// Sample code for demonstration
-function calculateSum(a, b) {
-  return a + b;
-}
-
-// Calculate the sum of two numbers
-const num1 = 5;
-const num2 = 10;
-const sum = calculateSum(num1, num2);
-
-console.log(\`The sum of \${num1} and \${num2} is \${sum}\`);
-
-// More code below
-function multiply(a, b) {
-  return a * b;
-}
-
-const product = multiply(num1, num2);
-console.log(\`The product of \${num1} and \${num2} is \${product}\`);
-`;
-
-  // Create sample files for IDE simulator
-  const sampleFiles = [
-    {
-      name: 'index.js',
-      language: 'javascript' as const,
-      content: sampleCode,
-    },
-    {
-      name: 'styles.css',
-      language: 'css' as const,
-      content: `/* Sample CSS */
-body {
-  font-family: Arial, sans-serif;
-  margin: 0;
-  padding: 0;
-  background-color: #f5f5f5;
-}
-
-.container {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 20px;
-}`,
-    },
-  ];
+  // Get step icon based on step type
+  const getStepIcon = (type: LessonStepType) => {
+    switch (type) {
+      case LessonStepType.CODE:
+        return <CodeIcon />;
+      case LessonStepType.SHORTCUT:
+        return <KeyboardIcon />;
+      case LessonStepType.QUIZ:
+        return <QuizIcon />;
+      default:
+        return null;
+    }
+  };
   
-  // If lesson not found, show error
-  if (!lesson) {
+  if (loading) {
     return (
-      <Container maxWidth="md" sx={{ py: 4 }}>
-        <Paper sx={{ p: 3, textAlign: 'center' }}>
-          <Typography variant="h5" color="error" gutterBottom>
-            Lesson Not Found
-          </Typography>
-          <Typography variant="body1" paragraph>
-            The requested lesson could not be found.
-          </Typography>
-          <Button
-            variant="contained"
-            onClick={() => navigate('/curriculum')}
-          >
-            Back to Curriculum
-          </Button>
-        </Paper>
-      </Container>
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+        <CircularProgress />
+      </Box>
     );
   }
   
+  if (error || !lesson) {
+    return (
+      <Box sx={{ p: 3 }}>
+        <Alert severity="error">{error || 'Lesson not found'}</Alert>
+        <Button
+          startIcon={<ArrowBackIcon />}
+          onClick={handleBackToCurriculum}
+          sx={{ mt: 2 }}
+        >
+          Back to Curriculum
+        </Button>
+      </Box>
+    );
+  }
+  
+  const allStepsCompleted = lesson.steps.every((_, index) => completed[index]);
+  
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
-      {/* Lesson header */}
-      <Paper sx={{ p: 3, mb: 4 }}>
-        <Typography variant="h4" gutterBottom>
+      <Box sx={{ mb: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <Button startIcon={<ArrowBackIcon />} onClick={handleBackToCurriculum}>
+          Back to Curriculum
+        </Button>
+      </Box>
+      
+      <Paper elevation={2} sx={{ p: 3, mb: 4 }}>
+        <Typography variant="h4" component="h1" gutterBottom>
           {lesson.title}
         </Typography>
-        <Typography variant="body1" paragraph>
+        
+        <Typography variant="body1" color="text.secondary" paragraph>
           {lesson.description}
         </Typography>
-        <Box sx={{ display: 'flex', alignItems: 'center', mt: 2 }}>
-          <Typography variant="body2" color="text.secondary" sx={{ mr: 2 }}>
-            Difficulty: {lesson.difficulty}
-          </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mr: 2 }}>
-            Estimated Time: {lesson.estimatedTime} minutes
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            XP Reward: {lesson.xpReward} XP
-          </Typography>
-        </Box>
-      </Paper>
-      
-      {/* Progress stepper */}
-      <Stepper activeStep={activeShortcutIndex} alternativeLabel sx={{ mb: 4 }}>
-        {shortcuts.map((shortcut, index) => (
-          <Step key={shortcut.id} completed={completedShortcuts.includes(shortcut.id)}>
-            <StepLabel>{`Shortcut ${index + 1}`}</StepLabel>
-          </Step>
-        ))}
-      </Stepper>
-      
-      {/* Main content */}
-      <Grid container spacing={4}>
-        {/* Shortcut challenge */}
-        <Grid item xs={12} md={6}>
-          {currentShortcut && (
-            <ShortcutChallenge
-              key={`shortcut-${currentShortcut.id}-${activeShortcutIndex}`}
-              shortcut={currentShortcut.shortcutWindows}
-              shortcutMac={currentShortcut.shortcutMac}
-              shortcutLinux={currentShortcut.shortcutLinux}
-              description={currentShortcut.name}
-              context={currentShortcut.context}
-              application={trackId}
-              onSuccess={handleShortcutSuccess}
-              onSkip={handleSkip}
-              onHint={handleHint}
-              showKeyboard={true}
-            />
-          )}
-          
-          {/* Navigation buttons */}
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 2 }}>
-            <Button
-              variant="outlined"
-              startIcon={<PrevIcon />}
-              onClick={handlePrevious}
-              disabled={activeShortcutIndex === 0}
-            >
-              Previous
-            </Button>
-            
-            <Button
-              variant="outlined"
-              endIcon={<NextIcon />}
-              onClick={handleSkip}
-              disabled={activeShortcutIndex === shortcuts.length - 1}
-            >
-              Skip
-            </Button>
-          </Box>
-          
-          {/* Progress info */}
-          <Box sx={{ mt: 2, textAlign: 'center' }}>
-            <Typography variant="body2" color="text.secondary">
-              {`Shortcut ${activeShortcutIndex + 1} of ${shortcuts.length}`}
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              {`Completed: ${completedShortcuts.length} of ${shortcuts.length}`}
-            </Typography>
-          </Box>
-        </Grid>
         
-        {/* IDE Simulator */}
-        <Grid item xs={12} md={6}>
-          <Typography variant="h6" gutterBottom>
-            IDE Preview
-          </Typography>
-          
-          <IDESimulator
-            application={trackId}
-            files={sampleFiles}
-            activeFile="index.js"
-            highlightLines={[3, 4]}
-            showSidebar={true}
-            showStatusBar={true}
-            showTabs={true}
-            height="500px"
-          />
-          
-          <Typography variant="body2" sx={{ mt: 2, fontStyle: 'italic' }}>
-            This is a simulated IDE environment to help you visualize where the shortcuts would be used.
-            The actual effect of pressing the shortcut is not shown in this preview.
-          </Typography>
-        </Grid>
-      </Grid>
-      
-      {/* Shortcut description card */}
-      {currentShortcut && (
-        <Card sx={{ mt: 4 }}>
-          <CardContent>
-            <Typography variant="h6" gutterBottom>
-              About this Shortcut
-            </Typography>
-            
-            <Grid container spacing={3}>
-              <Grid item xs={12} md={6}>
-                <Typography variant="body2" color="text.secondary" gutterBottom>
-                  Description
-                </Typography>
-                <Typography variant="body1" paragraph>
-                  {currentShortcut.description}
-                </Typography>
-                
-                <Typography variant="body2" color="text.secondary" gutterBottom>
-                  When to use
-                </Typography>
-                <Typography variant="body1">
-                  {currentShortcut.context}
-                </Typography>
-              </Grid>
-              
-              <Grid item xs={12} md={6}>
-                <Typography variant="body2" color="text.secondary" gutterBottom>
-                  Shortcut Keys
-                </Typography>
-                <Box sx={{ mb: 2 }}>
-                  <Typography variant="body1" fontWeight="bold">
-                    Windows: {currentShortcut.shortcutWindows}
-                  </Typography>
-                  {currentShortcut.shortcutMac && (
-                    <Typography variant="body1" fontWeight="bold">
-                      Mac: {currentShortcut.shortcutMac}
-                    </Typography>
-                  )}
-                </Box>
-                
-                <Typography variant="body2" color="text.secondary" gutterBottom>
-                  Category
-                </Typography>
-                <Typography variant="body1" sx={{ mb: 2 }}>
-                  {currentShortcut.category}
-                </Typography>
-                
-                <Typography variant="body2" color="text.secondary" gutterBottom>
-                  Difficulty
-                </Typography>
-                <Typography variant="body1">
-                  {currentShortcut.difficulty}
-                </Typography>
-              </Grid>
-            </Grid>
-          </CardContent>
-        </Card>
-      )}
-      
-      {/* Success overlay */}
-      {showSuccess && (
-        <Box
-          sx={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: 'rgba(0, 0, 0, 0.7)',
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            zIndex: 9999,
-          }}
-        >
-          <Paper
-            elevation={5}
-            sx={{
-              p: 4,
-              textAlign: 'center',
-              maxWidth: '400px',
-              backgroundColor: theme.palette.success.light,
-            }}
-          >
-            <TrophyIcon sx={{ fontSize: 60, color: theme.palette.success.main, mb: 2 }} />
-            <Typography variant="h4" gutterBottom>
+        <Divider sx={{ my: 2 }} />
+        
+        {allStepsCompleted ? (
+          <Box sx={{ textAlign: 'center', py: 4 }}>
+            <CheckCircleIcon color="success" sx={{ fontSize: 60, mb: 2 }} />
+            <Typography variant="h5" gutterBottom>
               Lesson Completed!
             </Typography>
             <Typography variant="body1" paragraph>
-              Congratulations! You've completed all shortcuts in this lesson.
+              Great job! You've completed all steps in this lesson.
             </Typography>
-            <Typography variant="h6" sx={{ mb: 2 }}>
-              +{lesson.xpReward} XP
+            <Button
+              variant="contained"
+              color="primary"
+              onClick={handleBackToCurriculum}
+              sx={{ mt: 2 }}
+            >
+              Back to Curriculum
+            </Button>
+          </Box>
+        ) : (
+          <Stepper activeStep={activeStep} orientation="vertical">
+            {lesson.steps.map((step, index) => (
+              <Step key={index} completed={completed[index]}>
+                <StepLabel
+                  optional={
+                    <Typography variant="caption">
+                      {step.type === LessonStepType.CODE
+                        ? 'Code Exercise'
+                        : step.type === LessonStepType.SHORTCUT
+                        ? 'Shortcut Practice'
+                        : 'Quiz Question'}
+                    </Typography>
+                  }
+                  icon={getStepIcon(step.type)}
+                >
+                  {step.title}
+                </StepLabel>
+                <StepContent>
+                  <Box sx={{ mb: 2 }}>
+                    <Typography variant="body1" paragraph>
+                      {step.description}
+                    </Typography>
+                    {renderStepContent(step, index)}
+                  </Box>
+                </StepContent>
+              </Step>
+            ))}
+          </Stepper>
+        )}
+      </Paper>
+      
+      {lesson.tips && lesson.tips.length > 0 && (
+        <Grid container spacing={3}>
+          <Grid item xs={12}>
+            <Typography variant="h6" gutterBottom>
+              Helpful Tips
             </Typography>
-            <Typography variant="body2">
-              Returning to curriculum...
-            </Typography>
-          </Paper>
-        </Box>
+          </Grid>
+          {lesson.tips.map((tip, index) => (
+            <Grid item xs={12} md={6} key={index}>
+              <Card>
+                <CardContent>
+                  <Typography variant="subtitle1" gutterBottom>
+                    {tip.title}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    {tip.content}
+                  </Typography>
+                </CardContent>
+                {tip.link && (
+                  <CardActions>
+                    <Button size="small" href={tip.link} target="_blank" rel="noopener">
+                      Learn More
+                    </Button>
+                  </CardActions>
+                )}
+              </Card>
+            </Grid>
+          ))}
+        </Grid>
       )}
+      
+      <Snackbar
+        open={showSuccess}
+        autoHideDuration={6000}
+        onClose={() => setShowSuccess(false)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert onClose={() => setShowSuccess(false)} severity="success" sx={{ width: '100%' }}>
+          Congratulations! You've completed this lesson.
+        </Alert>
+      </Snackbar>
     </Container>
   );
 };

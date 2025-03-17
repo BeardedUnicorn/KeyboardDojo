@@ -4,7 +4,6 @@ import Navigation from './Navigation';
 import Footer from './Footer';
 import { isDesktop } from '../../../shared/src/utils';
 import AppTopBar from './AppTopBar';
-import HeartsDisplay from './HeartsDisplay';
 import UserInfo from './UserInfo';
 import { useThemeContext } from '../contexts/ThemeContext';
 import SettingsPanel from './settings-panel';
@@ -14,7 +13,7 @@ interface MainLayoutProps {
 }
 
 const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
-  const { theme } = useThemeContext();
+  const { mode, toggleTheme } = useThemeContext();
   const [settingsOpen, setSettingsOpen] = useState(false);
   
   const handleOpenSettings = () => {
@@ -57,13 +56,13 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
             flexGrow: 1,
             p: 3,
             overflow: 'auto',
-            transition: theme.transitions.create('margin', {
+            transition: (theme) => theme.transitions.create('margin', {
               easing: theme.transitions.easing.sharp,
               duration: theme.transitions.duration.leavingScreen,
             }),
           }}
         >
-          {/* Header with user info and hearts display */}
+          {/* Header with user info */}
           <Box 
             sx={{ 
               display: 'flex', 
@@ -77,7 +76,6 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
             </Box>
             
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-              <HeartsDisplay size="small" />
               <UserInfo />
             </Box>
           </Box>

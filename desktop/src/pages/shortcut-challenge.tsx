@@ -21,8 +21,6 @@ import {
   EmojiEvents as TrophyIcon
 } from '@mui/icons-material';
 import { ShortcutChallenge, IDESimulator } from '../components';
-import HeartsDisplay from '../components/HeartsDisplay';
-import { useHearts } from '../contexts/HeartsContext';
 
 // Sample code for IDE simulator
 const sampleJavaScriptCode = `// Sample JavaScript code
@@ -46,124 +44,109 @@ const product = multiply(num1, num2);
 console.log(\`The product of \${num1} and \${num2} is \${product}\`);
 `;
 
-// Sample challenges for VS Code
+// Sample VS Code challenges
 const vsCodeChallenges = [
   {
-    id: 'vscode-1',
-    shortcut: 'Ctrl+S',
-    description: 'Save the current file',
-    context: 'You\'ve made changes to your code and want to save them.',
-    application: 'vscode' as const,
+    id: 'vscode-challenge-1',
+    title: 'Navigate to File',
+    description: 'Use the keyboard shortcut to open the "Go to File" dialog.',
+    shortcut: {
+      windows: 'Ctrl+P',
+      mac: 'Cmd+P',
+    },
+    hint: 'This shortcut allows you to quickly open any file in your project.',
   },
   {
-    id: 'vscode-2',
-    shortcut: 'Ctrl+F',
-    description: 'Find text in the current file',
-    context: 'You need to search for a specific variable name in your code.',
-    application: 'vscode' as const,
+    id: 'vscode-challenge-2',
+    title: 'Quick Open Symbol',
+    description: 'Use the keyboard shortcut to open the "Go to Symbol" dialog.',
+    shortcut: {
+      windows: 'Ctrl+Shift+O',
+      mac: 'Cmd+Shift+O',
+    },
+    hint: 'This shortcut allows you to navigate to any symbol (function, class, etc.) in the current file.',
   },
   {
-    id: 'vscode-3',
-    shortcut: 'Ctrl+//',
-    description: 'Toggle line comment',
-    context: 'You want to comment out a line of code.',
-    application: 'vscode' as const,
-  },
-  {
-    id: 'vscode-4',
-    shortcut: 'Ctrl+D',
-    description: 'Select the next occurrence of the current selection',
-    context: 'You want to select all instances of a variable to rename it.',
-    application: 'vscode' as const,
-  },
-  {
-    id: 'vscode-5',
-    shortcut: 'Alt+Up',
-    description: 'Move line up',
-    context: 'You want to move a line of code above the previous line.',
-    application: 'vscode' as const,
+    id: 'vscode-challenge-3',
+    title: 'Toggle Terminal',
+    description: 'Use the keyboard shortcut to toggle the integrated terminal.',
+    shortcut: {
+      windows: 'Ctrl+`',
+      mac: 'Cmd+`',
+    },
+    hint: 'The backtick key (`) is typically located above the Tab key.',
   },
 ];
 
-// Sample challenges for IntelliJ
+// Sample IntelliJ challenges
 const intellijChallenges = [
   {
-    id: 'intellij-1',
-    shortcut: 'Ctrl+S',
-    description: 'Save all files',
-    context: 'You\'ve made changes to multiple files and want to save them all.',
-    application: 'intellij' as const,
+    id: 'intellij-challenge-1',
+    title: 'Search Everywhere',
+    description: 'Use the keyboard shortcut to open the "Search Everywhere" dialog.',
+    shortcut: {
+      windows: 'Shift+Shift (double tap)',
+      mac: 'Shift+Shift (double tap)',
+    },
+    hint: 'Double-tapping the Shift key opens a powerful search dialog.',
   },
   {
-    id: 'intellij-2',
-    shortcut: 'Ctrl+Shift+F',
-    description: 'Find text in all project files',
-    context: 'You need to search for a method name across the entire project.',
-    application: 'intellij' as const,
+    id: 'intellij-challenge-2',
+    title: 'Recent Files',
+    description: 'Use the keyboard shortcut to show the list of recently opened files.',
+    shortcut: {
+      windows: 'Ctrl+E',
+      mac: 'Cmd+E',
+    },
+    hint: 'This shortcut shows a popup with your most recently accessed files.',
   },
   {
-    id: 'intellij-3',
-    shortcut: 'Ctrl+/',
-    description: 'Comment or uncomment the current line',
-    context: 'You want to temporarily disable a line of code.',
-    application: 'intellij' as const,
-  },
-  {
-    id: 'intellij-4',
-    shortcut: 'Alt+F7',
-    description: 'Find all usages of a symbol',
-    context: 'You want to see everywhere a method is called in your project.',
-    application: 'intellij' as const,
-  },
-  {
-    id: 'intellij-5',
-    shortcut: 'Ctrl+Alt+L',
-    description: 'Reformat code',
-    context: 'You want to fix the indentation and formatting of your code.',
-    application: 'intellij' as const,
+    id: 'intellij-challenge-3',
+    title: 'Generate Code',
+    description: 'Use the keyboard shortcut to open the code generation menu.',
+    shortcut: {
+      windows: 'Alt+Insert',
+      mac: 'Cmd+N',
+    },
+    hint: 'This shortcut opens a menu for generating common code constructs.',
   },
 ];
 
-// Sample challenges for Cursor
+// Sample Cursor challenges
 const cursorChallenges = [
   {
-    id: 'cursor-1',
-    shortcut: 'Ctrl+K',
-    description: 'Open command palette',
-    context: 'You want to access Cursor\'s AI commands quickly.',
-    application: 'cursor' as const,
+    id: 'cursor-challenge-1',
+    title: 'Open AI Chat',
+    description: 'Use the keyboard shortcut to open the AI chat panel.',
+    shortcut: {
+      windows: 'Ctrl+I',
+      mac: 'Cmd+I',
+    },
+    hint: 'This shortcut opens the AI assistant chat panel.',
   },
   {
-    id: 'cursor-2',
-    shortcut: 'Ctrl+Shift+I',
-    description: 'Generate code with AI',
-    context: 'You want to use AI to help you implement a function.',
-    application: 'cursor' as const,
+    id: 'cursor-challenge-2',
+    title: 'Generate Code with AI',
+    description: 'Use the keyboard shortcut to generate code with AI.',
+    shortcut: {
+      windows: 'Ctrl+K',
+      mac: 'Cmd+K',
+    },
+    hint: 'This shortcut triggers AI code generation based on your comments.',
   },
   {
-    id: 'cursor-3',
-    shortcut: 'Ctrl+Shift+L',
-    description: 'Explain selected code with AI',
-    context: 'You want to understand what a complex piece of code does.',
-    application: 'cursor' as const,
-  },
-  {
-    id: 'cursor-4',
-    shortcut: 'Ctrl+Shift+D',
-    description: 'Debug code with AI',
-    context: 'Your code has a bug and you want AI to help find it.',
-    application: 'cursor' as const,
-  },
-  {
-    id: 'cursor-5',
-    shortcut: 'Ctrl+Shift+R',
-    description: 'Refactor code with AI',
-    context: 'You want to improve your code\'s structure and readability.',
-    application: 'cursor' as const,
+    id: 'cursor-challenge-3',
+    title: 'Explain Code with AI',
+    description: 'Use the keyboard shortcut to explain selected code with AI.',
+    shortcut: {
+      windows: 'Ctrl+Shift+E',
+      mac: 'Cmd+Shift+E',
+    },
+    hint: 'Select some code first, then use this shortcut to get an explanation.',
   },
 ];
 
-// Combined challenges
+// All challenges by IDE
 const allChallenges = {
   vscode: vsCodeChallenges,
   intellij: intellijChallenges,
@@ -182,15 +165,6 @@ const ShortcutChallengePage: React.FC = () => {
   const [timeElapsed, setTimeElapsed] = useState(0);
   const [startTime, setStartTime] = useState<number | null>(null);
   const [timerInterval, setTimerInterval] = useState<NodeJS.Timeout | null>(null);
-  
-  // Hearts system from context
-  const { 
-    currentHearts, 
-    useHeart, 
-    isLoading: heartsLoading 
-  } = useHearts();
-  
-  const [showNoHeartsAlert, setShowNoHeartsAlert] = useState(false);
   
   // Get the current challenges based on selected IDE
   const currentChallenges = allChallenges[selectedIDE];
@@ -222,31 +196,18 @@ const ShortcutChallengePage: React.FC = () => {
   };
   
   const handleFailure = () => {
-    // Use a heart when failing a challenge
-    const heartUsed = useHeart();
-    
-    // Show alert if out of hearts
-    if (!heartUsed || currentHearts <= 0) {
-      setShowNoHeartsAlert(true);
-    }
+    // Just show feedback, no hearts penalty
+    console.log('Challenge failed');
   };
   
   const handleSkip = () => {
-    // Use a heart when skipping a challenge
-    const heartUsed = useHeart();
-    
-    // If no hearts left, show alert
-    if (!heartUsed) {
-      setShowNoHeartsAlert(true);
-      return;
-    }
-    
-    // Otherwise proceed to next challenge
+    // Skip to next challenge without penalty
     handleNext();
   };
   
   // Handle hint
   const handleHint = () => {
+    setShowHint(true);
     console.log('Hint requested for challenge:', currentChallenge.id);
   };
   
@@ -288,12 +249,6 @@ const ShortcutChallengePage: React.FC = () => {
   };
   
   const startChallenge = () => {
-    // Check if user has hearts
-    if (currentHearts <= 0) {
-      setShowNoHeartsAlert(true);
-      return;
-    }
-    
     // Start timer
     const now = Date.now();
     setStartTime(now);
@@ -305,64 +260,20 @@ const ShortcutChallengePage: React.FC = () => {
     setTimerInterval(interval);
   };
   
-  // Create sample files for IDE simulator
-  const sampleFiles = [
-    {
-      name: 'index.js',
-      language: 'javascript' as const,
-      content: sampleJavaScriptCode,
-    },
-    {
-      name: 'styles.css',
-      language: 'css' as const,
-      content: `/* Sample CSS */
-body {
-  font-family: Arial, sans-serif;
-  margin: 0;
-  padding: 0;
-  background-color: #f5f5f5;
-}
-
-.container {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 20px;
-}
-
-/* More styles below */
-.button {
-  background-color: #4CAF50;
-  color: white;
-  padding: 10px 15px;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-}
-
-.button:hover {
-  background-color: #45a049;
-}`,
-    },
-    {
-      name: 'README.md',
-      language: 'markdown' as const,
-      content: `# Sample Project
-
-This is a sample project for the IDE simulator.
-
-## Features
-
-- Feature 1
-- Feature 2
-- Feature 3
-
-## Getting Started
-
-1. Clone the repository
-2. Install dependencies
-3. Run the project`,
-    },
-  ];
+  // Update current challenge when active step changes
+  useEffect(() => {
+    setCurrentChallenge(currentChallenges[activeStep]);
+    setShowHint(false);
+  }, [activeStep, currentChallenges]);
+  
+  // Clean up timer on unmount
+  useEffect(() => {
+    return () => {
+      if (timerInterval) {
+        clearInterval(timerInterval);
+      }
+    };
+  }, [timerInterval]);
   
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
@@ -371,9 +282,6 @@ This is a sample project for the IDE simulator.
           <Typography variant="h4" component="h1" gutterBottom>
             Shortcut Challenge
           </Typography>
-          
-          {/* Hearts display */}
-          <HeartsDisplay showTimer={true} size="medium" />
         </Box>
         
         <Typography variant="body1" paragraph>
@@ -432,7 +340,7 @@ This is a sample project for the IDE simulator.
         {/* Challenge content */}
         {!completed ? (
           <Box>
-            {!startTime && !heartsLoading ? (
+            {!startTime ? (
               <Box sx={{ textAlign: 'center', my: 4 }}>
                 <Typography variant="h6" gutterBottom>
                   Ready to start the challenge?
@@ -442,32 +350,79 @@ This is a sample project for the IDE simulator.
                   color="primary" 
                   size="large"
                   onClick={startChallenge}
-                  disabled={currentHearts <= 0}
                   sx={{ mt: 2 }}
                 >
                   Start Challenge
                 </Button>
-                {currentHearts <= 0 && (
-                  <Typography variant="body2" color="error" sx={{ mt: 2 }}>
-                    You don't have any lives left. Wait for them to regenerate or earn more.
-                  </Typography>
-                )}
               </Box>
             ) : (
-              <>
-                <ShortcutChallenge
-                  shortcut={currentChallenge.shortcut}
-                  description={currentChallenge.description}
-                  context={currentChallenge.context}
-                  application={currentChallenge.application}
-                  onSuccess={handleSuccess}
-                  onSkip={handleSkip}
-                  onHint={handleHint}
-                  showKeyboard={true}
-                />
+              <Box>
+                {/* Challenge progress */}
+                <Stepper activeStep={activeStep} sx={{ mb: 3 }}>
+                  {currentChallenges.map((challenge, index) => (
+                    <Step key={challenge.id} completed={index < activeStep}>
+                      <StepLabel>{`Challenge ${index + 1}`}</StepLabel>
+                    </Step>
+                  ))}
+                </Stepper>
+                
+                {/* Current challenge */}
+                <Box sx={{ mb: 3 }}>
+                  <Typography variant="h5" gutterBottom>
+                    {currentChallenge.title}
+                  </Typography>
+                  <Typography variant="body1" paragraph>
+                    {currentChallenge.description}
+                  </Typography>
+                  
+                  {showHint && (
+                    <Alert severity="info" sx={{ mb: 2 }}>
+                      <Typography variant="body2">
+                        <strong>Hint:</strong> {currentChallenge.hint}
+                      </Typography>
+                    </Alert>
+                  )}
+                  
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
+                    <Typography variant="body2" color="text.secondary">
+                      Time: {timeElapsed} seconds
+                    </Typography>
+                    
+                    <Button 
+                      variant="outlined" 
+                      size="small"
+                      onClick={handleHint}
+                      disabled={showHint}
+                    >
+                      Show Hint
+                    </Button>
+                  </Box>
+                </Box>
+                
+                {/* IDE Simulator */}
+                <Paper 
+                  elevation={2} 
+                  sx={{ 
+                    p: 2, 
+                    mb: 3, 
+                    backgroundColor: theme.palette.background.default,
+                    border: '1px solid',
+                    borderColor: theme.palette.divider,
+                  }}
+                >
+                  <Typography variant="subtitle2" gutterBottom>
+                    IDE Simulator
+                  </Typography>
+                  <IDESimulator 
+                    code={sampleJavaScriptCode}
+                    targetShortcut={currentChallenge.shortcut}
+                    onSuccess={handleSuccess}
+                    onFailure={handleFailure}
+                  />
+                </Paper>
                 
                 {/* Navigation buttons */}
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 2 }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 4 }}>
                   <Button
                     variant="outlined"
                     startIcon={<PrevIcon />}
@@ -479,14 +434,13 @@ This is a sample project for the IDE simulator.
                   
                   <Button
                     variant="outlined"
-                    startIcon={<ResetIcon />}
-                    onClick={handleReset}
+                    onClick={handleSkip}
                   >
-                    Reset
+                    Skip Challenge
                   </Button>
                   
                   <Button
-                    variant="outlined"
+                    variant="contained"
                     endIcon={<NextIcon />}
                     onClick={handleNext}
                     disabled={activeStep === currentChallenges.length - 1}
@@ -494,17 +448,7 @@ This is a sample project for the IDE simulator.
                     Next
                   </Button>
                 </Box>
-                
-                {/* Progress info */}
-                <Box sx={{ mt: 2, textAlign: 'center' }}>
-                  <Typography variant="body2" color="text.secondary">
-                    {`Challenge ${activeStep + 1} of ${currentChallenges.length}`}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    {`Completed: ${completed ? 'Yes' : 'No'}`}
-                  </Typography>
-                </Box>
-              </>
+              </Box>
             )}
           </Box>
         ) : (
@@ -532,22 +476,6 @@ This is a sample project for the IDE simulator.
           </Button>
         </Box>
       </Paper>
-      
-      {/* No hearts alert */}
-      <Snackbar 
-        open={showNoHeartsAlert} 
-        autoHideDuration={6000} 
-        onClose={() => setShowNoHeartsAlert(false)}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-      >
-        <Alert 
-          onClose={() => setShowNoHeartsAlert(false)} 
-          severity="warning" 
-          variant="filled"
-        >
-          You don't have any lives left! Wait for them to regenerate or earn more.
-        </Alert>
-      </Snackbar>
     </Container>
   );
 };

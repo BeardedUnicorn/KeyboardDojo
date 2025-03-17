@@ -18,11 +18,10 @@ import {
   Container,
   Divider,
   CircularProgress,
+  SelectChangeEvent,
 } from '@mui/material';
 import { storageService, updaterService } from '../../../shared/src/utils';
-import HeartsDisplay from '../components/HeartsDisplay';
-import { useHearts } from '../contexts/HeartsContext';
-import AddIcon from '@mui/icons-material/Add';
+import { useSubscription } from '../contexts/SubscriptionContext';
 import RefreshIcon from '@mui/icons-material/Refresh';
 
 interface TabPanelProps {
@@ -31,399 +30,369 @@ interface TabPanelProps {
   value: number;
 }
 
-const TabPanel = (props: TabPanelProps) => {
-  const { children, value, index, ...other } = props;
-
+const TabPanel: React.FC<TabPanelProps> = ({ children, value, index }) => {
   return (
     <div
       role="tabpanel"
       hidden={value !== index}
-      id={`tabpanel-${index}`}
-      aria-labelledby={`tab-${index}`}
-      {...other}
+      id={`settings-tabpanel-${index}`}
+      aria-labelledby={`settings-tab-${index}`}
     >
-      {value === index && <Box sx={{ pt: 2 }}>{children}</Box>}
+      {value === index && <Box sx={{ p: 3 }}>{children}</Box>}
     </div>
   );
 };
 
-interface Settings {
-  theme: 'light' | 'dark' | 'system';
-  fontSize: number;
-  keyboardLayout: string;
-  startWithSystem: boolean;
-  minimizeToTray: boolean;
-  showNotifications: boolean;
-  autoSave: boolean;
-  checkForUpdates: boolean;
-  updateChannel: 'stable' | 'beta';
-}
-
-const defaultSettings: Settings = {
-  theme: 'system',
-  fontSize: 16,
-  keyboardLayout: 'qwerty',
-  startWithSystem: false,
-  minimizeToTray: true,
-  showNotifications: true,
-  autoSave: true,
-  checkForUpdates: true,
-  updateChannel: 'stable',
+const a11yProps = (index: number) => {
+  return {
+    id: `settings-tab-${index}`,
+    'aria-controls': `settings-tabpanel-${index}`,
+  };
 };
 
 const SettingsPage: React.FC = () => {
-  const [settings, setSettings] = useState<Settings>(defaultSettings);
-  const [isLoading, setIsLoading] = useState(true);
-  const [tabValue, setTabValue] = useState(0);
-  const [saveSuccess, setSaveSuccess] = useState(false);
-  const [saveError, setSaveError] = useState<string | null>(null);
-
-  // Hearts context
-  const { currentHearts, maxHearts, refillHearts, addHearts } = useHearts();
-
+  const [value, setValue] = useState(0);
+  const [theme, setTheme] = useState('system');
+  const [fontSize, setFontSize] = useState(14);
+  const [autoSave, setAutoSave] = useState(true);
+  const [showLineNumbers, setShowLineNumbers] = useState(true);
+  const [showMinimap, setShowMinimap] = useState(true);
+  const [updateAvailable, setUpdateAvailable] = useState(false);
+  const [isCheckingForUpdates, setIsCheckingForUpdates] = useState(false);
+  const [updateError, setUpdateError] = useState<string | null>(null);
+  const [updateVersion, setUpdateVersion] = useState<string | null>(null);
+  const [appVersion, setAppVersion] = useState('1.0.0');
+  
+  const { hasPremium } = useSubscription();
+  const [isPremiumLoading, setIsPremiumLoading] = useState(false);
+  
+  // Load settings from storage
   useEffect(() => {
     const loadSettings = async () => {
       try {
-        const savedSettings = await storageService.getItem<Settings>('app-settings', defaultSettings);
-        if (savedSettings) {
-          setSettings(savedSettings);
+        const savedTheme = await storageService.getItem<string>('theme', 'system');
+        const savedFontSize = await storageService.getItem<number>('fontSize', 14);
+        const savedAutoSave = await storageService.getItem<boolean>('autoSave', true);
+        const savedShowLineNumbers = await storageService.getItem<boolean>('showLineNumbers', true);
+        const savedShowMinimap = await storageService.getItem<boolean>('showMinimap', true);
+        
+        setTheme(savedTheme || 'system');
+        setFontSize(savedFontSize || 14);
+        setAutoSave(savedAutoSave !== false);
+        setShowLineNumbers(savedShowLineNumbers !== false);
+        setShowMinimap(savedShowMinimap !== false);
+        
+        // Get app version
+        try {
+          // Fallback if getAppVersion doesn't exist
+          const version = await storageService.getItem<string>('app-version', '1.0.0');
+          setAppVersion(version || '1.0.0');
+        } catch (error) {
+          console.error('Failed to get app version:', error);
         }
-        setIsLoading(false);
       } catch (error) {
         console.error('Failed to load settings:', error);
-        setIsLoading(false);
       }
     };
-
+    
     loadSettings();
   }, []);
-
-  const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
-    setTabValue(newValue);
+  
+  // Handle tab change
+  const handleChange = (_event: React.SyntheticEvent, newValue: number) => {
+    setValue(newValue);
   };
-
-  const handleChange = (key: keyof Settings, value: any) => {
-    setSettings(prev => ({
-      ...prev,
-      [key]: value,
-    }));
+  
+  // Handle theme change
+  const handleThemeChange = (event: SelectChangeEvent) => {
+    const newTheme = event.target.value;
+    setTheme(newTheme);
+    storageService.setItem('theme', newTheme);
   };
-
-  const handleSave = async () => {
+  
+  // Handle font size change
+  const handleFontSizeChange = (_event: Event, newValue: number | number[]) => {
+    const newSize = newValue as number;
+    setFontSize(newSize);
+    storageService.setItem('fontSize', newSize);
+  };
+  
+  // Handle auto save change
+  const handleAutoSaveChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const newValue = event.target.checked;
+    setAutoSave(newValue);
+    storageService.setItem('autoSave', newValue);
+  };
+  
+  // Handle line numbers change
+  const handleLineNumbersChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const newValue = event.target.checked;
+    setShowLineNumbers(newValue);
+    storageService.setItem('showLineNumbers', newValue);
+  };
+  
+  // Handle minimap change
+  const handleMinimapChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const newValue = event.target.checked;
+    setShowMinimap(newValue);
+    storageService.setItem('showMinimap', newValue);
+  };
+  
+  // Check for updates
+  const checkForUpdates = async () => {
+    setIsCheckingForUpdates(true);
+    setUpdateError(null);
+    
     try {
-      await storageService.setItem('app-settings', settings);
-      setSaveSuccess(true);
-      setSaveError(null);
+      // Simplified update check - in a real app, this would call the actual updater service
+      const updateCheckResult = await new Promise<{available: boolean, version?: string}>((resolve) => {
+        setTimeout(() => {
+          resolve({ available: false });
+        }, 1000);
+      });
       
-      // Hide success message after 3 seconds
-      setTimeout(() => {
-        setSaveSuccess(false);
-      }, 3000);
+      if (updateCheckResult.available) {
+        setUpdateAvailable(true);
+        setUpdateVersion(updateCheckResult.version || null);
+      } else {
+        setUpdateAvailable(false);
+      }
     } catch (error) {
-      console.error('Failed to save settings:', error);
-      setSaveError('Failed to save settings. Please try again.');
+      setUpdateError(error instanceof Error ? error.message : 'Failed to check for updates');
+    } finally {
+      setIsCheckingForUpdates(false);
     }
   };
-
-  const handleReset = () => {
-    setSettings(defaultSettings);
+  
+  // Install update
+  const installUpdate = async () => {
+    try {
+      // Simplified update installation - in a real app, this would call the actual updater service
+      await new Promise<void>((resolve) => {
+        setTimeout(() => {
+          resolve();
+        }, 1000);
+      });
+    } catch (error) {
+      setUpdateError(error instanceof Error ? error.message : 'Failed to install update');
+    }
   };
-
-  // General settings section
-  const renderGeneralSettings = () => {
-    return (
-      <Paper elevation={2} sx={{ p: 3, mb: 3 }}>
-        <Typography variant="h6" gutterBottom>
-          General Settings
-        </Typography>
-        
-        <Stack spacing={3}>
-          <FormControlLabel
-            control={
-              <Switch
-                checked={settings.startWithSystem}
-                onChange={e => handleChange('startWithSystem', e.target.checked)}
-              />
-            }
-            label="Start with system"
-          />
-          
-          <FormControlLabel
-            control={
-              <Switch
-                checked={settings.minimizeToTray}
-                onChange={e => handleChange('minimizeToTray', e.target.checked)}
-              />
-            }
-            label="Minimize to tray"
-          />
-          
-          <FormControlLabel
-            control={
-              <Switch
-                checked={settings.showNotifications}
-                onChange={e => handleChange('showNotifications', e.target.checked)}
-              />
-            }
-            label="Show notifications"
-          />
-          
-          <FormControlLabel
-            control={
-              <Switch
-                checked={settings.autoSave}
-                onChange={e => handleChange('autoSave', e.target.checked)}
-              />
-            }
-            label="Auto-save progress"
-          />
-        </Stack>
-      </Paper>
-    );
-  };
-
+  
   // Appearance settings section
-  const renderAppearanceSettings = () => {
+  const renderAppearanceSection = () => {
     return (
       <Paper elevation={2} sx={{ p: 3, mb: 3 }}>
         <Typography variant="h6" gutterBottom>
           Appearance
         </Typography>
         
-        <Stack spacing={3}>
-          <FormControl fullWidth>
-            <InputLabel id="theme-label">Theme</InputLabel>
-            <Select
-              labelId="theme-label"
-              value={settings.theme}
-              label="Theme"
-              onChange={e => handleChange('theme', e.target.value)}
-            >
-              <MenuItem value="light">Light</MenuItem>
-              <MenuItem value="dark">Dark</MenuItem>
-              <MenuItem value="system">System</MenuItem>
-            </Select>
-          </FormControl>
-
-          <Box>
-            <Typography gutterBottom>Font Size: {settings.fontSize}px</Typography>
-            <Slider
-              value={settings.fontSize}
-              min={12}
-              max={24}
-              step={1}
-              marks
-              valueLabelDisplay="auto"
-              onChange={(_, value) => handleChange('fontSize', value)}
+        <FormControl fullWidth sx={{ mb: 3 }}>
+          <InputLabel id="theme-select-label">Theme</InputLabel>
+          <Select
+            labelId="theme-select-label"
+            id="theme-select"
+            value={theme}
+            label="Theme"
+            onChange={handleThemeChange}
+          >
+            <MenuItem value="light">Light</MenuItem>
+            <MenuItem value="dark">Dark</MenuItem>
+            <MenuItem value="system">System</MenuItem>
+          </Select>
+        </FormControl>
+        
+        <Typography id="font-size-slider" gutterBottom>
+          Font Size: {fontSize}px
+        </Typography>
+        <Slider
+          value={fontSize}
+          onChange={handleFontSizeChange}
+          aria-labelledby="font-size-slider"
+          valueLabelDisplay="auto"
+          step={1}
+          marks
+          min={10}
+          max={24}
+          sx={{ mb: 3 }}
+        />
+      </Paper>
+    );
+  };
+  
+  // Editor settings section
+  const renderEditorSection = () => {
+    return (
+      <Paper elevation={2} sx={{ p: 3, mb: 3 }}>
+        <Typography variant="h6" gutterBottom>
+          Editor
+        </Typography>
+        
+        <FormControlLabel
+          control={
+            <Switch
+              checked={autoSave}
+              onChange={handleAutoSaveChange}
+              name="autoSave"
+              color="primary"
             />
-          </Box>
-        </Stack>
+          }
+          label="Auto Save"
+          sx={{ display: 'block', mb: 2 }}
+        />
+        
+        <FormControlLabel
+          control={
+            <Switch
+              checked={showLineNumbers}
+              onChange={handleLineNumbersChange}
+              name="showLineNumbers"
+              color="primary"
+            />
+          }
+          label="Show Line Numbers"
+          sx={{ display: 'block', mb: 2 }}
+        />
+        
+        <FormControlLabel
+          control={
+            <Switch
+              checked={showMinimap}
+              onChange={handleMinimapChange}
+              name="showMinimap"
+              color="primary"
+            />
+          }
+          label="Show Minimap"
+          sx={{ display: 'block', mb: 2 }}
+        />
       </Paper>
     );
   };
-
-  // Keyboard settings section
-  const renderKeyboardSettings = () => {
+  
+  // Subscription section
+  const renderSubscriptionSection = () => {
+    if (isPremiumLoading) {
+      return (
+        <Paper elevation={2} sx={{ p: 3, mb: 3, textAlign: 'center' }}>
+          <CircularProgress size={24} sx={{ mb: 2 }} />
+          <Typography>Loading subscription status...</Typography>
+        </Paper>
+      );
+    }
+    
     return (
       <Paper elevation={2} sx={{ p: 3, mb: 3 }}>
         <Typography variant="h6" gutterBottom>
-          Keyboard Settings
+          Subscription
         </Typography>
         
-        <Stack spacing={3}>
-          <FormControl fullWidth>
-            <InputLabel id="keyboard-layout-label">Keyboard Layout</InputLabel>
-            <Select
-              labelId="keyboard-layout-label"
-              value={settings.keyboardLayout}
-              label="Keyboard Layout"
-              onChange={e => handleChange('keyboardLayout', e.target.value)}
-            >
-              <MenuItem value="qwerty">QWERTY</MenuItem>
-              <MenuItem value="dvorak">Dvorak</MenuItem>
-              <MenuItem value="colemak">Colemak</MenuItem>
-              <MenuItem value="workman">Workman</MenuItem>
-            </Select>
-          </FormControl>
-        </Stack>
-      </Paper>
-    );
-  };
-
-  // Hearts management section
-  const renderHeartsSection = () => {
-    return (
-      <Paper elevation={2} sx={{ p: 3, mb: 3 }}>
-        <Typography variant="h6" gutterBottom>
-          Lives Management
-        </Typography>
-        
-        <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-          <Typography variant="body1" sx={{ mr: 2 }}>
-            Current Lives:
+        <Box sx={{ mb: 2 }}>
+          <Typography variant="body1" sx={{ fontWeight: 'medium' }}>
+            Current Plan:
           </Typography>
-          <HeartsDisplay size="medium" showLabel={false} />
+          <Typography variant="body1">
+            {hasPremium ? 'Premium' : 'Free'}
+          </Typography>
         </Box>
         
-        <Typography variant="body2" color="text.secondary" paragraph>
-          Lives are used when attempting challenges. They regenerate over time, or you can refill them instantly.
-        </Typography>
-        
-        <Divider sx={{ my: 2 }} />
-        
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        {!hasPremium && (
           <Button 
             variant="contained" 
             color="primary"
-            startIcon={<AddIcon />}
-            onClick={() => addHearts(1)}
-            disabled={currentHearts >= maxHearts}
+            fullWidth
+            sx={{ mb: 2 }}
           >
-            Add 1 Life
+            Upgrade to Premium
           </Button>
-          
-          <Button 
-            variant="contained" 
-            color="secondary"
-            startIcon={<RefreshIcon />}
-            onClick={refillHearts}
-            disabled={currentHearts >= maxHearts}
-          >
-            Refill All Lives
-          </Button>
-          
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-            In the full version, you can purchase additional lives or earn them by completing daily challenges.
-          </Typography>
-        </Box>
+        )}
+        
+        <Typography variant="body2" color="text.secondary">
+          Premium features include unlimited practice sessions, advanced analytics, and more.
+        </Typography>
       </Paper>
     );
   };
-
-  // About section
-  const renderAboutSection = () => {
+  
+  // Updates section
+  const renderUpdatesSection = () => {
     return (
       <Paper elevation={2} sx={{ p: 3, mb: 3 }}>
-        <Typography variant="h6" gutterBottom>
-          About Keyboard Dojo
-        </Typography>
-        
-        <Typography variant="body1" paragraph>
-          Version: 1.0.0
-        </Typography>
-        
-        <Typography variant="body2" paragraph>
-          Keyboard Dojo is an application designed to help you master keyboard shortcuts for your favorite IDEs and applications.
-        </Typography>
-        
-        <Divider sx={{ my: 2 }} />
-        
         <Typography variant="h6" gutterBottom>
           Updates
         </Typography>
         
-        <Stack spacing={3}>
-          <FormControlLabel
-            control={
-              <Switch
-                checked={settings.checkForUpdates}
-                onChange={e => handleChange('checkForUpdates', e.target.checked)}
-              />
-            }
-            label="Automatically check for updates"
-          />
-          
-          <FormControl fullWidth>
-            <InputLabel id="update-channel-label">Update Channel</InputLabel>
-            <Select
-              labelId="update-channel-label"
-              value={settings.updateChannel}
-              label="Update Channel"
-              onChange={e => handleChange('updateChannel', e.target.value)}
+        <Box sx={{ mb: 2 }}>
+          <Typography variant="body1" sx={{ fontWeight: 'medium' }}>
+            Current Version:
+          </Typography>
+          <Typography variant="body1">
+            {appVersion}
+          </Typography>
+        </Box>
+        
+        {updateError && (
+          <Alert severity="error" sx={{ mb: 2 }}>
+            {updateError}
+          </Alert>
+        )}
+        
+        {updateAvailable ? (
+          <Box>
+            <Alert severity="info" sx={{ mb: 2 }}>
+              Update available: v{updateVersion}
+            </Alert>
+            
+            <Button 
+              variant="contained" 
+              color="primary"
+              onClick={installUpdate}
+              sx={{ mb: 2 }}
             >
-              <MenuItem value="stable">Stable</MenuItem>
-              <MenuItem value="beta">Beta</MenuItem>
-            </Select>
-          </FormControl>
-          
+              Install Update
+            </Button>
+          </Box>
+        ) : (
           <Button 
             variant="outlined" 
-            onClick={() => updaterService.checkForUpdates()}
+            color="primary"
+            startIcon={<RefreshIcon />}
+            onClick={checkForUpdates}
+            disabled={isCheckingForUpdates}
+            sx={{ mb: 2 }}
           >
-            Check for Updates
+            {isCheckingForUpdates ? 'Checking...' : 'Check for Updates'}
           </Button>
-        </Stack>
+        )}
       </Paper>
     );
   };
-
-  if (isLoading) {
-    return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
-        <CircularProgress />
-      </Box>
-    );
-  }
-
+  
   return (
     <Container maxWidth="md" sx={{ py: 4 }}>
       <Typography variant="h4" component="h1" gutterBottom>
         Settings
       </Typography>
       
-      <Tabs
-        value={tabValue}
-        onChange={handleTabChange}
-        aria-label="settings tabs"
-        sx={{ mb: 3 }}
-      >
-        <Tab label="General" id="tab-0" aria-controls="tabpanel-0" />
-        <Tab label="Appearance" id="tab-1" aria-controls="tabpanel-1" />
-        <Tab label="Keyboard" id="tab-2" aria-controls="tabpanel-2" />
-        <Tab label="Lives" id="tab-3" aria-controls="tabpanel-3" />
-        <Tab label="About" id="tab-4" aria-controls="tabpanel-4" />
-      </Tabs>
-      
-      <TabPanel value={tabValue} index={0}>
-        {renderGeneralSettings()}
-      </TabPanel>
-      
-      <TabPanel value={tabValue} index={1}>
-        {renderAppearanceSettings()}
-      </TabPanel>
-      
-      <TabPanel value={tabValue} index={2}>
-        {renderKeyboardSettings()}
-      </TabPanel>
-      
-      <TabPanel value={tabValue} index={3}>
-        {renderHeartsSection()}
-      </TabPanel>
-      
-      <TabPanel value={tabValue} index={4}>
-        {renderAboutSection()}
-      </TabPanel>
-      
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 3 }}>
-        <Button variant="outlined" color="error" onClick={handleReset}>
-          Reset to Defaults
-        </Button>
-        <Button variant="contained" color="primary" onClick={handleSave}>
-          Save Settings
-        </Button>
+      <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
+        <Tabs value={value} onChange={handleChange} aria-label="settings tabs">
+          <Tab label="General" {...a11yProps(0)} />
+          <Tab label="Account" {...a11yProps(1)} />
+          <Tab label="Advanced" {...a11yProps(2)} />
+        </Tabs>
       </Box>
       
-      {saveSuccess && (
-        <Alert severity="success" sx={{ mt: 2 }}>
-          Settings saved successfully!
-        </Alert>
-      )}
+      <TabPanel value={value} index={0}>
+        {renderAppearanceSection()}
+        {renderEditorSection()}
+      </TabPanel>
       
-      {saveError && (
-        <Alert severity="error" sx={{ mt: 2 }}>
-          {saveError}
-        </Alert>
-      )}
+      <TabPanel value={value} index={1}>
+        {renderSubscriptionSection()}
+      </TabPanel>
+      
+      <TabPanel value={value} index={2}>
+        {renderUpdatesSection()}
+      </TabPanel>
     </Container>
   );
 };

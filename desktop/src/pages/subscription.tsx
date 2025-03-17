@@ -32,6 +32,54 @@ import { useSubscription } from '../contexts/SubscriptionContext';
 import { SubscriptionTier } from '../services/subscriptionService';
 import { formatDate } from '../utils/dateUtils';
 
+// Mock data for subscription plans
+const mockPlans = [
+  {
+    id: 'free',
+    name: 'Free',
+    price: 0,
+    interval: 'month',
+    features: [
+      'Basic keyboard shortcuts',
+      'Limited lessons',
+      'Progress tracking',
+    ],
+    isPopular: false,
+    tier: SubscriptionTier.FREE
+  },
+  {
+    id: 'premium',
+    name: 'Premium',
+    price: 9.99,
+    interval: 'month',
+    features: [
+      'All keyboard shortcuts',
+      'Unlimited lessons',
+      'Advanced progress tracking',
+      'Custom practice sessions',
+      'No ads',
+    ],
+    isPopular: true,
+    tier: SubscriptionTier.PREMIUM
+  },
+  {
+    id: 'pro',
+    name: 'Pro',
+    price: 19.99,
+    interval: 'month',
+    features: [
+      'Everything in Premium',
+      'Team collaboration',
+      'Analytics dashboard',
+      'Priority support',
+      'Custom shortcuts',
+      'API access',
+    ],
+    isPopular: false,
+    tier: SubscriptionTier.PRO
+  }
+];
+
 interface TabPanelProps {
   children?: React.ReactNode;
   index: number;
@@ -56,17 +104,19 @@ const TabPanel = (props: TabPanelProps) => {
 
 const SubscriptionPage: React.FC = () => {
   const { 
-    isLoading, 
-    state, 
-    plans, 
-    activePlan, 
-    hasPremium, 
-    hasPro, 
-    subscribe, 
-    cancelSubscription,
-    simulateSubscription
+    hasPremium,
+    isPremiumLoading: isLoading
   } = useSubscription();
 
+  // Mock state for the subscription page
+  const [plans] = useState(mockPlans);
+  const [activePlan] = useState({
+    ...mockPlans[0],
+    expiresAt: new Date().toISOString(),
+    paymentMethod: 'Credit Card'
+  });
+  const [hasPro] = useState(false);
+  
   const [tabValue, setTabValue] = useState(0);
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
@@ -91,6 +141,29 @@ const SubscriptionPage: React.FC = () => {
     setError(null);
   };
 
+  // Mock subscription functions
+  const subscribe = async () => {
+    setIsProcessing(true);
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    setIsProcessing(false);
+    setSuccess('Subscription successful!');
+    setCheckoutOpen(false);
+  };
+
+  const cancelSubscription = async () => {
+    setIsProcessing(true);
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    setIsProcessing(false);
+    setSuccess('Subscription cancelled!');
+  };
+
+  const simulateSubscription = async () => {
+    setIsProcessing(true);
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    setIsProcessing(false);
+    setSuccess('Subscription simulated!');
+  };
+
   const handleSubscribe = async () => {
     if (!selectedPlan) return;
     
@@ -98,72 +171,12 @@ const SubscriptionPage: React.FC = () => {
     setError(null);
     
     try {
-      const result = await subscribe(selectedPlan, paymentMethod, autoRenew);
-      
-      if (result) {
-        setSuccess('Subscription successful!');
-        setCheckoutOpen(false);
-        
-        // Clear success message after 3 seconds
-        setTimeout(() => {
-          setSuccess(null);
-        }, 3000);
-      } else {
-        setError('Failed to process subscription. Please try again.');
-      }
-    } catch (error) {
-      setError('An error occurred. Please try again.');
-      console.error('Subscription error:', error);
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
-  const handleCancelSubscription = async () => {
-    setIsProcessing(true);
-    setError(null);
-    
-    try {
-      const result = await cancelSubscription();
-      
-      if (result) {
-        setSuccess('Subscription cancelled successfully.');
-        
-        // Clear success message after 3 seconds
-        setTimeout(() => {
-          setSuccess(null);
-        }, 3000);
-      } else {
-        setError('Failed to cancel subscription. Please try again.');
-      }
-    } catch (error) {
-      setError('An error occurred. Please try again.');
-      console.error('Cancellation error:', error);
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
-  const handleSimulateSubscription = async (tier: SubscriptionTier, interval: 'month' | 'year') => {
-    setIsProcessing(true);
-    setError(null);
-    
-    try {
-      const result = await simulateSubscription(tier, interval);
-      
-      if (result) {
-        setSuccess(`Simulated ${tier} subscription successful!`);
-        
-        // Clear success message after 3 seconds
-        setTimeout(() => {
-          setSuccess(null);
-        }, 3000);
-      } else {
-        setError('Failed to simulate subscription. Please try again.');
-      }
-    } catch (error) {
-      setError('An error occurred. Please try again.');
-      console.error('Simulation error:', error);
+      await subscribe();
+      setSuccess('Successfully subscribed!');
+      setCheckoutOpen(false);
+    } catch (err) {
+      setError('Failed to process subscription. Please try again.');
+      console.error('Subscription error:', err);
     } finally {
       setIsProcessing(false);
     }
@@ -247,7 +260,7 @@ const SubscriptionPage: React.FC = () => {
                     variant="outlined" 
                     color="error" 
                     fullWidth
-                    onClick={handleCancelSubscription}
+                    onClick={cancelSubscription}
                     disabled={isProcessing}
                   >
                     {isProcessing ? <CircularProgress size={24} /> : 'Cancel Subscription'}
@@ -325,28 +338,28 @@ const SubscriptionPage: React.FC = () => {
               Auto-renew
             </Typography>
             <Typography variant="body1" gutterBottom>
-              {state.autoRenew ? 'Enabled' : 'Disabled'}
+              {hasPremium ? 'Enabled' : 'Disabled'}
             </Typography>
           </Grid>
           
-          {state.expiresAt && (
+          {activePlan.expiresAt && (
             <Grid item xs={12} sm={6}>
               <Typography variant="body2" color="text.secondary">
                 Expires
               </Typography>
               <Typography variant="body1" gutterBottom>
-                {formatDate(new Date(state.expiresAt))}
+                {formatDate(new Date(activePlan.expiresAt))}
               </Typography>
             </Grid>
           )}
           
-          {state.paymentMethod && (
+          {activePlan.paymentMethod && (
             <Grid item xs={12} sm={6}>
               <Typography variant="body2" color="text.secondary">
                 Payment Method
               </Typography>
               <Typography variant="body1" gutterBottom>
-                {state.paymentMethod}
+                {activePlan.paymentMethod}
               </Typography>
             </Grid>
           )}
@@ -356,7 +369,7 @@ const SubscriptionPage: React.FC = () => {
           <Button 
             variant="outlined" 
             color="error"
-            onClick={handleCancelSubscription}
+            onClick={cancelSubscription}
             disabled={isProcessing}
           >
             {isProcessing ? <CircularProgress size={24} /> : 'Cancel Subscription'}
@@ -381,7 +394,7 @@ const SubscriptionPage: React.FC = () => {
           <Button 
             variant="contained" 
             color="primary"
-            onClick={() => handleSimulateSubscription(SubscriptionTier.PREMIUM, 'month')}
+            onClick={() => simulateSubscription()}
             disabled={isProcessing}
             startIcon={<FavoriteIcon />}
           >
@@ -391,7 +404,7 @@ const SubscriptionPage: React.FC = () => {
           <Button 
             variant="contained" 
             color="secondary"
-            onClick={() => handleSimulateSubscription(SubscriptionTier.PRO, 'month')}
+            onClick={() => simulateSubscription()}
             disabled={isProcessing}
           >
             Simulate Pro Monthly

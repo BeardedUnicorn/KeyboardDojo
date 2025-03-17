@@ -239,8 +239,8 @@ const Profile = () => {
     const rarityOrder = ['legendary', 'epic', 'rare', 'uncommon', 'common'];
     const rarestAchievements = [...completedAchievements]
       .sort((a, b) => {
-        const rarityA = rarityOrder.indexOf(a.achievement.rarity);
-        const rarityB = rarityOrder.indexOf(b.achievement.rarity);
+        const rarityA = rarityOrder.indexOf(a.achievement.rarity || 'common');
+        const rarityB = rarityOrder.indexOf(b.achievement.rarity || 'common');
         return rarityA - rarityB;
       })
       .slice(0, 3);
@@ -353,8 +353,8 @@ const Profile = () => {
               <Typography variant="subtitle2" color="text.secondary" gutterBottom>
                 Total XP from Achievements
               </Typography>
-              <Typography variant="h5" fontWeight="medium">
-                {completedAchievements.reduce((sum, a) => sum + a.achievement.xpReward, 0)}
+              <Typography variant="h4" sx={{ fontWeight: 'bold', color: 'primary.main' }}>
+                {completedAchievements.reduce((sum, a) => sum + (a.achievement.xpReward || 0), 0)}
               </Typography>
               <Typography variant="body2" color="text.secondary">
                 XP earned

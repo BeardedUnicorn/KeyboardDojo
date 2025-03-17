@@ -209,6 +209,7 @@ export const vscodeTrack: ApplicationTrack = {
           xpReward: 50,
           estimatedTime: 10,
           order: 0,
+          steps: [],
         },
         {
           id: 'vscode-basics-2',
@@ -223,6 +224,7 @@ export const vscodeTrack: ApplicationTrack = {
           unlockRequirements: {
             previousLessons: ['vscode-basics-1'],
           },
+          steps: [],
         },
         {
           id: 'vscode-basics-3',
@@ -237,6 +239,7 @@ export const vscodeTrack: ApplicationTrack = {
           unlockRequirements: {
             previousLessons: ['vscode-basics-2'],
           },
+          steps: [],
         },
       ],
     },
@@ -262,6 +265,7 @@ export const vscodeTrack: ApplicationTrack = {
           xpReward: 75,
           estimatedTime: 15,
           order: 0,
+          steps: [],
         },
         {
           id: 'vscode-intermediate-2',
@@ -276,6 +280,7 @@ export const vscodeTrack: ApplicationTrack = {
           unlockRequirements: {
             previousLessons: ['vscode-intermediate-1'],
           },
+          steps: [],
         },
         {
           id: 'vscode-intermediate-3',
@@ -290,6 +295,7 @@ export const vscodeTrack: ApplicationTrack = {
           unlockRequirements: {
             previousLessons: ['vscode-intermediate-2'],
           },
+          steps: [],
         },
       ],
     },

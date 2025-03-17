@@ -24,6 +24,7 @@ import SortIcon from '@mui/icons-material/Sort';
 import { useAchievements } from '../hooks';
 import { AchievementCategory } from '../services/achievementsService';
 import { AchievementBadge } from './';
+import { AchievementWithProgress } from '../contexts/AchievementsContext';
 
 // Define sort options
 type SortOption = 'default' | 'name' | 'rarity' | 'completion' | 'progress';
@@ -43,13 +44,13 @@ const AchievementsList: React.FC<AchievementsListProps> = ({
 }) => {
   const theme = useTheme();
   const { achievements, completedAchievements, refreshAchievements, isLoading } = useAchievements();
-  const [activeTab, setActiveTab] = useState<AchievementCategory | 'all'>('all');
+  const [activeTab, setActiveTab] = useState<string | 'all'>('all');
   const [sortBy, setSortBy] = useState<SortOption>('default');
   
   // Update active tab when categoryFilter changes
   useEffect(() => {
     if (categoryFilter) {
-      setActiveTab(categoryFilter as AchievementCategory);
+      setActiveTab(categoryFilter);
     } else {
       setActiveTab('all');
     }
@@ -60,7 +61,7 @@ const AchievementsList: React.FC<AchievementsListProps> = ({
   }, [refreshAchievements]);
   
   // Filter achievements based on active tab, rarity filter, search query, and secret setting
-  const filteredAchievements = achievements.filter(a => {
+  const filteredAchievements = completedAchievements.filter(a => {
     // Filter by category
     const categoryMatch = activeTab === 'all' || a.achievement.category === activeTab;
     
@@ -85,8 +86,10 @@ const AchievementsList: React.FC<AchievementsListProps> = ({
         return a.achievement.title.localeCompare(b.achievement.title);
       
       case 'rarity': {
-        const rarityOrder = { legendary: 0, epic: 1, rare: 2, uncommon: 3, common: 4 };
-        return rarityOrder[a.achievement.rarity] - rarityOrder[b.achievement.rarity];
+        const rarityOrder: Record<string, number> = { legendary: 0, epic: 1, rare: 2, uncommon: 3, common: 4 };
+        const rarityA = a.achievement.rarity || 'common';
+        const rarityB = b.achievement.rarity || 'common';
+        return rarityOrder[rarityA] - rarityOrder[rarityB];
       }
       
       case 'completion': {
@@ -103,8 +106,8 @@ const AchievementsList: React.FC<AchievementsListProps> = ({
       
       case 'progress': {
         // Sort by progress percentage (highest first)
-        const progressA = (a.progress / a.achievement.criteria.value) * 100;
-        const progressB = (b.progress / b.achievement.criteria.value) * 100;
+        const progressA = a.progress || 0;
+        const progressB = b.progress || 0;
         return progressB - progressA;
       }
       
@@ -117,7 +120,7 @@ const AchievementsList: React.FC<AchievementsListProps> = ({
   });
   
   // Handle tab change
-  const handleTabChange = (event: React.SyntheticEvent, newValue: AchievementCategory | 'all') => {
+  const handleTabChange = (event: React.SyntheticEvent, newValue: string | 'all') => {
     setActiveTab(newValue);
   };
   
@@ -246,45 +249,31 @@ const AchievementsList: React.FC<AchievementsListProps> = ({
                       Progress
                     </Typography>
                     <Typography variant="caption" color="text.secondary">
-                      {Math.min(progress, achievement.criteria.value)}/{achievement.criteria.value}
+                      {Math.min(progress || 0, achievement.criteria?.value || 100)}/{achievement.criteria?.value || 100}
                     </Typography>
                   </Box>
                   <LinearProgress 
                     variant="determinate" 
-                    value={(progress / achievement.criteria.value) * 100} 
-                    sx={{ height: 4, borderRadius: 2 }} 
+                    value={completed ? 100 : ((progress || 0) / (achievement.criteria?.value || 100)) * 100} 
+                    sx={{ height: 6, borderRadius: 3 }} 
                   />
                 </Box>
                 
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <Typography 
-                    variant="body2" 
-                    sx={{ 
-                      color: theme.palette.success.main,
-                      fontWeight: 'medium'
-                    }}
-                  >
+                {completed && completedDate && (
+                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
+                    Completed: {new Date(completedDate).toLocaleDateString()}
+                  </Typography>
+                )}
+                
+                {achievement.xpReward && achievement.xpReward > 0 && (
+                  <Typography variant="caption" color="primary" sx={{ display: 'block', mt: 0.5 }}>
                     +{achievement.xpReward} XP
                   </Typography>
-                  
-                  {completed && completedDate && (
-                    <Typography variant="caption" color="text.secondary">
-                      {new Date(completedDate).toLocaleDateString()}
-                    </Typography>
-                  )}
-                </Box>
+                )}
               </CardContent>
             </Card>
           </Grid>
         ))}
-        
-        {filteredAchievements.length === 0 && (
-          <Grid item xs={12}>
-            <Typography variant="body1" color="text.secondary" align="center" sx={{ py: 4 }}>
-              No achievements found with the current filters.
-            </Typography>
-          </Grid>
-        )}
       </Grid>
     </Box>
   );

@@ -7,6 +7,7 @@ A comprehensive application for learning and mastering keyboard shortcuts across
 - **Interactive Learning**: Practice keyboard shortcuts in an interactive environment
 - **Progress Tracking**: Track your learning progress and improvement over time
 - **Customized Learning Paths**: Focus on shortcuts for specific applications
+- **Multiple Curriculums**: Choose from different learning paths including IDE shortcuts, programming languages, and more
 - **Premium Content**: Access advanced lessons and features with a subscription
 - **Cross-Platform**: Learn shortcuts for Windows, macOS, and popular applications
 
@@ -87,7 +88,28 @@ A comprehensive application for learning and mastering keyboard shortcuts across
 └── ...
 ```
 
-### Running Tests
+## Curriculum Structure
+
+Keyboard Dojo now supports multiple curriculum types:
+
+- **IDE Shortcuts**: Learn keyboard shortcuts for popular IDEs like VS Code, IntelliJ, and Cursor
+- **Programming Languages**: Master language-specific shortcuts and coding patterns
+- **Productivity Tools**: Improve efficiency with shortcuts for common productivity applications
+
+Each curriculum contains:
+- Multiple tracks (e.g., Beginner, Intermediate, Advanced)
+- Modules within each track
+- Lessons within each module
+- Various exercise types (code, shortcut practice, quizzes)
+
+## Progression System
+
+The application uses a simple progression system:
+- Complete lessons to unlock new content
+- Track your progress across different curriculums
+- Earn achievements for completing lessons and mastering shortcuts
+
+## Running Tests
 
 ```bash
 # Run frontend tests

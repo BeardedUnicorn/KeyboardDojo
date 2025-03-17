@@ -208,6 +208,7 @@ export const cursorTrack: ApplicationTrack = {
           xpReward: 50,
           estimatedTime: 10,
           order: 0,
+          steps: [],
         },
         {
           id: 'cursor-basics-2',
@@ -222,6 +223,7 @@ export const cursorTrack: ApplicationTrack = {
           unlockRequirements: {
             previousLessons: ['cursor-basics-1'],
           },
+          steps: [],
         },
         {
           id: 'cursor-basics-3',
@@ -236,6 +238,7 @@ export const cursorTrack: ApplicationTrack = {
           unlockRequirements: {
             previousLessons: ['cursor-basics-2'],
           },
+          steps: [],
         },
       ],
     },
@@ -261,6 +264,7 @@ export const cursorTrack: ApplicationTrack = {
           xpReward: 75,
           estimatedTime: 15,
           order: 0,
+          steps: [],
         },
         {
           id: 'cursor-intermediate-2',
@@ -275,6 +279,7 @@ export const cursorTrack: ApplicationTrack = {
           unlockRequirements: {
             previousLessons: ['cursor-intermediate-1'],
           },
+          steps: [],
         },
         {
           id: 'cursor-intermediate-3',
@@ -289,6 +294,7 @@ export const cursorTrack: ApplicationTrack = {
           unlockRequirements: {
             previousLessons: ['cursor-intermediate-2'],
           },
+          steps: [],
         },
       ],
     },

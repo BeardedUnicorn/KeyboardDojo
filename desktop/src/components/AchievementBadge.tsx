@@ -6,10 +6,14 @@ import SchoolIcon from '@mui/icons-material/School';
 import SpeedIcon from '@mui/icons-material/Speed';
 import ExploreIcon from '@mui/icons-material/Explore';
 import LockIcon from '@mui/icons-material/Lock';
-import { Achievement } from '../services/achievementsService';
+import { Achievement as ServiceAchievement } from '../services/achievementsService';
+import { Achievement as ContextAchievement } from '../contexts/AchievementsContext';
+
+// Union type to accept both achievement types
+type AchievementType = ServiceAchievement | ContextAchievement;
 
 interface AchievementBadgeProps {
-  achievement: Achievement;
+  achievement: AchievementType;
   completed?: boolean;
   showRarity?: boolean;
   showDescription?: boolean;
@@ -118,9 +122,9 @@ const AchievementBadge: React.FC<AchievementBadgeProps> = ({
               {achievement.secret && !completed ? 'Secret Achievement' : achievement.title}
             </Typography>
             
-            {showRarity && (
+            {showRarity && achievement.rarity && (
               <Chip 
-                label={achievement.rarity.charAt(0).toUpperCase() + achievement.rarity.slice(1)} 
+                label={(achievement.rarity || 'common').charAt(0).toUpperCase() + (achievement.rarity || 'common').slice(1)} 
                 size="small"
                 sx={{ 
                   bgcolor: `${getRarityColor()}${completed ? '20' : '10'}`,

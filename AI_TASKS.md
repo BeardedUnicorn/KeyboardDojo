@@ -1,216 +1,58 @@
-# AI Implementation Task Checklist
+# AI Implementation Task Checklist for Multi-Curriculum Support
 
-## Core Game Mechanics
-- [x] Implement shortcut detection system for multi-key combinations (Ctrl+Shift+Key, etc.)
-- [x] Create shortcut challenge component that prompts users to press specific shortcuts
-- [x] Develop feedback system for correct/incorrect shortcut attempts
-- [x] Implement visual simulation of IDE interfaces for contextual shortcut learning
+## Research and Analysis
+- [x] Analyze current curriculum structure and implementation
+- [x] Identify hearts feature components and dependencies
+- [x] Understand current UI navigation and lesson selection flow
 
-## Curriculum Structure
-- [x] Design data model for application tracks (IntelliJ, VS Code, Cursor)
-- [x] Implement lesson progression system with unlockable content
-- [x] Create checkpoint/mastery challenge system
-- [ ] Develop difficulty adaptation based on user performance
+## Phase 1: Curriculum Structure Refactoring
+- [x] Create a unified curriculum interface to standardize different curriculum types
+  - [x] Define `Curriculum` interface with common properties and specialized fields
+  - [x] Update existing curriculum files to implement the new interface
+- [x] Implement curriculum registry system
+  - [x] Create a central registry to manage all available curriculums
+  - [x] Add metadata for each curriculum (name, description, icon, etc.)
+- [x] Refactor lesson state management
+  - [x] Update `lessonsSlice.ts` to support multiple curriculums
+  - [x] Add curriculum filtering and selection functionality
 
-## Gamification Elements
-- [x] XP and Leveling System
-  - [x] Create XP system with level progression
-  - [x] Implement level-up notifications
-  - [x] Add XP rewards for completing lessons and challenges
-  - [x] Create level progress bar component
-- [x] Streak Tracking
-  - [x] Implement daily streak tracking
-  - [x] Create streak display component
-  - [x] Add streak bonuses for XP
-- [x] Badges/Achievements
-  - [x] Create achievement data model and service
-  - [x] Implement achievement notification system
-  - [x] Create achievements list and detail views
-  - [x] Add achievement tracking to profile page
-  - [x] Implement reusable achievement components
-  - [x] Add achievement statistics and visualizations
-  - [x] Enhance achievement display with consistent styling
-  - [x] Add filtering capabilities for achievements by category and rarity
-  - [x] Implement sorting functionality for achievements by name, rarity, completion date, and progress
-  - [x] Add search functionality for achievements by title and description
-  - [x] Implement achievement sharing and export functionality
-- [x] Hearts/Lives System for Challenges
-  - [x] Create hearts service for tracking available lives
-  - [x] Implement hearts regeneration over time
-  - [x] Create hearts display component
-  - [x] Integrate hearts system with challenges
-  - [x] Add hearts context for app-wide state management
+## Phase 2: Hearts Feature Removal
+- [x] Remove hearts-related components
+  - [x] Identify and remove hearts UI elements from lesson components
+  - [x] Remove hearts-related state management code
+- [x] Update lesson progression logic
+  - [x] Modify lesson completion and progression tracking
+  - [x] Implement alternative progression mechanism if needed
+- [x] Delete hearts-related files
+  - [x] Remove `HeartsContext.tsx`
+  - [x] Remove `heartsService.ts`
 
-## Progress Visualization
+## Phase 3: UI Updates for Multi-Curriculum Support
+- [x] Create curriculum selection interface
+  - [x] Design and implement curriculum selection component
+  - [x] Add curriculum filtering and search functionality
+- [x] Update lesson listing UI
+  - [x] Modify `Lessons.tsx` to display lessons grouped by curriculum
+  - [x] Update lesson cards to show curriculum-specific information
+- [x] Enhance lesson detail view
+  - [x] Update `LessonDetail.tsx` to handle curriculum-specific content
+  - [x] Implement curriculum-aware navigation between lessons
 
-- [x] Create component for curriculum progress visualization
-  - [x] Display progress through tracks and modules
-  - [x] Show completion percentages
-  - [x] Visual indicators for completed/in-progress/locked content
+## Phase 4: Testing and Refinement
+- [x] Create tests for new curriculum functionality
+  - [x] Unit tests for curriculum registry and interfaces
+  - [x] Integration tests for curriculum selection and navigation
+- [x] Verify hearts feature removal
+  - [x] Ensure all hearts-related code is removed
+  - [x] Test lesson progression without hearts
+- [x] User experience testing
+  - [x] Test navigation between different curriculums
+  - [x] Verify lesson progression across curriculums
 
-- [x] Implement practice session heatmap
-  - [x] Calendar-style visualization of practice frequency
-  - [x] Color intensity based on practice amount
-  - [x] Tooltips with session details
-
-- [x] Build statistics dashboard
-  - [x] Display key metrics (level, XP, streak)
-  - [x] Show practice time statistics
-  - [x] Visualize shortcut mastery progress
-  - [x] Track achievements and milestones
-
-- [x] Create progress dashboard page
-  - [x] Combine all visualization components
-  - [x] Add to main navigation
-  - [x] Implement tab navigation for different views
-
-## User Experience
-- [ ] Design and implement mascot character with animations
-- [ ] Create engaging visual feedback for correct/incorrect answers
-- [ ] Implement sound effects for actions and achievements
-- [ ] Design themed UI for each application track
-
-## UI Improvements
-- [x] Implement collapsible sidemenu with minimal footprint
-  - [x] Modify Navigation component to use a compact collapsed state
-  - [x] Create mini variant drawer that shows only icons when collapsed
-  - [x] Add smooth transition animations between states
-  - [x] Ensure navigation state persists between sessions
-  - [x] Optimize space usage in collapsed state
-
-- [x] Implement dark mode as default theme
-  - [x] Create dark mode color palette in theme.ts
-  - [x] Update background, text, and component colors for dark theme
-  - [x] Add contrast and accessibility improvements for dark mode
-  - [x] Ensure proper color hierarchy and visual hierarchy
-  - [x] Implement consistent dark styling across all components
-
-- [x] Add theme toggle functionality
-  - [x] Create theme context for managing theme state
-  - [x] Add theme toggle button in settings
-  - [x] Implement theme persistence in local storage
-  - [x] Add smooth transition when switching themes
-
-- [x] Optimize responsive layout
-  - [x] Improve ResponsiveLayout component to better handle sidemenu states
-  - [x] Ensure proper content spacing with collapsed menu
-  - [x] Fix any layout issues in different viewport sizes
-
-## User Management
-- [ ] Implement user profiles and progress tracking
-- [ ] Create settings for keyboard layout preferences
-- [x] Add OS detection for appropriate shortcut display (Windows/Mac)
-- [ ] Implement data synchronization between web and desktop
-
-## Monetization Features
-- [x] Design freemium model with premium features
-  - [x] Implement hearts/lives system with regeneration
-  - [x] Create hearts management in settings
-  - [x] Add hearts rewards for achievements
-- [x] Implement subscription management
-  - [x] Create subscription service with different tiers
-  - [x] Develop subscription context for app-wide state management
-  - [x] Build subscription management UI
-  - [x] Integrate subscription status with hearts system
-- [ ] Create in-app store for cosmetic items or power-ups
-- [ ] Add ad integration for free tier users
-
-## Technical Infrastructure
-- [x] Optimize keyboard event handling for all shortcut combinations
-  - [x] Create platform-specific keyboard event handlers
-  - [x] Implement debounce and throttle mechanisms for performance
-  - [x] Add support for custom key mappings
-  - [x] Create comprehensive test suite for keyboard events
-- [x] Ensure cross-platform compatibility (Windows, macOS, Linux)
-  - [x] Implement OS detection service
-  - [x] Create platform-specific UI adjustments
-  - [x] Test and fix platform-specific issues
-  - [x] Update shortcut display based on detected OS
-- [x] Implement offline mode functionality
-  - [x] Create local storage service for offline data
-  - [x] Implement data synchronization when connection is restored
-  - [x] Add offline mode indicator in UI
-  - [x] Ensure all core features work without internet connection
-- [x] Create update notification and delivery system
-  - [x] Implement version checking against remote server
-  - [x] Create update notification component
-  - [x] Add automatic update download and installation
-  - [x] Implement update progress tracking
-
-## Content Development
-- [x] Compile comprehensive shortcut lists for each supported application
-  - [x] Create VSCodeShortcutsLesson.ts with organized shortcut categories
-  - [x] Create IntelliJShortcutsLesson.ts with organized shortcut categories
-  - [x] Create CursorShortcutsLesson.ts with organized shortcut categories
-  - [x] Ensure all shortcuts have proper OS-specific variants (Windows, macOS, Linux)
-- [x] Organize shortcuts into logical lesson groups
-  - [x] Group VS Code shortcuts by functionality (navigation, editing, debugging, etc.)
-  - [x] Group IntelliJ shortcuts by functionality (navigation, editing, refactoring, etc.)
-  - [x] Group Cursor shortcuts by functionality (general, chat, code, terminal, etc.)
-  - [x] Create progressive difficulty levels within each application
-- [x] Create contextual examples for each shortcut
-  - [x] Add real-world usage scenarios for VS Code shortcuts
-  - [x] Add real-world usage scenarios for IntelliJ shortcuts
-  - [x] Add real-world usage scenarios for Cursor shortcuts
-  - [x] Include visual cues and mnemonics for easier learning
-- [x] Design progressive difficulty curve across lessons
-  - [x] Create beginner, intermediate, and advanced lesson tracks
-  - [x] Implement spaced repetition for shortcut mastery
-  - [x] Design challenges that combine multiple shortcuts
-
-- [x] Fix TypeScript errors related to unused imports in the codebase
-  - [x] Removed unused React import in App.tsx
-  - [x] Disabled noUnusedLocals and noUnusedParameters in tsconfig.json
-- [x] Fix duplicate identifier errors in routes/index.tsx
-  - [x] Removed duplicate Routes, Route, and AppRoutes declarations
-  - [x] Removed non-existent Learn page reference
-- [x] Run the build command again to verify fixes
-  - [x] Build completed successfully
-
-## Bug Fixes
-- [x] Fix shortcut progression issue
-  - [x] Add useRef to track successful shortcut completion in ShortcutChallenge component
-  - [x] Add key prop to ShortcutChallenge component for proper re-rendering
-  - [x] Update handleShortcutSuccess function to ensure proper state updates
-  - [x] Add effect to reset state when shortcut changes
-
-## Desktop App Improvements
-- [x] Implement top app bar for window management
-  - [x] Create AppTopBar component with window controls (minimize, maximize, close)
-  - [x] Add draggable region for moving the window
-  - [x] Integrate theme toggle in the app bar
-  - [x] Add settings button for quick access to settings
-  - [x] Adjust navigation drawer to work with the top app bar
-
-- [x] Implement OS-specific shortcuts and window dragging
-  - [x] Create OS detection service to identify the user's operating system
-  - [x] Update Shortcut interface to include Linux-specific shortcuts
-  - [x] Modify ShortcutChallenge component to display OS-specific shortcuts
-  - [x] Enhance window dragging functionality with Tauri data attributes
-  - [x] Add visual indicators for draggable regions
-
-- [x] Fix macOS desktop build issues
-  - [x] Add missing methods to OSDetectionService: getOSInfo, addOSChangeListener, removeOSChangeListener, formatShortcutForOS
-  - [x] Fix TypeScript errors in keyboardService.ts related to OSDetectionService methods
-  - [x] Successfully build macOS desktop application with yarn build:desktop:macos
-
-- [x] Fix inconsistencies between Meta key detection and CMD display
-  - [x] Update OSDetectionService.convertShortcut to properly handle Meta key for macOS (⌘)
-  - [x] Update ShortcutChallenge.formatShortcutForDisplay to consistently display ⌘ for Command/Meta key
-  - [x] Update keyboardService.ts key mappings for consistent handling of Command/Meta key
-  - [x] Update shortcutDetector.normalizeKey to properly normalize ⌘, ⌥, and ⇧ symbols
-
-- [x] Implement window border with traffic light controls
-  - [x] Create windowManager utility to handle window operations using Tauri APIs
-  - [x] Update AppTopBar component with macOS-style traffic light controls (red, yellow, green)
-  - [x] Add Windows-style window controls for non-macOS platforms
-  - [x] Ensure proper OS detection for displaying appropriate controls
-
-## Content Development
-- [x] Create mastery curriculum for each supported application
-  - [x] Create VSCodeMasteryCurriculum.ts with advanced shortcuts and techniques
-  - [x] Create IntelliJMasteryCurriculum.ts with advanced shortcuts and techniques
-  - [x] Create CursorMasteryCurriculum.ts with AI-powered features and advanced shortcuts
-  - [x] Organize shortcuts into logical categories for each application
-  - [x] Include detailed descriptions and context for each shortcut
-  - [x] Add helpful tips for mastering each application 
+## Phase 5: Documentation and Deployment
+- [x] Update documentation
+  - [x] Document curriculum interface and registry
+  - [x] Update user guides to reflect UI changes
+- [x] Prepare for deployment
+  - [x] Final code review and cleanup
+  - [x] Version bump and changelog update

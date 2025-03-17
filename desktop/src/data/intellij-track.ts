@@ -201,13 +201,14 @@ export const intellijTrack: ApplicationTrack = {
         {
           id: 'intellij-basics-1',
           title: 'Navigation Fundamentals',
-          description: 'Learn how to navigate efficiently in IntelliJ IDEA.',
+          description: 'Learn how to navigate efficiently in IntelliJ.',
           shortcuts: navigationShortcuts.slice(0, 3),
           difficulty: 'beginner' as const,
           category: 'navigation' as ShortcutCategory,
           xpReward: 50,
           estimatedTime: 10,
           order: 0,
+          steps: [],
         },
         {
           id: 'intellij-basics-2',
@@ -222,6 +223,7 @@ export const intellijTrack: ApplicationTrack = {
           unlockRequirements: {
             previousLessons: ['intellij-basics-1'],
           },
+          steps: [],
         },
         {
           id: 'intellij-basics-3',
@@ -236,6 +238,7 @@ export const intellijTrack: ApplicationTrack = {
           unlockRequirements: {
             previousLessons: ['intellij-basics-2'],
           },
+          steps: [],
         },
       ],
     },
@@ -261,6 +264,7 @@ export const intellijTrack: ApplicationTrack = {
           xpReward: 75,
           estimatedTime: 15,
           order: 0,
+          steps: [],
         },
         {
           id: 'intellij-intermediate-2',
@@ -275,6 +279,7 @@ export const intellijTrack: ApplicationTrack = {
           unlockRequirements: {
             previousLessons: ['intellij-intermediate-1'],
           },
+          steps: [],
         },
         {
           id: 'intellij-intermediate-3',
@@ -289,6 +294,7 @@ export const intellijTrack: ApplicationTrack = {
           unlockRequirements: {
             previousLessons: ['intellij-intermediate-2'],
           },
+          steps: [],
         },
       ],
     },
