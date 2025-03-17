@@ -1,12 +1,13 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Box } from '@mui/material';
 import Navigation from './Navigation';
 import Footer from './Footer';
 import { isDesktop } from '../../../shared/src/utils';
-import TitleBar from './title-bar';
+import AppTopBar from './AppTopBar';
 import HeartsDisplay from './HeartsDisplay';
 import UserInfo from './UserInfo';
 import { useThemeContext } from '../contexts/ThemeContext';
+import SettingsPanel from './settings-panel';
 
 interface MainLayoutProps {
   children: React.ReactNode;
@@ -14,6 +15,15 @@ interface MainLayoutProps {
 
 const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
   const { theme } = useThemeContext();
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  
+  const handleOpenSettings = () => {
+    setSettingsOpen(true);
+  };
+  
+  const handleCloseSettings = () => {
+    setSettingsOpen(false);
+  };
   
   return (
     <Box
@@ -26,8 +36,8 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
         color: 'text.primary',
       }}
     >
-      {/* Title bar (desktop only) */}
-      {isDesktop() && <TitleBar />}
+      {/* App Top Bar (desktop only) */}
+      {isDesktop() && <AppTopBar onOpenSettings={handleOpenSettings} />}
       
       {/* Main content area with navigation */}
       <Box
@@ -81,6 +91,9 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
           <Footer />
         </Box>
       </Box>
+      
+      {/* Settings Panel */}
+      <SettingsPanel open={settingsOpen} onClose={handleCloseSettings} />
     </Box>
   );
 };

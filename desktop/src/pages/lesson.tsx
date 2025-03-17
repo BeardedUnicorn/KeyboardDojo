@@ -53,12 +53,14 @@ const LessonPage: React.FC = () => {
     if (!currentShortcut) return;
     
     // Mark the shortcut as completed
-    if (!completedShortcuts.includes(currentShortcut.id)) {
-      setCompletedShortcuts([...completedShortcuts, currentShortcut.id]);
+    const updatedCompletedShortcuts = [...completedShortcuts];
+    if (!updatedCompletedShortcuts.includes(currentShortcut.id)) {
+      updatedCompletedShortcuts.push(currentShortcut.id);
+      setCompletedShortcuts(updatedCompletedShortcuts);
     }
     
     // Check if all shortcuts are completed
-    if (completedShortcuts.length + 1 === shortcuts.length) {
+    if (updatedCompletedShortcuts.length === shortcuts.length) {
       // Show success message
       setShowSuccess(true);
       
@@ -228,6 +230,7 @@ body {
         <Grid item xs={12} md={6}>
           {currentShortcut && (
             <ShortcutChallenge
+              key={`shortcut-${currentShortcut.id}-${activeShortcutIndex}`}
               shortcut={currentShortcut.shortcutWindows}
               description={currentShortcut.name}
               context={currentShortcut.context}

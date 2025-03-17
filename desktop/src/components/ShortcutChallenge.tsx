@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   Box, 
   Paper, 
@@ -47,6 +47,7 @@ const ShortcutChallenge: React.FC<ShortcutChallengeProps> = ({
   const [showHint, setShowHint] = useState(false);
   const [timeElapsed, setTimeElapsed] = useState(0);
   const [startTime] = useState(Date.now());
+  const successHandled = useRef(false);
   
   // Parse the shortcut
   const parsedShortcut = parseShortcut(shortcut);
@@ -60,20 +61,34 @@ const ShortcutChallenge: React.FC<ShortcutChallengeProps> = ({
     return () => clearInterval(timer);
   }, [startTime]);
   
+  // Reset state when shortcut changes
+  useEffect(() => {
+    setStatus('waiting');
+    setAttempts(0);
+    setLastAttempt('');
+    setShowHint(false);
+    successHandled.current = false;
+  }, [shortcut]);
+  
   // Set up keyboard event listeners
   useEffect(() => {
     // Initialize the shortcut detector
     shortcutDetector.initialize();
     
     const handleKeyDown = (event: KeyboardEvent) => {
-      // Ignore if already successful
-      if (status === 'success') return;
+      // Ignore if already successful and handled
+      if (status === 'success' && successHandled.current) return;
       
       // Check if the shortcut matches
       if (matchesShortcut(event, parsedShortcut)) {
         setStatus('success');
         setAttempts(prev => prev + 1);
-        onSuccess?.();
+        
+        // Mark as handled to prevent multiple triggers
+        if (!successHandled.current) {
+          successHandled.current = true;
+          onSuccess?.();
+        }
         
         // Prevent default browser behavior
         event.preventDefault();

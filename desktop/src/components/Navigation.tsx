@@ -28,6 +28,7 @@ import {
 } from '@mui/icons-material';
 import { useSubscription } from '../contexts/SubscriptionContext';
 import { useThemeContext } from '../contexts/ThemeContext';
+import { isDesktop } from '../../../shared/src/utils';
 
 // Drawer widths
 const drawerWidth = 240;
@@ -112,6 +113,9 @@ const Navigation = () => {
     return path !== '/' && location.pathname.startsWith(path);
   };
 
+  // Calculate top offset for the drawer based on whether we're in desktop mode
+  const topOffset = isDesktop() ? 48 : 0; // 48px is the height of our AppTopBar
+
   return (
     <Drawer
       variant="permanent"
@@ -122,10 +126,14 @@ const Navigation = () => {
           width: open ? drawerWidth : miniDrawerWidth,
           boxSizing: 'border-box',
           overflowX: 'hidden',
+          borderRight: `1px solid ${theme.palette.divider}`,
           transition: theme.transitions.create('width', {
             easing: theme.transitions.easing.sharp,
             duration: theme.transitions.duration.enteringScreen,
           }),
+          // Adjust top position to account for the AppTopBar
+          top: `${topOffset}px`,
+          height: `calc(100% - ${topOffset}px)`,
         },
       }}
     >

@@ -150,4 +150,19 @@
   - [x] Removed duplicate Routes, Route, and AppRoutes declarations
   - [x] Removed non-existent Learn page reference
 - [x] Run the build command again to verify fixes
-  - [x] Build completed successfully 
+  - [x] Build completed successfully
+
+## Bug Fixes
+- [x] Fix shortcut progression issue
+  - [x] Add useRef to track successful shortcut completion in ShortcutChallenge component
+  - [x] Add key prop to ShortcutChallenge component for proper re-rendering
+  - [x] Update handleShortcutSuccess function to ensure proper state updates
+  - [x] Add effect to reset state when shortcut changes
+
+## Desktop App Improvements
+- [x] Implement top app bar for window management
+  - [x] Create AppTopBar component with window controls (minimize, maximize, close)
+  - [x] Add draggable region for moving the window
+  - [x] Integrate theme toggle in the app bar
+  - [x] Add settings button for quick access to settings
+  - [x] Adjust navigation drawer to work with the top app bar 
