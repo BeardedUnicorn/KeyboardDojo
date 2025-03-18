@@ -1,15 +1,24 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  Box, 
-  Typography, 
-  Paper, 
-  Tabs, 
-  Tab, 
-  List, 
-  ListItem, 
-  ListItemText, 
-  ListItemIcon, 
-  Collapse, 
+import {
+  ExpandMore as ExpandMoreIcon,
+  ExpandLess as ExpandLessIcon,
+  Lock as LockIcon,
+  CheckCircle as CheckCircleIcon,
+  School as SchoolIcon,
+  PlayArrow as PlayArrowIcon,
+  WorkspacePremium as WorkspacePremiumIcon,
+  Code as CodeIcon,
+} from '@mui/icons-material';
+import {
+  Box,
+  Typography,
+  Paper,
+  Tabs,
+  Tab,
+  List,
+  ListItem,
+  ListItemText,
+  ListItemIcon,
+  Collapse,
   Chip,
   Divider,
   useTheme,
@@ -17,32 +26,29 @@ import {
   InputLabel,
   Select,
   MenuItem,
-  SelectChangeEvent
+  ButtonBase,
 } from '@mui/material';
-import {
-  ExpandMore as ExpandMoreIcon,
-  ExpandLess as ExpandLessIcon,
-  Lock as LockIcon,
-  CheckCircle as CheckCircleIcon,
-  School as SchoolIcon,
-  PlayArrow as PlayArrowIcon
-} from '@mui/icons-material';
-import { 
-  ApplicationTrack, 
-  ApplicationType, 
-  Module, 
-  Lesson, 
-  DifficultyLevel,
-  CurriculumMetadata
-} from '../types/curriculum';
-import { curriculumService } from '../services/curriculumService';
+import React, { useState, useEffect } from 'react';
+
+import { curriculumService } from '../services';
+
+import type {
+  ApplicationTrack,
+  ApplicationType,
+  Module,
+  ICurriculumMetadata,
+} from '../types/ICurriculum';
+import type { DifficultyLevel } from '@/types/curriculum/DifficultyLevel';
+import type {
+  SelectChangeEvent } from '@mui/material';
+import type { FC, SyntheticEvent } from 'react';
 
 interface CurriculumViewProps {
   onSelectLesson?: (trackId: ApplicationType, moduleId: string, lessonId: string) => void;
   onSelectChallenge?: (trackId: ApplicationType, challengeId: string) => void;
 }
 
-const CurriculumView: React.FC<CurriculumViewProps> = ({
+const CurriculumView: FC<CurriculumViewProps> = ({
   onSelectLesson,
   onSelectChallenge,
 }) => {
@@ -50,48 +56,48 @@ const CurriculumView: React.FC<CurriculumViewProps> = ({
   const [selectedTrack, setSelectedTrack] = useState<ApplicationType>('vscode');
   const [expandedModules, setExpandedModules] = useState<string[]>([]);
   const [tracks, setTracks] = useState<ApplicationTrack[]>([]);
-  const [curriculums, setCurriculums] = useState<CurriculumMetadata[]>([]);
+  const [curriculums, setCurriculums] = useState<ICurriculumMetadata[]>([]);
   const [selectedCurriculumId, setSelectedCurriculumId] = useState<string>('');
-  
+
   // Load curriculums and tracks on component mount
   useEffect(() => {
     // Get all available curriculums
     const availableCurriculums = curriculumService.getCurriculumMetadata();
     setCurriculums(availableCurriculums);
-    
+
     // Set the active curriculum as the selected one
     const activeCurriculum = curriculumService.getActiveCurriculum();
     setSelectedCurriculumId(activeCurriculum.id);
-    
+
     // Load tracks for the active curriculum
     const loadedTracks = curriculumService.getApplicationTracks();
     setTracks(loadedTracks);
-    
+
     // Expand the first module by default
     if (loadedTracks.length > 0 && loadedTracks[0].modules.length > 0) {
       setExpandedModules([loadedTracks[0].modules[0].id]);
     }
   }, []);
-  
+
   // Get the current track
-  const currentTrack = tracks.find(track => track.id === selectedTrack);
-  
+  const currentTrack = tracks.find((track) => track.id === selectedTrack);
+
   // Handle curriculum change
   const handleCurriculumChange = (event: SelectChangeEvent<string>) => {
     const curriculumId = event.target.value;
     setSelectedCurriculumId(curriculumId);
-    
+
     // Set the active curriculum in the service
     curriculumService.setActiveCurriculum(curriculumId);
-    
+
     // Load tracks for the selected curriculum
     const loadedTracks = curriculumService.getApplicationTracks();
     setTracks(loadedTracks);
-    
+
     // Reset selected track to the first one if available
     if (loadedTracks.length > 0) {
       setSelectedTrack(loadedTracks[0].id);
-      
+
       // Expand the first module by default
       if (loadedTracks[0].modules.length > 0) {
         setExpandedModules([loadedTracks[0].modules[0].id]);
@@ -100,285 +106,318 @@ const CurriculumView: React.FC<CurriculumViewProps> = ({
       }
     }
   };
-  
+
   // Handle track change
-  const handleTrackChange = (_event: React.SyntheticEvent, newValue: ApplicationType) => {
+  const handleTrackChange = (_event: SyntheticEvent, newValue: ApplicationType) => {
     setSelectedTrack(newValue);
-    
-    // Expand the first module of the new track by default
-    const track = tracks.find(t => t.id === newValue);
+
+    // Expand the first module by default
+    const track = tracks.find((t) => t.id === newValue);
     if (track && track.modules.length > 0) {
       setExpandedModules([track.modules[0].id]);
     } else {
       setExpandedModules([]);
     }
   };
-  
+
   // Handle module expansion toggle
   const handleModuleToggle = (moduleId: string) => {
-    setExpandedModules(prev => {
+    setExpandedModules((prev) => {
       if (prev.includes(moduleId)) {
-        return prev.filter(id => id !== moduleId);
+        return prev.filter((id) => id !== moduleId);
       } else {
         return [...prev, moduleId];
       }
     });
   };
-  
+
   // Handle lesson selection
   const handleLessonSelect = (moduleId: string, lessonId: string) => {
     if (onSelectLesson) {
       onSelectLesson(selectedTrack, moduleId, lessonId);
     }
   };
-  
+
   // Handle challenge selection
   const handleChallengeSelect = (challengeId: string) => {
     if (onSelectChallenge) {
       onSelectChallenge(selectedTrack, challengeId);
     }
   };
-  
-  // Get difficulty color
+
+  // Get color for difficulty level
   const getDifficultyColor = (difficulty: DifficultyLevel): string => {
     switch (difficulty) {
       case 'beginner':
         return theme.palette.success.main;
       case 'intermediate':
-        return theme.palette.warning.main;
+        return theme.palette.info.main;
       case 'advanced':
-        return theme.palette.error.main;
+        return theme.palette.warning.main;
       case 'expert':
-        return theme.palette.error.dark;
+        return theme.palette.error.main;
       default:
-        return theme.palette.primary.main;
+        return theme.palette.grey[500];
     }
   };
-  
-  // Get application-specific styling
+
+  // Get style for application tab
   const getApplicationStyle = (application: ApplicationType) => {
+    let color = theme.palette.primary.main;
+    let icon = <CodeIcon />;
+
     switch (application) {
       case 'vscode':
-        return {
-          color: '#0078D7',
-          backgroundColor: '#0078D722',
-          icon: '🔵'
-        };
+        color = '#0078D7';
+        icon = <CodeIcon />;
+        break;
       case 'intellij':
-        return {
-          color: '#FC801D',
-          backgroundColor: '#FC801D22',
-          icon: '🟠'
-        };
+        color = '#F97A12';
+        icon = <CodeIcon />;
+        break;
       case 'cursor':
-        return {
-          color: '#9B57B6',
-          backgroundColor: '#9B57B622',
-          icon: '🟣'
-        };
+        color = '#00A67D';
+        icon = <CodeIcon />;
+        break;
       default:
-        return {
-          color: theme.palette.primary.main,
-          backgroundColor: theme.palette.primary.main + '22',
-          icon: '⌨️'
-        };
+        break;
     }
+
+    return { color, icon };
   };
-  
+
   // Check if a module is unlocked
   const isModuleUnlocked = (moduleId: string): boolean => {
     return curriculumService.isModuleUnlocked(selectedTrack, moduleId);
   };
-  
+
   // Check if a lesson is unlocked
   const isLessonUnlocked = (moduleId: string, lessonId: string): boolean => {
     return curriculumService.isLessonUnlocked(selectedTrack, moduleId, lessonId);
   };
-  
+
   // Check if a lesson is completed
   const isLessonCompleted = (lessonId: string): boolean => {
     const userProgress = curriculumService.getUserProgress();
     if (!userProgress) return false;
-    
-    return userProgress.completedLessons.some(cl => cl.lessonId === lessonId);
+
+    return userProgress.completedLessons.some((lesson) => lesson.lessonId === lessonId);
   };
-  
+
   // Get lesson progress
   const getLessonProgress = (lessonId: string): number => {
     const userProgress = curriculumService.getUserProgress();
     if (!userProgress) return 0;
-    
-    const currentLesson = userProgress.currentLessons.find(cl => cl.lessonId === lessonId);
+
+    const currentLesson = userProgress.currentLessons.find(
+      (lesson) => lesson.lessonId === lessonId && lesson.trackId === selectedTrack,
+    );
     return currentLesson ? currentLesson.progress : 0;
   };
-  
-  // Render module
+
+  // Render a module
   const renderModule = (module: Module) => {
-    const isUnlocked = isModuleUnlocked(module.id);
     const isExpanded = expandedModules.includes(module.id);
-    const appStyle = getApplicationStyle(selectedTrack);
-    
+    const isUnlocked = isModuleUnlocked(module.id);
+
     return (
       <Box key={module.id} sx={{ mb: 2 }}>
-        <Paper 
-          elevation={2} 
-          sx={{ 
-            overflow: 'hidden',
+        <Paper
+          elevation={2}
+          sx={{
+            borderLeft: `4px solid ${getDifficultyColor(module.difficulty)}`,
             opacity: isUnlocked ? 1 : 0.7,
-            border: '1px solid',
-            borderColor: isUnlocked ? appStyle.color : theme.palette.divider,
           }}
         >
-          {/* Module header */}
-          <Box 
-            sx={{ 
-              p: 2, 
-              cursor: 'pointer',
-              backgroundColor: isExpanded ? appStyle.backgroundColor : 'transparent',
-              transition: 'background-color 0.2s',
-              '&:hover': {
-                backgroundColor: appStyle.backgroundColor,
-              },
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-            }}
-            onClick={() => handleModuleToggle(module.id)}
-          >
-            <Box sx={{ display: 'flex', alignItems: 'center' }}>
-              <SchoolIcon sx={{ mr: 1, color: appStyle.color }} />
-              <Box>
-                <Typography variant="h6" component="div">
-                  {module.title}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  {module.lessons.length} lessons • {module.difficulty}
-                </Typography>
-              </Box>
-            </Box>
-            
-            <Box sx={{ display: 'flex', alignItems: 'center' }}>
-              {!isUnlocked && (
-                <LockIcon sx={{ mr: 1, color: theme.palette.text.disabled }} />
-              )}
-              {isExpanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
-            </Box>
-          </Box>
-          
-          {/* Module content */}
-          <Collapse in={isExpanded} timeout="auto" unmountOnExit>
-            <Divider />
-            <Box sx={{ p: 2 }}>
-              <Typography variant="body2" paragraph>
-                {module.description}
-              </Typography>
-              
-              <Chip 
-                label={module.difficulty} 
-                size="small" 
-                sx={{ 
-                  backgroundColor: getDifficultyColor(module.difficulty) + '22',
-                  color: getDifficultyColor(module.difficulty),
-                  mb: 2,
-                }} 
-              />
-              
-              <List disablePadding>
-                {module.lessons.map((lesson) => {
-                  const lessonUnlocked = isLessonUnlocked(module.id, lesson.id);
-                  const lessonCompleted = isLessonCompleted(lesson.id);
-                  const progress = getLessonProgress(lesson.id);
-                  
-                  return (
-                    <ListItem 
-                      key={lesson.id}
-                      disablePadding
-                      sx={{ 
-                        mb: 1,
-                        opacity: lessonUnlocked ? 1 : 0.7,
-                        borderRadius: 1,
-                        overflow: 'hidden',
-                      }}
-                    >
-                      <Paper 
-                        elevation={1} 
-                        sx={{ 
-                          width: '100%',
-                          borderLeft: '4px solid',
-                          borderColor: lessonCompleted 
-                            ? theme.palette.success.main 
-                            : (lessonUnlocked ? appStyle.color : theme.palette.divider),
+          <ListItem>
+            <ButtonBase
+              onClick={() => isUnlocked && handleModuleToggle(module.id)}
+              disabled={!isUnlocked}
+              sx={{
+                py: 2,
+                width: '100%',
+                display: 'flex',
+                justifyContent: 'space-between',
+                opacity: isUnlocked ? 1 : 0.7,
+              }}
+            >
+              <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                <ListItemIcon>
+                  {isUnlocked ? (
+                    <SchoolIcon color="primary" />
+                  ) : (
+                    <LockIcon color="disabled" />
+                  )}
+                </ListItemIcon>
+                <ListItemText
+                  primary={
+                    <Typography variant="h6" component="div">
+                      {module.title}
+                      <Chip
+                        label={module.difficulty}
+                        size="small"
+                        sx={{
+                          ml: 1,
+                          backgroundColor: getDifficultyColor(module.difficulty),
+                          color: 'white',
                         }}
-                      >
-                        <Box
-                          sx={{ 
-                            display: 'flex',
-                            alignItems: 'center',
-                            p: 2,
-                            cursor: lessonUnlocked ? 'pointer' : 'default',
-                            opacity: lessonUnlocked ? 1 : 0.7,
-                            '&:hover': {
-                              backgroundColor: lessonUnlocked ? theme.palette.action.hover : 'transparent',
-                            },
-                          }}
-                          onClick={() => lessonUnlocked && handleLessonSelect(module.id, lesson.id)}
-                        >
-                          <ListItemIcon>
-                            {lessonCompleted ? (
-                              <CheckCircleIcon sx={{ color: theme.palette.success.main }} />
-                            ) : (
-                              <PlayArrowIcon sx={{ color: lessonUnlocked ? appStyle.color : theme.palette.text.disabled }} />
-                            )}
-                          </ListItemIcon>
-                          <ListItemText
-                            primary={lesson.title}
-                            secondary={
-                              <Box component="span" sx={{ display: 'flex', alignItems: 'center', mt: 0.5 }}>
-                                <Chip 
-                                  label={lesson.difficulty} 
-                                  size="small" 
-                                  sx={{ 
-                                    height: 20,
-                                    fontSize: '0.7rem',
-                                    backgroundColor: getDifficultyColor(lesson.difficulty) + '22',
-                                    color: getDifficultyColor(lesson.difficulty),
-                                    mr: 1,
-                                  }} 
-                                />
-                                <Typography variant="caption" component="span">
-                                  {lesson.estimatedTime} min • {lesson.xpReward} XP
-                                </Typography>
-                              </Box>
-                            }
-                          />
-                          {!lessonUnlocked && (
-                            <LockIcon sx={{ color: theme.palette.text.disabled, ml: 1 }} />
-                          )}
-                        </Box>
-                      </Paper>
-                    </ListItem>
-                  );
-                })}
-              </List>
-            </Box>
-          </Collapse>
+                      />
+                    </Typography>
+                  }
+                  secondary={module.description}
+                />
+              </Box>
+              {isExpanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+            </ButtonBase>
+          </ListItem>
         </Paper>
+
+        <Collapse in={isExpanded && isUnlocked} timeout="auto" unmountOnExit>
+          <List component="div" disablePadding>
+            {module.lessons.map((lesson) => {
+              const lessonCompleted = isLessonCompleted(lesson.lessonId);
+              const lessonUnlocked = isLessonUnlocked(module.id, lesson.lessonId);
+              const progress = getLessonProgress(lesson.lessonId);
+
+              return (
+                <ListItem key={lesson.lessonId}>
+                  <ButtonBase
+                    onClick={() => lessonUnlocked && handleLessonSelect(module.id, lesson.lessonId)}
+                    disabled={!lessonUnlocked}
+                    sx={{
+                      pl: 4,
+                      width: '100%',
+                      display: 'flex',
+                      justifyContent: 'flex-start',
+                      borderLeft: `4px solid ${
+                        lessonCompleted
+                          ? theme.palette.success.main
+                          : progress > 0
+                          ? theme.palette.info.main
+                          : 'transparent'
+                      }`,
+                      ml: 2,
+                      my: 1,
+                      backgroundColor: theme.palette.background.paper,
+                      opacity: lessonUnlocked ? 1 : 0.7,
+                    }}
+                  >
+                    <ListItemIcon>
+                      {lessonCompleted ? (
+                        <CheckCircleIcon color="success" />
+                      ) : lessonUnlocked ? (
+                        <PlayArrowIcon color="primary" />
+                      ) : (
+                        <LockIcon color="disabled" />
+                      )}
+                    </ListItemIcon>
+                    <ListItemText
+                      primary={lesson.title}
+                      secondary={
+                        <>
+                          <Typography variant="body2" component="span">
+                            {lesson.description?.substring(0, 60)}
+                            {lesson.description && lesson.description.length > 60 ? '...' : ''}
+                          </Typography>
+                          <Box sx={{ display: 'flex', alignItems: 'center', mt: 1 }}>
+                            <Chip
+                              label={`XP: ${lesson.xpReward}`}
+                              size="small"
+                              sx={{ mr: 1 }}
+                            />
+                            <Chip
+                              label={`${lesson.estimatedTime || 10} min`}
+                              size="small"
+                              sx={{ mr: 1 }}
+                            />
+                            {lesson.category && (
+                              <Chip
+                                label={lesson.category}
+                                size="small"
+                                sx={{ mr: 1 }}
+                              />
+                            )}
+                          </Box>
+                        </>
+                      }
+                    />
+                  </ButtonBase>
+                </ListItem>
+              );
+            })}
+          </List>
+        </Collapse>
       </Box>
     );
   };
-  
+
+  // Render mastery challenges
+  const renderMasteryChallenges = () => {
+    return (
+      <Box sx={{ mt: 4 }}>
+        <Typography variant="h5" gutterBottom>
+          Mastery Challenges
+        </Typography>
+        <Divider sx={{ mb: 2 }} />
+
+        <List>
+          {currentTrack?.modules
+            .filter((module) => module.id.includes('mastery'))
+            .flatMap((module) => module.lessons)
+            .map((challenge) => (
+              <ListItem key={challenge.lessonId}>
+                <ButtonBase
+                  onClick={() => handleChallengeSelect(challenge.id)}
+                  sx={{
+                    width: '100%',
+                    display: 'flex',
+                    justifyContent: 'flex-start',
+                    mb: 1,
+                    backgroundColor: theme.palette.background.paper,
+                    borderLeft: `4px solid ${getDifficultyColor(challenge.difficulty)}`,
+                    p: 1,
+                  }}
+                >
+                  <ListItemIcon>
+                    <WorkspacePremiumIcon color="primary" />
+                  </ListItemIcon>
+                  <ListItemText
+                    primary={
+                      <Typography variant="h6">
+                        {challenge.title}
+                        <Chip
+                          label={challenge.difficulty}
+                          size="small"
+                          sx={{
+                            ml: 1,
+                            backgroundColor: getDifficultyColor(challenge.difficulty),
+                            color: 'white',
+                          }}
+                        />
+                      </Typography>
+                    }
+                    secondary={challenge.description}
+                  />
+                </ButtonBase>
+              </ListItem>
+            ))}
+        </List>
+      </Box>
+    );
+  };
+
   return (
-    <Box>
-      {/* Curriculum selector */}
-      <Box sx={{ mb: 3 }}>
-        <FormControl fullWidth variant="outlined" size="small">
+    <Box sx={{ p: 3 }}>
+      {/* Curriculum Selector */}
+      {curriculums.length > 1 && (
+        <FormControl fullWidth sx={{ mb: 3 }}>
           <InputLabel id="curriculum-select-label">Curriculum</InputLabel>
           <Select
             labelId="curriculum-select-label"
             id="curriculum-select"
             value={selectedCurriculumId}
-            onChange={handleCurriculumChange}
             label="Curriculum"
+            onChange={handleCurriculumChange}
           >
             {curriculums.map((curriculum) => (
               <MenuItem key={curriculum.id} value={curriculum.id}>
@@ -387,58 +426,54 @@ const CurriculumView: React.FC<CurriculumViewProps> = ({
             ))}
           </Select>
         </FormControl>
-      </Box>
-      
-      {/* Track tabs */}
-      {tracks.length > 0 && (
-        <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
-          <Tabs
-            value={selectedTrack}
-            onChange={handleTrackChange}
-            variant="scrollable"
-            scrollButtons="auto"
-            aria-label="application track tabs"
-          >
-            {tracks.map((track) => (
-              <Tab
-                key={track.id}
-                label={track.name}
-                value={track.id}
-                icon={<Box component="span">{getApplicationStyle(track.id).icon}</Box>}
-                iconPosition="start"
-                sx={{
-                  '&.Mui-selected': {
-                    color: getApplicationStyle(track.id).color,
-                  },
-                }}
-              />
-            ))}
-          </Tabs>
-        </Box>
       )}
-      
-      {/* Track description */}
+
+      {/* Application Track Tabs */}
+      <Tabs
+        value={selectedTrack}
+        onChange={handleTrackChange}
+        aria-label="application tracks"
+        variant="fullWidth"
+        sx={{ mb: 3 }}
+      >
+        {tracks.map((track) => {
+          const { color, icon } = getApplicationStyle(track.id);
+          return (
+            <Tab
+              key={track.id}
+              value={track.id}
+              label={track.name}
+              icon={icon}
+              sx={{
+                '&.Mui-selected': {
+                  color,
+                },
+              }}
+            />
+          );
+        })}
+      </Tabs>
+
+      {/* Track Description */}
       {currentTrack && (
-        <Box sx={{ mb: 3 }}>
-          <Typography variant="body1" paragraph>
-            {currentTrack.description}
+        <Paper sx={{ p: 2, mb: 3 }}>
+          <Typography variant="h5" gutterBottom>
+            {currentTrack.name}
           </Typography>
-        </Box>
+          <Typography variant="body1">{currentTrack.description}</Typography>
+        </Paper>
       )}
-      
-      {/* Modules */}
-      {currentTrack && currentTrack.modules.map((module) => renderModule(module))}
-      
-      {/* No tracks message */}
-      {tracks.length === 0 && (
-        <Box sx={{ textAlign: 'center', py: 4 }}>
-          <Typography variant="h6" color="text.secondary">
-            No tracks available for this curriculum.
-          </Typography>
-        </Box>
-      )}
+
+      {/* Modules and Lessons */}
+      {currentTrack?.modules
+        .filter((module) => !module.id.includes('mastery'))
+        .sort((a, b) => a.order - b.order)
+        .map((module) => renderModule(module))}
+
+      {/* Mastery Challenges */}
+      {currentTrack && renderMasteryChallenges()}
     </Box>
   );
 };
 
-export default CurriculumView; 
+export default CurriculumView;

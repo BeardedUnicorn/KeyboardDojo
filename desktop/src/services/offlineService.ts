@@ -1,11 +1,13 @@
 /**
  * Offline Service
- * 
+ *
  * This service provides functionality for handling offline mode,
  * including local storage, data synchronization, and offline indicators.
  */
 
-import { invoke } from '@tauri-apps/api/core';
+import { BaseService } from './BaseService';
+import { loggerService } from './loggerService';
+import { serviceFactory } from './ServiceFactory';
 
 // Define types for offline data
 export interface OfflineData {
@@ -22,7 +24,7 @@ export interface PendingChange {
   timestamp: number;
 }
 
-class OfflineService {
+class OfflineService extends BaseService {
   private _isOffline: boolean = false;
   private _pendingChanges: PendingChange[] = [];
   private _lastSyncTimestamp: number = 0;
@@ -33,217 +35,225 @@ class OfflineService {
    * Initialize the offline service
    * This sets up event listeners for online/offline events
    */
-  initialize(): void {
+  async initialize(): Promise<void> {
+    await super.initialize();
+    
     // Listen for online/offline events
     window.addEventListener('online', this.handleOnline);
     window.addEventListener('offline', this.handleOffline);
-    
+
     // Check initial connection status
     this._isOffline = !navigator.onLine;
-    
+
     // Load offline data from local storage
     this.loadOfflineData();
-    
-    console.log(`Offline service initialized. Current status: ${this._isOffline ? 'Offline' : 'Online'}`);
+
+    loggerService.info(`Offline service initialized. Current status: ${this._isOffline ? 'Offline' : 'Online'}`, {
+      component: 'OfflineService',
+      isOffline: this._isOffline,
+    });
   }
 
   /**
    * Clean up the offline service
-   * This removes event listeners
+   * This removes event listeners and saves offline data
    */
   cleanup(): void {
+    // Remove event listeners
     window.removeEventListener('online', this.handleOnline);
     window.removeEventListener('offline', this.handleOffline);
+
+    // Save offline data to local storage
+    this.saveOfflineData();
+
+    loggerService.info('Offline service cleaned up', { component: 'OfflineService' });
     
-    console.log('Offline service cleaned up');
+    super.cleanup();
   }
 
-  /**
-   * Handle online event
-   */
   private handleOnline = async (): Promise<void> => {
-    console.log('Device is now online');
     this._isOffline = false;
     
     // Notify listeners
-    this._offlineListeners.forEach(listener => listener(false));
+    this._offlineListeners.forEach((listener) => listener(false));
     
     // Attempt to sync pending changes
-    await this.syncPendingChanges();
+    if (this._pendingChanges.length > 0) {
+      await this.syncPendingChanges();
+    }
+    
+    loggerService.info('Connection restored. Online mode activated.', { component: 'OfflineService' });
   };
 
-  /**
-   * Handle offline event
-   */
   private handleOffline = (): void => {
-    console.log('Device is now offline');
     this._isOffline = true;
     
     // Notify listeners
-    this._offlineListeners.forEach(listener => listener(true));
+    this._offlineListeners.forEach((listener) => listener(true));
+    
+    loggerService.warn('Connection lost. Offline mode activated.', { component: 'OfflineService' });
   };
 
-  /**
-   * Load offline data from local storage
-   */
   private loadOfflineData(): void {
     try {
-      const offlineDataStr = localStorage.getItem('offlineData');
-      if (offlineDataStr) {
-        const offlineData: OfflineData = JSON.parse(offlineDataStr);
-        this._pendingChanges = offlineData.pendingChanges || [];
-        this._lastSyncTimestamp = offlineData.lastSyncTimestamp || 0;
-        this._isOffline = offlineData.isOffline || !navigator.onLine;
+      const storedData = localStorage.getItem('offline-data');
+      
+      if (storedData) {
+        const parsedData: OfflineData = JSON.parse(storedData);
+        this._pendingChanges = parsedData.pendingChanges || [];
+        this._lastSyncTimestamp = parsedData.lastSyncTimestamp || 0;
+        
+        loggerService.info('Loaded offline data from storage', { 
+          component: 'OfflineService',
+          pendingChangesCount: this._pendingChanges.length,
+          lastSyncTimestamp: this._lastSyncTimestamp,
+        });
       }
     } catch (error) {
-      console.error('Error loading offline data:', error);
+      loggerService.error('Failed to load offline data', error, { component: 'OfflineService' });
     }
   }
 
-  /**
-   * Save offline data to local storage
-   */
   private saveOfflineData(): void {
     try {
-      const offlineData: OfflineData = {
-        pendingChanges: this._pendingChanges,
+      const dataToStore: OfflineData = {
         lastSyncTimestamp: this._lastSyncTimestamp,
-        isOffline: this._isOffline
+        pendingChanges: this._pendingChanges,
+        isOffline: this._isOffline,
       };
       
-      localStorage.setItem('offlineData', JSON.stringify(offlineData));
+      localStorage.setItem('offline-data', JSON.stringify(dataToStore));
+      
+      loggerService.info('Saved offline data to storage', { 
+        component: 'OfflineService',
+        pendingChangesCount: this._pendingChanges.length,
+        lastSyncTimestamp: this._lastSyncTimestamp,
+      });
     } catch (error) {
-      console.error('Error saving offline data:', error);
+      loggerService.error('Failed to save offline data', error, { component: 'OfflineService' });
     }
   }
 
-  /**
-   * Add a pending change to be synced when online
-   * @param change The change to add
-   */
   addPendingChange(change: Omit<PendingChange, 'timestamp'>): void {
-    const fullChange: PendingChange = {
+    // Add timestamp to the change
+    const pendingChange: PendingChange = {
       ...change,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     };
     
-    this._pendingChanges.push(fullChange);
+    // Add to pending changes
+    this._pendingChanges.push(pendingChange);
+    
+    // Save to local storage
     this.saveOfflineData();
     
-    console.log(`Added pending change: ${change.type} ${change.entity} ${change.id}`);
+    loggerService.info('Added pending change', { 
+      component: 'OfflineService',
+      changeType: change.type,
+      entity: change.entity,
+      id: change.id,
+      pendingChangesCount: this._pendingChanges.length,
+    });
   }
 
-  /**
-   * Sync pending changes with the server
-   * @returns Promise that resolves when sync is complete
-   */
   async syncPendingChanges(): Promise<boolean> {
-    if (this._isOffline || this._pendingChanges.length === 0) {
+    if (this._isOffline) {
+      loggerService.warn('Cannot sync changes while offline', { component: 'OfflineService' });
       return false;
     }
     
-    console.log(`Syncing ${this._pendingChanges.length} pending changes...`);
+    if (this._pendingChanges.length === 0) {
+      loggerService.info('No pending changes to sync', { component: 'OfflineService' });
+      return true;
+    }
+    
+    loggerService.info(`Syncing ${this._pendingChanges.length} pending changes`, { 
+      component: 'OfflineService',
+      pendingChangesCount: this._pendingChanges.length,
+    });
     
     try {
-      // In a real implementation, we would use Tauri API to sync with the server
-      // For now, we'll just simulate a successful sync
+      // In a real implementation, this would send the changes to the server
+      // For this example, we'll just simulate a successful sync
       
-      // Example of how this would be implemented with Tauri:
-      /*
-      await invoke('sync_pending_changes', { 
-        changes: this._pendingChanges,
-        lastSyncTimestamp: this._lastSyncTimestamp
-      });
-      */
+      // Sort changes by timestamp
+      const sortedChanges = [...this._pendingChanges].sort((a, b) => a.timestamp - b.timestamp);
       
-      // Update last sync timestamp
-      this._lastSyncTimestamp = Date.now();
+      // Process each change
+      for (const change of sortedChanges) {
+        // Simulate API call
+        await new Promise((resolve) => setTimeout(resolve, 100));
+        
+        loggerService.info(`Synced change: ${change.type} ${change.entity} ${change.id}`, { 
+          component: 'OfflineService',
+          change,
+        });
+      }
       
       // Clear pending changes
       this._pendingChanges = [];
       
-      // Save updated offline data
+      // Update last sync timestamp
+      this._lastSyncTimestamp = Date.now();
+      
+      // Save to local storage
       this.saveOfflineData();
       
       // Notify listeners
-      this._syncListeners.forEach(listener => listener(true));
+      this._syncListeners.forEach((listener) => listener(true));
       
-      console.log('Sync completed successfully');
+      loggerService.info('Successfully synced all pending changes', { 
+        component: 'OfflineService',
+        lastSyncTimestamp: this._lastSyncTimestamp,
+      });
+      
       return true;
     } catch (error) {
-      console.error('Error syncing pending changes:', error);
+      loggerService.error('Failed to sync pending changes', error, { component: 'OfflineService' });
       
       // Notify listeners
-      this._syncListeners.forEach(listener => listener(false));
+      this._syncListeners.forEach((listener) => listener(false));
       
       return false;
     }
   }
 
-  /**
-   * Check if the device is currently offline
-   * @returns Whether the device is offline
-   */
   isOffline(): boolean {
     return this._isOffline;
   }
 
-  /**
-   * Get the number of pending changes
-   * @returns Number of pending changes
-   */
   getPendingChangesCount(): number {
     return this._pendingChanges.length;
   }
 
-  /**
-   * Get all pending changes
-   * @returns Array of pending changes
-   */
   getPendingChanges(): PendingChange[] {
     return [...this._pendingChanges];
   }
 
-  /**
-   * Add a listener for offline status changes
-   * @param listener The listener function
-   */
   addOfflineListener(listener: (isOffline: boolean) => void): void {
     this._offlineListeners.add(listener);
   }
 
-  /**
-   * Remove a listener for offline status changes
-   * @param listener The listener function
-   */
   removeOfflineListener(listener: (isOffline: boolean) => void): void {
     this._offlineListeners.delete(listener);
   }
 
-  /**
-   * Add a listener for sync events
-   * @param listener The listener function
-   */
   addSyncListener(listener: (success: boolean) => void): void {
     this._syncListeners.add(listener);
   }
 
-  /**
-   * Remove a listener for sync events
-   * @param listener The listener function
-   */
   removeSyncListener(listener: (success: boolean) => void): void {
     this._syncListeners.delete(listener);
   }
 
-  /**
-   * Get the timestamp of the last successful sync
-   * @returns Timestamp of the last sync
-   */
   getLastSyncTimestamp(): number {
     return this._lastSyncTimestamp;
   }
 }
 
-// Export a singleton instance
-export const offlineService = new OfflineService(); 
+// Create and register the service
+const offlineService = new OfflineService();
+serviceFactory.register('offlineService', offlineService);
+
+// Export the singleton instance
+export { offlineService };

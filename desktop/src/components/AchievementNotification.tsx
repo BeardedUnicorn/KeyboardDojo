@@ -1,18 +1,19 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  Box, 
-  Paper, 
-  Typography, 
-  IconButton, 
-  Slide, 
-  useTheme,
-  Snackbar
-} from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
-import FavoriteIcon from '@mui/icons-material/Favorite';
-import { Achievement } from '../services/achievementsService';
-import { AchievementBadge } from './';
+import {
+  Box,
+  Paper,
+  Typography,
+  IconButton,
+  useTheme,
+  Snackbar,
+} from '@mui/material';
 import { alpha } from '@mui/material/styles';
+import React, { useState } from 'react';
+
+import { AchievementBadge } from './';
+
+import type { Achievement } from '../services';
+import type { FC } from 'react';
 
 interface AchievementNotificationProps {
   achievement: Achievement;
@@ -20,19 +21,19 @@ interface AchievementNotificationProps {
   autoHideDuration?: number;
 }
 
-const AchievementNotification: React.FC<AchievementNotificationProps> = ({
+const AchievementNotification: FC<AchievementNotificationProps> = ({
   achievement,
   onClose,
-  autoHideDuration = 6000
+  autoHideDuration = 6000,
 }) => {
   const theme = useTheme();
   const [open, setOpen] = useState(true);
-  
+
   const handleClose = () => {
     setOpen(false);
     setTimeout(onClose, 300);
   };
-  
+
   // Get color based on rarity
   const getRarityColor = () => {
     switch (achievement.rarity) {
@@ -49,7 +50,7 @@ const AchievementNotification: React.FC<AchievementNotificationProps> = ({
         return theme.palette.primary.main;
     }
   };
-  
+
   return (
     <Snackbar
       open={open}
@@ -70,12 +71,12 @@ const AchievementNotification: React.FC<AchievementNotificationProps> = ({
         }}
       >
         <Box sx={{ display: 'flex', alignItems: 'flex-start' }}>
-          <AchievementBadge 
-            achievement={achievement} 
-            size="medium" 
-            showDescription={true}
+          <AchievementBadge
+            achievement={achievement}
+            size="medium"
+            showDescription
           />
-          
+
           <IconButton
             size="small"
             aria-label="close"
@@ -86,13 +87,13 @@ const AchievementNotification: React.FC<AchievementNotificationProps> = ({
             <CloseIcon fontSize="small" />
           </IconButton>
         </Box>
-        
+
         {/* Show XP reward if applicable */}
         {achievement.xpReward && achievement.xpReward > 0 && (
-          <Box 
-            sx={{ 
-              display: 'flex', 
-              alignItems: 'center', 
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
               mt: 1,
               p: 1,
               bgcolor: 'background.default',
@@ -109,4 +110,4 @@ const AchievementNotification: React.FC<AchievementNotificationProps> = ({
   );
 };
 
-export default AchievementNotification; 
+export default AchievementNotification;

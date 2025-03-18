@@ -12,7 +12,7 @@ This checklist ensures that all aspects of the Keyboard Dojo Desktop application
 
 - [x] User account management
   - [x] Login and registration
-  - [x] Profile management
+  - [x] ProfilePage management
   - [x] Password reset
   - [x] Account linking
 

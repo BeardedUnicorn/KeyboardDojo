@@ -5,6 +5,10 @@
  * downloading updates, and installing updates.
  */
 
+import { getVersion } from '@tauri-apps/api/app';
+
+import { loggerService } from './loggerService';
+
 // Mock the update functions since they're not available in Tauri v2 yet
 // In a real implementation, these would be imported from Tauri plugins
 const checkUpdate = async () => ({ 
@@ -12,12 +16,11 @@ const checkUpdate = async () => ({
   manifest: {
     version: '0.0.0',
     body: '',
-    date: new Date().toISOString()
-  }
+    date: new Date().toISOString(),
+  },
 });
 const installUpdate = async () => {};
 const relaunch = async () => {};
-import { getVersion } from '@tauri-apps/api/app';
 
 export interface UpdateInfo {
   version: string;
@@ -39,7 +42,7 @@ class UpdateService {
   private _updateInfo: UpdateInfo | null = null;
   private _updateProgress: UpdateProgress = {
     status: 'idle',
-    progress: 0
+    progress: 0,
   };
   private _progressListeners: Set<(progress: UpdateProgress) => void> = new Set();
   private _updateCheckInterval: number | null = null;
@@ -53,7 +56,10 @@ class UpdateService {
     try {
       // Get the current version
       this._currentVersion = await getVersion();
-      console.log(`Current app version: ${this._currentVersion}`);
+      loggerService.info(`Current app version: ${this._currentVersion}`, { 
+        component: 'UpdateService',
+        version: this._currentVersion,
+      });
       
       // Check for updates immediately
       await this.checkForUpdates();
@@ -63,9 +69,9 @@ class UpdateService {
         this.checkForUpdates();
       }, 60 * 60 * 1000); // 1 hour
       
-      console.log('Update service initialized');
+      loggerService.info('Update service initialized', { component: 'UpdateService' });
     } catch (error) {
-      console.error('Error initializing update service:', error);
+      loggerService.error('Error initializing update service:', error, { component: 'UpdateService' });
     }
   }
 
@@ -79,7 +85,7 @@ class UpdateService {
       this._updateCheckInterval = null;
     }
     
-    console.log('Update service cleaned up');
+    loggerService.info('Update service cleaned up', { component: 'UpdateService' });
   }
 
   /**
@@ -90,32 +96,39 @@ class UpdateService {
     this.setProgress({ status: 'checking', progress: 0 });
     
     try {
-      console.log('Checking for updates...');
+      loggerService.info('Checking for updates...', { component: 'UpdateService' });
       
       // In a real implementation, we would use Tauri API to check for updates
       const { shouldUpdate, manifest } = await checkUpdate();
       
       if (shouldUpdate) {
-        console.log(`Update available: ${manifest?.version}`);
+        loggerService.info(`Update available: ${manifest?.version}`, { 
+          component: 'UpdateService',
+          newVersion: manifest?.version,
+          currentVersion: this._currentVersion,
+        });
         
         this._updateInfo = {
           version: manifest?.version || 'unknown',
           currentVersion: this._currentVersion,
           body: manifest?.body || '',
           date: manifest?.date || new Date().toISOString(),
-          available: true
+          available: true,
         };
         
         this.setProgress({ status: 'idle', progress: 0 });
       } else {
-        console.log('No updates available');
+        loggerService.info('No updates available', { 
+          component: 'UpdateService',
+          currentVersion: this._currentVersion,
+        });
         
         this._updateInfo = {
           version: this._currentVersion,
           currentVersion: this._currentVersion,
           body: '',
           date: new Date().toISOString(),
-          available: false
+          available: false,
         };
         
         this.setProgress({ status: 'idle', progress: 0 });
@@ -123,12 +136,12 @@ class UpdateService {
       
       return this._updateInfo;
     } catch (error) {
-      console.error('Error checking for updates:', error);
+      loggerService.error('Error checking for updates:', error, { component: 'UpdateService' });
       
       this.setProgress({ 
         status: 'error', 
         progress: 0,
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: error instanceof Error ? error.message : 'Unknown error',
       });
       
       return null;
@@ -141,14 +154,20 @@ class UpdateService {
    */
   async downloadAndInstallUpdate(): Promise<boolean> {
     if (!this._updateInfo?.available) {
-      console.warn('No update available to download');
+      loggerService.warn('No update available to download', { 
+        component: 'UpdateService',
+        currentVersion: this._currentVersion,
+      });
       return false;
     }
     
     this.setProgress({ status: 'downloading', progress: 0 });
     
     try {
-      console.log('Downloading and installing update...');
+      loggerService.info('Downloading and installing update...', { 
+        component: 'UpdateService',
+        version: this._updateInfo.version,
+      });
       
       // Simulate download progress
       const progressInterval = setInterval(() => {
@@ -162,15 +181,21 @@ class UpdateService {
       clearInterval(progressInterval);
       this.setProgress({ status: 'ready', progress: 1 });
       
-      console.log('Update installed successfully');
+      loggerService.info('Update installed successfully', { 
+        component: 'UpdateService',
+        version: this._updateInfo.version,
+      });
       return true;
     } catch (error) {
-      console.error('Error downloading and installing update:', error);
+      loggerService.error('Error downloading and installing update:', error, { 
+        component: 'UpdateService',
+        version: this._updateInfo?.version,
+      });
       
       this.setProgress({ 
         status: 'error', 
         progress: 0,
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: error instanceof Error ? error.message : 'Unknown error',
       });
       
       return false;
@@ -181,13 +206,16 @@ class UpdateService {
    * Restart the app to apply the update
    */
   async restartApp(): Promise<void> {
-    console.log('Restarting app to apply update...');
+    loggerService.info('Restarting app to apply update...', { 
+      component: 'UpdateService',
+      version: this._updateInfo?.version,
+    });
     
     try {
       // In a real implementation, we would use Tauri API to restart the app
       await relaunch();
     } catch (error) {
-      console.error('Error restarting app:', error);
+      loggerService.error('Error restarting app:', error, { component: 'UpdateService' });
     }
   }
 
@@ -198,11 +226,11 @@ class UpdateService {
   private setProgress(progress: Partial<UpdateProgress>): void {
     this._updateProgress = {
       ...this._updateProgress,
-      ...progress
+      ...progress,
     };
     
     // Notify listeners
-    this._progressListeners.forEach(listener => listener(this._updateProgress));
+    this._progressListeners.forEach((listener) => listener(this._updateProgress));
   }
 
   /**

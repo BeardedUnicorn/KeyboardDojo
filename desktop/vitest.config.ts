@@ -1,6 +1,7 @@
-import { defineConfig } from 'vitest/config';
-import react from '@vitejs/plugin-react';
 import { resolve } from 'path';
+
+import react from '@vitejs/plugin-react';
+import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
   plugins: [react()],
@@ -16,9 +17,20 @@ export default defineConfig({
       exclude: ['**/node_modules/**', '**/dist/**', '**/src/test/**'],
     },
   },
+  // Path aliases configuration for tests
+  // These must match the paths in tsconfig.json and vite.config.ts
+  // See src/docs/import-aliases.md for more information
   resolve: {
     alias: {
       '@': resolve(__dirname, './src'),
+      '@components': resolve(__dirname, './src/components'),
+      '@hooks': resolve(__dirname, './src/hooks'),
+      '@utils': resolve(__dirname, './src/utils'),
+      '@pages': resolve(__dirname, './src/pages'),
+      '@contexts': resolve(__dirname, './src/contexts'),
+      '@services': resolve(__dirname, './src/services'),
+      '@data': resolve(__dirname, './src/data'),
+      '@tests': resolve(__dirname, './src/tests'),
     },
   },
-}); 
+});

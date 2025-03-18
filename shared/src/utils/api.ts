@@ -97,8 +97,8 @@ class ApiClient {
    */
   async setAuthToken(token: string | null): Promise<void> {
     this.authToken = token;
-    
-    // Store the token in secure storage
+
+    // StorePage the token in secure storage
     if (token) {
       await secureStorage.setSecureItem(this.AUTH_TOKEN_KEY, token);
     } else {
@@ -158,9 +158,9 @@ class ApiClient {
               headers: requestHeaders,
               timestamp: Date.now(),
             };
-            
+
             this.offlineQueue.push(offlineRequest);
-            
+
             return {
               data: null,
               error: new Error('Offline mode: Request queued for later'),
@@ -181,7 +181,7 @@ class ApiClient {
           if (response.status === 401) {
             // Clear the auth token
             await this.setAuthToken(null);
-            
+
             return {
               data: null,
               error: new Error('Unauthorized: Please log in again'),
@@ -217,9 +217,9 @@ class ApiClient {
               headers: requestHeaders,
               timestamp: Date.now(),
             };
-            
+
             this.offlineQueue.push(offlineRequest);
-            
+
             return {
               data: null,
               error: new Error('Offline mode: Request queued for later'),
@@ -238,7 +238,7 @@ class ApiClient {
           if (response.status === 401) {
             // Clear the auth token
             await this.setAuthToken(null);
-            
+
             return {
               data: null,
               error: new Error('Unauthorized: Please log in again'),
@@ -369,4 +369,4 @@ class ApiClient {
 }
 
 // Export a singleton instance
-export const apiClient = new ApiClient(); 
+export const apiClient = new ApiClient();

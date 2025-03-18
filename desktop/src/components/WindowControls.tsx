@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+
 import { windowService } from '../services';
 
 // Styles for the window controls

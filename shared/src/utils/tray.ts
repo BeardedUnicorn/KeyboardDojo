@@ -41,16 +41,16 @@ class TrayService {
           // Example of how this would be implemented with Tauri:
           /*
           import { SystemTray, SystemTrayEvent } from '@tauri-apps/api/tray';
-          
+
           const tray = new SystemTray();
           await tray.setIcon(icon);
           await tray.setTooltip(tooltip);
-          
+
           tray.on('click', () => {
             // Handle click event
           });
           */
-          
+
           console.log(`System tray initialized with icon ${icon} and tooltip ${tooltip}`);
           this.initialized = true;
         } catch (error) {
@@ -75,7 +75,7 @@ class TrayService {
       console.warn('System tray not initialized. Call initialize() first.');
     }
 
-    // Store menu items for later use
+    // StorePage menu items for later use
     items.forEach(item => {
       this.items.set(item.id, item);
     });
@@ -87,33 +87,33 @@ class TrayService {
           // Example of how this would be implemented with Tauri:
           /*
           import { SystemTray, SystemTrayMenu, SystemTrayMenuItem } from '@tauri-apps/api/tray';
-          
+
           const tray = new SystemTray();
           const menu = new SystemTrayMenu();
-          
+
           const createMenuItems = (items: TrayMenuItem[]) => {
             return items.map(item => {
               const menuItem = new SystemTrayMenuItem(item.label, item.id, {
                 enabled: item.enabled,
                 checked: item.checked,
               });
-              
+
               if (item.onClick) {
                 menuItem.on('click', item.onClick);
               }
-              
+
               if (item.submenu) {
                 menuItem.submenu = createMenuItems(item.submenu);
               }
-              
+
               return menuItem;
             });
           };
-          
+
           menu.items = createMenuItems(items);
           await tray.setMenu(menu);
           */
-          
+
           console.log('System tray menu set:', items);
         } catch (error) {
           console.error('Failed to set system tray menu:', error);
@@ -152,26 +152,26 @@ class TrayService {
           // Example of how this would be implemented with Tauri:
           /*
           import { SystemTray, SystemTrayMenuItem } from '@tauri-apps/api/tray';
-          
+
           const tray = new SystemTray();
           const menu = await tray.getMenu();
           const menuItem = menu.getItem(id);
-          
+
           if (menuItem) {
             if (updates.label !== undefined) {
               await menuItem.setLabel(updates.label);
             }
-            
+
             if (updates.enabled !== undefined) {
               await menuItem.setEnabled(updates.enabled);
             }
-            
+
             if (updates.checked !== undefined) {
               await menuItem.setChecked(updates.checked);
             }
           }
           */
-          
+
           console.log(`System tray menu item ${id} updated:`, updates);
         } catch (error) {
           console.error('Failed to update system tray menu item:', error);
@@ -203,13 +203,13 @@ class TrayService {
           // Example of how this would be implemented with Tauri:
           /*
           import { isPermissionGranted, requestPermission, sendNotification } from '@tauri-apps/api/notification';
-          
+
           let permissionGranted = await isPermissionGranted();
           if (!permissionGranted) {
             const permission = await requestPermission();
             permissionGranted = permission === 'granted';
           }
-          
+
           if (permissionGranted) {
             sendNotification({
               title,
@@ -218,7 +218,7 @@ class TrayService {
             });
           }
           */
-          
+
           console.log(`System tray notification shown: ${title} - ${content}`);
         } catch (error) {
           console.error('Failed to show system tray notification:', error);
@@ -230,7 +230,7 @@ class TrayService {
           // Use the Web Notifications API in web environment
           if ('Notification' in window) {
             const permission = await Notification.requestPermission();
-            
+
             if (permission === 'granted') {
               new Notification(title, {
                 body: content,
@@ -261,11 +261,11 @@ class TrayService {
           // Example of how this would be implemented with Tauri:
           /*
           import { SystemTray } from '@tauri-apps/api/tray';
-          
+
           const tray = new SystemTray();
           await tray.destroy();
           */
-          
+
           console.log('System tray destroyed');
           this.initialized = false;
           this.items.clear();
@@ -282,4 +282,4 @@ class TrayService {
 }
 
 // Export a singleton instance
-export const trayService = new TrayService(); 
+export const trayService = new TrayService();

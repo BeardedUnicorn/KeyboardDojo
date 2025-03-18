@@ -27,8 +27,8 @@
 - [x] Accuracy tracking
 - [x] Personalized recommendations
 
-### User Profile
-- [x] Profile settings
+### User ProfilePage
+- [x] ProfilePage settings
 - [x] Subscription management
 - [x] Progress history
 - [x] Achievement badges
@@ -74,7 +74,7 @@
 
 ### User Progress
 - [x] Track lesson completion
-- [x] Store typing metrics
+- [x] StorePage typing metrics
 - [x] Calculate improvement over time
 - [x] Generate personalized recommendations
 

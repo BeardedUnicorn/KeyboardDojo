@@ -1,5 +1,7 @@
 import { storageService } from '../../../shared/src/utils';
 
+import { loggerService } from './loggerService';
+
 // Subscription tiers
 export enum SubscriptionTier {
   FREE = 'free',
@@ -38,8 +40,8 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
       'Basic shortcut lessons',
       'Limited hearts (5 max)',
       'Standard regeneration speed',
-      'Basic achievements'
-    ]
+      'Basic achievements',
+    ],
   },
   {
     id: 'premium-monthly',
@@ -52,8 +54,8 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
       'Unlimited hearts',
       'No ads',
       'Exclusive themes',
-      'Advanced statistics'
-    ]
+      'Advanced statistics',
+    ],
   },
   {
     id: 'premium-yearly',
@@ -67,8 +69,8 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
       'No ads',
       'Exclusive themes',
       'Advanced statistics',
-      '2 months free'
-    ]
+      '2 months free',
+    ],
   },
   {
     id: 'pro-monthly',
@@ -81,8 +83,8 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
       'Custom shortcut lessons',
       'Priority support',
       'Team progress tracking',
-      'Export progress reports'
-    ]
+      'Export progress reports',
+    ],
   },
   {
     id: 'pro-yearly',
@@ -96,9 +98,9 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
       'Priority support',
       'Team progress tracking',
       'Export progress reports',
-      '2 months free'
-    ]
-  }
+      '2 months free',
+    ],
+  },
 ];
 
 // Storage key
@@ -117,7 +119,7 @@ class SubscriptionService {
       activePlan: null,
       expiresAt: null,
       paymentMethod: null,
-      autoRenew: false
+      autoRenew: false,
     };
   }
 
@@ -126,29 +128,24 @@ class SubscriptionService {
    */
   async initialize(): Promise<void> {
     try {
-      const savedState = await storageService.getItem<SubscriptionState>(
-        SUBSCRIPTION_STORAGE_KEY,
-        this.state
-      );
+      // Load subscription state from storage
+      const savedState = await storageService.getItem<SubscriptionState>(SUBSCRIPTION_STORAGE_KEY);
       
-      if (savedState) {
-        // Check if subscription has expired
-        if (savedState.expiresAt && savedState.expiresAt < Date.now()) {
-          // Subscription expired, revert to free tier
-          this.state = {
-            ...savedState,
-            currentTier: SubscriptionTier.FREE,
-            activePlan: null,
-            expiresAt: null,
-            autoRenew: false
-          };
-          await this.saveState();
-        } else {
-          this.state = savedState;
-        }
+      if (!savedState) {
+        // Initialize with default state
+        this.state = {
+          currentTier: SubscriptionTier.FREE,
+          activePlan: null,
+          expiresAt: null,
+          paymentMethod: null,
+          autoRenew: false,
+        };
+        await this.saveState();
+      } else {
+        this.state = savedState;
       }
     } catch (error) {
-      console.error('Failed to initialize subscription service:', error);
+      loggerService.error('Failed to initialize subscription service:', error, { component: 'SubscriptionService' });
     }
   }
 
@@ -160,7 +157,7 @@ class SubscriptionService {
       await storageService.setItem(SUBSCRIPTION_STORAGE_KEY, this.state);
       this.notifyListeners();
     } catch (error) {
-      console.error('Failed to save subscription state:', error);
+      loggerService.error('Failed to save subscription state:', error, { component: 'SubscriptionService' });
     }
   }
 
@@ -186,7 +183,7 @@ class SubscriptionService {
       return SUBSCRIPTION_PLANS[0]; // Free plan
     }
     
-    return SUBSCRIPTION_PLANS.find(plan => plan.id === this.state.activePlan) || null;
+    return SUBSCRIPTION_PLANS.find((plan) => plan.id === this.state.activePlan) || null;
   }
 
   /**
@@ -197,7 +194,7 @@ class SubscriptionService {
    */
   async subscribe(planId: string, paymentMethod: string, autoRenew: boolean): Promise<boolean> {
     try {
-      const plan = SUBSCRIPTION_PLANS.find(p => p.id === planId);
+      const plan = SUBSCRIPTION_PLANS.find((p) => p.id === planId);
       
       if (!plan) {
         throw new Error(`Plan with ID ${planId} not found`);
@@ -217,13 +214,24 @@ class SubscriptionService {
         activePlan: plan.id,
         expiresAt,
         paymentMethod,
-        autoRenew
+        autoRenew,
       };
       
       await this.saveState();
+      
+      loggerService.info('Subscription successful', { 
+        component: 'SubscriptionService',
+        planId,
+        tier: plan.tier,
+        expiresAt: new Date(expiresAt).toISOString(),
+      });
+      
       return true;
     } catch (error) {
-      console.error('Failed to subscribe:', error);
+      loggerService.error('Failed to subscribe:', error, { 
+        component: 'SubscriptionService',
+        planId,
+      });
       return false;
     }
   }
@@ -238,13 +246,19 @@ class SubscriptionService {
       
       this.state = {
         ...this.state,
-        autoRenew: false
+        autoRenew: false,
       };
       
       await this.saveState();
+      
+      loggerService.info('Subscription cancelled', { 
+        component: 'SubscriptionService',
+        planId: this.state.activePlan,
+      });
+      
       return true;
     } catch (error) {
-      console.error('Failed to cancel subscription:', error);
+      loggerService.error('Failed to cancel subscription:', error, { component: 'SubscriptionService' });
       return false;
     }
   }
@@ -274,14 +288,14 @@ class SubscriptionService {
    * Remove listener
    */
   removeListener(callback: (state: SubscriptionState) => void): void {
-    this.listeners = this.listeners.filter(listener => listener !== callback);
+    this.listeners = this.listeners.filter((listener) => listener !== callback);
   }
 
   /**
    * Notify all listeners of state change
    */
   private notifyListeners(): void {
-    this.listeners.forEach(listener => listener(this.state));
+    this.listeners.forEach((listener) => listener(this.state));
   }
 
   /**

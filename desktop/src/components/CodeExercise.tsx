@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import {
   Box,
   Typography,
@@ -6,9 +6,11 @@ import {
   TextField,
   Button,
   Alert,
-  useTheme
+  useTheme,
 } from '@mui/material';
-import PlayArrowIcon from '@mui/icons-material/PlayArrow';
+import React, { useState } from 'react';
+
+import type { ChangeEvent, FC } from 'react';
 
 interface CodeExerciseProps {
   instructions: string;
@@ -18,32 +20,32 @@ interface CodeExerciseProps {
   onFailure: () => void;
 }
 
-const CodeExercise: React.FC<CodeExerciseProps> = ({
+const CodeExercise: FC<CodeExerciseProps> = ({
   instructions,
   initialCode,
   expectedOutput,
   onSuccess,
-  onFailure
+  onFailure,
 }) => {
   const theme = useTheme();
   const [code, setCode] = useState(initialCode);
   const [output, setOutput] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
-  
+
   // Handle code change
-  const handleCodeChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
+  const handleCodeChange = (event: ChangeEvent<HTMLTextAreaElement>) => {
     setCode(event.target.value);
     setError(null);
     setSuccess(false);
   };
-  
+
   // Handle code execution
   const handleRunCode = () => {
     try {
       // In a real app, this would execute the code safely
       // For this demo, we'll just simulate execution
-      
+
       // Simple evaluation for demonstration purposes
       // WARNING: Never use eval in production code without proper sandboxing
       let result;
@@ -53,20 +55,20 @@ const CodeExercise: React.FC<CodeExerciseProps> = ({
         const mockConsole = {
           log: (...args: any[]) => {
             consoleOutput.push(args.join(' '));
-          }
+          },
         };
-        
+
         // Create a safe execution context
         const execFunc = new Function('console', code);
         execFunc(mockConsole);
-        
+
         result = consoleOutput.join('\n');
       } catch (execError) {
         throw new Error(`Execution error: ${execError instanceof Error ? execError.message : String(execError)}`);
       }
-      
+
       setOutput(result);
-      
+
       // Check if output matches expected output
       if (result.trim() === expectedOutput.trim()) {
         setSuccess(true);
@@ -83,7 +85,7 @@ const CodeExercise: React.FC<CodeExerciseProps> = ({
       onFailure();
     }
   };
-  
+
   return (
     <Box sx={{ mb: 3 }}>
       <Paper elevation={1} sx={{ p: 2, mb: 2, backgroundColor: theme.palette.background.default }}>
@@ -93,23 +95,23 @@ const CodeExercise: React.FC<CodeExerciseProps> = ({
         <Typography variant="body2" paragraph>
           {instructions}
         </Typography>
-        
+
         <Typography variant="subtitle2" gutterBottom>
           Expected Output:
         </Typography>
-        <Typography 
-          variant="body2" 
-          sx={{ 
-            fontFamily: 'monospace', 
+        <Typography
+          variant="body2"
+          sx={{
+            fontFamily: 'monospace',
             backgroundColor: theme.palette.mode === 'dark' ? '#2d2d2d' : '#f5f5f5',
             p: 1,
-            borderRadius: 1
+            borderRadius: 1,
           }}
         >
           {expectedOutput}
         </Typography>
       </Paper>
-      
+
       <TextField
         fullWidth
         multiline
@@ -126,7 +128,7 @@ const CodeExercise: React.FC<CodeExerciseProps> = ({
           },
         }}
       />
-      
+
       <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
         <Button
           variant="contained"
@@ -137,13 +139,13 @@ const CodeExercise: React.FC<CodeExerciseProps> = ({
           Run Code
         </Button>
       </Box>
-      
+
       {output && (
-        <Paper 
-          elevation={1} 
-          sx={{ 
-            p: 2, 
-            mb: 2, 
+        <Paper
+          elevation={1}
+          sx={{
+            p: 2,
+            mb: 2,
             backgroundColor: theme.palette.mode === 'dark' ? '#2d2d2d' : '#f5f5f5',
             borderLeft: '4px solid',
             borderColor: success ? theme.palette.success.main : theme.palette.primary.main,
@@ -152,9 +154,9 @@ const CodeExercise: React.FC<CodeExerciseProps> = ({
           <Typography variant="subtitle2" gutterBottom>
             Output:
           </Typography>
-          <Typography 
-            variant="body2" 
-            sx={{ 
+          <Typography
+            variant="body2"
+            sx={{
               fontFamily: 'monospace',
               whiteSpace: 'pre-wrap',
             }}
@@ -163,13 +165,13 @@ const CodeExercise: React.FC<CodeExerciseProps> = ({
           </Typography>
         </Paper>
       )}
-      
+
       {error && (
         <Alert severity="error" sx={{ mb: 2 }}>
           {error}
         </Alert>
       )}
-      
+
       {success && (
         <Alert severity="success" sx={{ mb: 2 }}>
           Great job! Your code produced the expected output.
@@ -179,4 +181,4 @@ const CodeExercise: React.FC<CodeExerciseProps> = ({
   );
 };
 
-export default CodeExercise; 
+export default CodeExercise;

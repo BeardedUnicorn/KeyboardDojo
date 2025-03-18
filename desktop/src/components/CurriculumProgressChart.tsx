@@ -1,16 +1,19 @@
-import React, { useMemo } from 'react';
-import { 
-  Box, 
-  Typography, 
-  Paper, 
-  LinearProgress, 
-  Grid, 
-  Tooltip, 
+import {
+  Box,
+  Typography,
+  Paper,
+  LinearProgress,
+  Grid,
+  Tooltip,
   useTheme,
-  CircularProgress
+  CircularProgress,
 } from '@mui/material';
-import { useUserProgress } from '../contexts/UserProgressContext';
-import { ApplicationTrack as Track, Module, Lesson } from '../types/curriculum';
+import React, { useMemo } from 'react';
+
+import { useUserProgressRedux } from '@hooks/useUserProgressRedux';
+
+import type { ApplicationTrack as Track, Module } from '../types/ICurriculum';
+import type { FC } from 'react';
 
 // Define the track progress interface based on the component usage
 interface TrackProgress {
@@ -46,11 +49,11 @@ interface CurriculumProgressChartProps {
 /**
  * Component to visualize curriculum progress across tracks and modules
  */
-const CurriculumProgressChart: React.FC<CurriculumProgressChartProps> = ({
+const CurriculumProgressChart: FC<CurriculumProgressChartProps> = ({
   tracks,
-  showDetails = true
+  showDetails = true,
 }) => {
-  const { progress, isLoading } = useUserProgress();
+  const { progress, isLoading } = useUserProgressRedux();
   const theme = useTheme();
 
   // Calculate progress percentages for each track and module
@@ -60,27 +63,27 @@ const CurriculumProgressChart: React.FC<CurriculumProgressChartProps> = ({
     // Cast progress to extended type that includes trackProgress
     const extendedProgress = progress as unknown as ExtendedUserProgress;
 
-    return tracks.map(track => {
+    return tracks.map((track) => {
       // Calculate track completion percentage
-      const trackProgress = extendedProgress.trackProgress?.[track.id] || { 
-        completedLessons: 0, 
+      const trackProgress = extendedProgress.trackProgress?.[track.id] || {
+        completedLessons: 0,
         totalLessons: 0,
         completedModules: 0,
-        modules: {} 
+        modules: {},
       };
-      
+
       const trackCompletionPercentage = trackProgress.totalLessons > 0
         ? Math.round((trackProgress.completedLessons / trackProgress.totalLessons) * 100)
         : 0;
 
       // Calculate module completion percentages
       const moduleData = track.modules.map((module: Module) => {
-        const moduleProgress = trackProgress.modules[module.id] || { 
-          completed: false, 
-          completedLessons: 0, 
-          totalLessons: module.lessons.length 
+        const moduleProgress = trackProgress.modules[module.id] || {
+          completed: false,
+          completedLessons: 0,
+          totalLessons: module.lessons.length,
         };
-        
+
         const moduleCompletionPercentage = moduleProgress.totalLessons > 0
           ? Math.round((moduleProgress.completedLessons / moduleProgress.totalLessons) * 100)
           : 0;
@@ -89,7 +92,7 @@ const CurriculumProgressChart: React.FC<CurriculumProgressChartProps> = ({
           module,
           completionPercentage: moduleCompletionPercentage,
           completedLessons: moduleProgress.completedLessons,
-          totalLessons: moduleProgress.totalLessons
+          totalLessons: moduleProgress.totalLessons,
         };
       });
 
@@ -98,7 +101,7 @@ const CurriculumProgressChart: React.FC<CurriculumProgressChartProps> = ({
         completionPercentage: trackCompletionPercentage,
         completedLessons: trackProgress.completedLessons,
         totalLessons: trackProgress.totalLessons,
-        modules: moduleData
+        modules: moduleData,
       };
     });
   }, [tracks, progress, isLoading]);
@@ -132,16 +135,16 @@ const CurriculumProgressChart: React.FC<CurriculumProgressChartProps> = ({
   return (
     <Box>
       {progressData.map(({ track, completionPercentage, completedLessons, totalLessons, modules }) => (
-        <Paper 
-          key={track.id} 
-          elevation={0} 
-          sx={{ 
-            p: 3, 
-            mb: 3, 
+        <Paper
+          key={track.id}
+          elevation={0}
+          sx={{
+            p: 3,
+            mb: 3,
             bgcolor: 'background.default',
             border: 1,
             borderColor: 'divider',
-            borderRadius: 2
+            borderRadius: 2,
           }}
         >
           <Box sx={{ mb: 2 }}>
@@ -153,23 +156,23 @@ const CurriculumProgressChart: React.FC<CurriculumProgressChartProps> = ({
                 {completedLessons} / {totalLessons} lessons completed
               </Typography>
             </Box>
-            
+
             <Tooltip title={`${completionPercentage}% complete`}>
-              <LinearProgress 
-                variant="determinate" 
-                value={completionPercentage} 
-                sx={{ 
-                  height: 10, 
+              <LinearProgress
+                variant="determinate"
+                value={completionPercentage}
+                sx={{
+                  height: 10,
                   borderRadius: 5,
                   bgcolor: theme.palette.grey[200],
                   '& .MuiLinearProgress-bar': {
-                    bgcolor: getColorByPercentage(completionPercentage)
-                  }
-                }} 
+                    bgcolor: getColorByPercentage(completionPercentage),
+                  },
+                }}
               />
             </Tooltip>
           </Box>
-          
+
           {showDetails && (
             <Grid container spacing={2}>
               {modules.map(({ module, completionPercentage, completedLessons, totalLessons }) => (
@@ -183,19 +186,19 @@ const CurriculumProgressChart: React.FC<CurriculumProgressChartProps> = ({
                         {completedLessons}/{totalLessons}
                       </Typography>
                     </Box>
-                    
+
                     <Tooltip title={`${completionPercentage}% complete`}>
-                      <LinearProgress 
-                        variant="determinate" 
-                        value={completionPercentage} 
-                        sx={{ 
-                          height: 6, 
+                      <LinearProgress
+                        variant="determinate"
+                        value={completionPercentage}
+                        sx={{
+                          height: 6,
                           borderRadius: 3,
                           bgcolor: theme.palette.grey[200],
                           '& .MuiLinearProgress-bar': {
-                            bgcolor: getColorByPercentage(completionPercentage)
-                          }
-                        }} 
+                            bgcolor: getColorByPercentage(completionPercentage),
+                          },
+                        }}
                       />
                     </Tooltip>
                   </Box>
@@ -209,4 +212,4 @@ const CurriculumProgressChart: React.FC<CurriculumProgressChartProps> = ({
   );
 };
 
-export default CurriculumProgressChart; 
+export default CurriculumProgressChart;

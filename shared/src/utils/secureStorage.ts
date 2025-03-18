@@ -57,7 +57,7 @@ class SecureStorageService {
   }
 
   /**
-   * Store a secure value
+   * StorePage a secure value
    * @param key The key to store the value under
    * @param value The value to store
    * @returns Promise that resolves when the value is stored
@@ -71,7 +71,7 @@ class SecureStorageService {
           // In a real implementation, we would use Tauri's secure storage API
           // For now, we'll use localStorage with encryption as a fallback
           localStorage.setItem(prefixedKey, this.encrypt(value));
-          
+
           // Example of how this would be implemented with Tauri:
           /*
           // Using the tauri-plugin-secure-storage
@@ -110,13 +110,13 @@ class SecureStorageService {
           // In a real implementation, we would use Tauri's secure storage API
           // For now, we'll use localStorage with encryption as a fallback
           const encryptedValue = localStorage.getItem(prefixedKey);
-          
+
           if (encryptedValue === null) {
             return null;
           }
-          
+
           return this.decrypt(encryptedValue);
-          
+
           // Example of how this would be implemented with Tauri:
           /*
           // Using the tauri-plugin-secure-storage
@@ -132,11 +132,11 @@ class SecureStorageService {
       web: async () => {
         try {
           const encryptedValue = localStorage.getItem(prefixedKey);
-          
+
           if (encryptedValue === null) {
             return null;
           }
-          
+
           return this.decrypt(encryptedValue);
         } catch (error) {
           console.error('Failed to get secure item:', error);
@@ -160,7 +160,7 @@ class SecureStorageService {
           // In a real implementation, we would use Tauri's secure storage API
           // For now, we'll use localStorage as a fallback
           localStorage.removeItem(prefixedKey);
-          
+
           // Example of how this would be implemented with Tauri:
           /*
           // Using the tauri-plugin-secure-storage
@@ -186,4 +186,4 @@ class SecureStorageService {
 }
 
 // Export a singleton instance
-export const secureStorage = new SecureStorageService(); 
+export const secureStorage = new SecureStorageService();

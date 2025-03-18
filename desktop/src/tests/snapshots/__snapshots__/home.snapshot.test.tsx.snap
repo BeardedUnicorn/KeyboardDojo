@@ -1,0 +1,224 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`HomePage Snapshot > renders correctly 1`] = `
+<div>
+  <div
+    data-testid="theme-provider"
+  >
+    <div
+      data-testid="user-progress-provider"
+    >
+      <div
+        data-testid="achievements-provider"
+      >
+        <div
+          data-testid="subscription-provider"
+        >
+          <div
+            class="MuiBox-root css-19kzrtu"
+          >
+            <div
+              class="MuiBox-root css-j4unr3"
+            >
+              <h1
+                class="MuiTypography-root MuiTypography-h4 MuiTypography-gutterBottom css-1it4a80-MuiTypography-root"
+              >
+                Welcome to Keyboard Dojo
+              </h1>
+              <h6
+                class="MuiTypography-root MuiTypography-subtitle1 css-1t4hig0-MuiTypography-root"
+              >
+                Improve your typing skills with personalized practice sessions
+              </h6>
+            </div>
+            <div
+              class="MuiGrid-root MuiGrid-container MuiGrid-spacing-xs-3 css-1qw2a80-MuiGrid-root"
+            >
+              <div
+                class="MuiGrid-root MuiGrid-item MuiGrid-grid-xs-12 MuiGrid-grid-md-6 css-1fyyp8j-MuiGrid-root"
+              >
+                <div
+                  class="MuiPaper-root MuiPaper-elevation MuiPaper-rounded MuiPaper-elevation1 MuiCard-root css-uqzz15-MuiPaper-root-MuiCard-root"
+                  style="--Paper-shadow: 0px 2px 1px -1px rgba(0,0,0,0.2),0px 1px 1px 0px rgba(0,0,0,0.14),0px 1px 3px 0px rgba(0,0,0,0.12);"
+                >
+                  <div
+                    class="MuiCardContent-root css-1lt5qva-MuiCardContent-root"
+                  >
+                    <div
+                      class="MuiBox-root css-1coeexk"
+                    >
+                      <svg
+                        aria-hidden="true"
+                        class="MuiSvgIcon-root MuiSvgIcon-colorPrimary MuiSvgIcon-fontSizeMedium css-1k3hahg-MuiSvgIcon-root"
+                        data-testid="CodeIcon"
+                        focusable="false"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          d="M9.4 16.6 4.8 12l4.6-4.6L8 6l-6 6 6 6zm5.2 0 4.6-4.6-4.6-4.6L16 6l6 6-6 6z"
+                        />
+                      </svg>
+                      <h6
+                        class="MuiTypography-root MuiTypography-h6 css-1miy0lu-MuiTypography-root"
+                      >
+                        Shortcut Challenge
+                      </h6>
+                    </div>
+                    <p
+                      class="MuiTypography-root MuiTypography-body2 css-19b5ozw-MuiTypography-root"
+                    >
+                      Master keyboard shortcuts for VS Code, IntelliJ, and Cursor with interactive challenges.
+                    </p>
+                    <a
+                      class="MuiButtonBase-root MuiButton-root MuiButton-contained MuiButton-containedSecondary MuiButton-sizeMedium MuiButton-containedSizeMedium MuiButton-colorSecondary MuiButton-fullWidth MuiButton-root MuiButton-contained MuiButton-containedSecondary MuiButton-sizeMedium MuiButton-containedSizeMedium MuiButton-colorSecondary MuiButton-fullWidth css-1hy71it-MuiButtonBase-root-MuiButton-root"
+                      href="/shortcuts"
+                      tabindex="0"
+                    >
+                      Start Challenge
+                    </a>
+                  </div>
+                </div>
+              </div>
+              <div
+                class="MuiGrid-root MuiGrid-item MuiGrid-grid-xs-12 MuiGrid-grid-md-6 css-1fyyp8j-MuiGrid-root"
+              >
+                <div
+                  class="MuiPaper-root MuiPaper-elevation MuiPaper-rounded MuiPaper-elevation1 MuiCard-root css-uqzz15-MuiPaper-root-MuiCard-root"
+                  style="--Paper-shadow: 0px 2px 1px -1px rgba(0,0,0,0.2),0px 1px 1px 0px rgba(0,0,0,0.14),0px 1px 3px 0px rgba(0,0,0,0.12);"
+                >
+                  <div
+                    class="MuiCardContent-root css-1lt5qva-MuiCardContent-root"
+                  >
+                    <div
+                      class="MuiBox-root css-1coeexk"
+                    >
+                      <svg
+                        aria-hidden="true"
+                        class="MuiSvgIcon-root MuiSvgIcon-colorPrimary MuiSvgIcon-fontSizeMedium css-1k3hahg-MuiSvgIcon-root"
+                        data-testid="SchoolIcon"
+                        focusable="false"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          d="M5 13.18v4L12 21l7-3.82v-4L12 17zM12 3 1 9l11 6 9-4.91V17h2V9z"
+                        />
+                      </svg>
+                      <h6
+                        class="MuiTypography-root MuiTypography-h6 css-1miy0lu-MuiTypography-root"
+                      >
+                        Structured Curriculum
+                      </h6>
+                    </div>
+                    <p
+                      class="MuiTypography-root MuiTypography-body2 css-19b5ozw-MuiTypography-root"
+                    >
+                      Follow a structured learning path with progressive lessons and challenges.
+                    </p>
+                    <a
+                      class="MuiButtonBase-root MuiButton-root MuiButton-contained MuiButton-containedPrimary MuiButton-sizeMedium MuiButton-containedSizeMedium MuiButton-colorPrimary MuiButton-fullWidth MuiButton-root MuiButton-contained MuiButton-containedPrimary MuiButton-sizeMedium MuiButton-containedSizeMedium MuiButton-colorPrimary MuiButton-fullWidth css-1k9hkw1-MuiButtonBase-root-MuiButton-root"
+                      href="/curriculum"
+                      tabindex="0"
+                    >
+                      View Curriculum
+                    </a>
+                  </div>
+                </div>
+              </div>
+              <div
+                class="MuiGrid-root MuiGrid-item MuiGrid-grid-xs-12 MuiGrid-grid-md-6 css-1fyyp8j-MuiGrid-root"
+              >
+                <div
+                  class="MuiPaper-root MuiPaper-elevation MuiPaper-rounded MuiPaper-elevation1 MuiCard-root css-uqzz15-MuiPaper-root-MuiCard-root"
+                  style="--Paper-shadow: 0px 2px 1px -1px rgba(0,0,0,0.2),0px 1px 1px 0px rgba(0,0,0,0.14),0px 1px 3px 0px rgba(0,0,0,0.12);"
+                >
+                  <div
+                    class="MuiCardContent-root css-1lt5qva-MuiCardContent-root"
+                  >
+                    <div
+                      class="MuiBox-root css-1coeexk"
+                    >
+                      <svg
+                        aria-hidden="true"
+                        class="MuiSvgIcon-root MuiSvgIcon-colorPrimary MuiSvgIcon-fontSizeMedium css-1k3hahg-MuiSvgIcon-root"
+                        data-testid="BarChartIcon"
+                        focusable="false"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          d="M4 9h4v11H4zm12 4h4v7h-4zm-6-9h4v16h-4z"
+                        />
+                      </svg>
+                      <h6
+                        class="MuiTypography-root MuiTypography-h6 css-1miy0lu-MuiTypography-root"
+                      >
+                        Progress
+                      </h6>
+                    </div>
+                    <p
+                      class="MuiTypography-root MuiTypography-body2 css-19b5ozw-MuiTypography-root"
+                    >
+                      View your typing statistics and track your improvement over time.
+                    </p>
+                    <a
+                      class="MuiButtonBase-root MuiButton-root MuiButton-contained MuiButton-containedPrimary MuiButton-sizeMedium MuiButton-containedSizeMedium MuiButton-colorPrimary MuiButton-fullWidth MuiButton-root MuiButton-contained MuiButton-containedPrimary MuiButton-sizeMedium MuiButton-containedSizeMedium MuiButton-colorPrimary MuiButton-fullWidth css-1k9hkw1-MuiButtonBase-root-MuiButton-root"
+                      href="/progress-dashboard"
+                      tabindex="0"
+                    >
+                      View Progress
+                    </a>
+                  </div>
+                </div>
+              </div>
+              <div
+                class="MuiGrid-root MuiGrid-item MuiGrid-grid-xs-12 MuiGrid-grid-md-6 css-1fyyp8j-MuiGrid-root"
+              >
+                <div
+                  class="MuiPaper-root MuiPaper-elevation MuiPaper-rounded MuiPaper-elevation1 MuiCard-root css-uqzz15-MuiPaper-root-MuiCard-root"
+                  style="--Paper-shadow: 0px 2px 1px -1px rgba(0,0,0,0.2),0px 1px 1px 0px rgba(0,0,0,0.14),0px 1px 3px 0px rgba(0,0,0,0.12);"
+                >
+                  <div
+                    class="MuiCardContent-root css-1lt5qva-MuiCardContent-root"
+                  >
+                    <div
+                      class="MuiBox-root css-1coeexk"
+                    >
+                      <svg
+                        aria-hidden="true"
+                        class="MuiSvgIcon-root MuiSvgIcon-colorPrimary MuiSvgIcon-fontSizeMedium css-1k3hahg-MuiSvgIcon-root"
+                        data-testid="EmojiEventsIcon"
+                        focusable="false"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          d="M19 5h-2V3H7v2H5c-1.1 0-2 .9-2 2v1c0 2.55 1.92 4.63 4.39 4.94.63 1.5 1.98 2.63 3.61 2.96V19H7v2h10v-2h-4v-3.1c1.63-.33 2.98-1.46 3.61-2.96C19.08 12.63 21 10.55 21 8V7c0-1.1-.9-2-2-2M5 8V7h2v3.82C5.84 10.4 5 9.3 5 8m14 0c0 1.3-.84 2.4-2 2.82V7h2z"
+                        />
+                      </svg>
+                      <h6
+                        class="MuiTypography-root MuiTypography-h6 css-1miy0lu-MuiTypography-root"
+                      >
+                        Achievements
+                      </h6>
+                    </div>
+                    <p
+                      class="MuiTypography-root MuiTypography-body2 css-19b5ozw-MuiTypography-root"
+                    >
+                      Unlock achievements as you improve your typing skills and complete challenges.
+                    </p>
+                    <a
+                      class="MuiButtonBase-root MuiButton-root MuiButton-contained MuiButton-containedSecondary MuiButton-sizeMedium MuiButton-containedSizeMedium MuiButton-colorSecondary MuiButton-fullWidth MuiButton-root MuiButton-contained MuiButton-containedSecondary MuiButton-sizeMedium MuiButton-containedSizeMedium MuiButton-colorSecondary MuiButton-fullWidth css-1hy71it-MuiButtonBase-root-MuiButton-root"
+                      href="/achievements"
+                      tabindex="0"
+                    >
+                      View Achievements
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+`;

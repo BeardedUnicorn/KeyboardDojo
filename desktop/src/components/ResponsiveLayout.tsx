@@ -1,22 +1,25 @@
-import React from 'react';
 import { Box, useTheme } from '@mui/material';
+import React from 'react';
+
 import { useWindowSize, WindowSize } from '../utils/responsive';
 
+import type { ReactNode ,FC } from 'react';
+
 interface ResponsiveLayoutProps {
-  children: React.ReactNode;
+  children: ReactNode;
   spacing?: number;
   minContentWidth?: number;
   maxContentWidth?: number;
   sidebarWidth?: number | Record<WindowSize, number>;
   showSidebar?: boolean | Record<WindowSize, boolean>;
-  sidebar?: React.ReactNode;
+  sidebar?: ReactNode;
   sidebarPosition?: 'left' | 'right';
 }
 
 /**
  * A responsive layout component that adapts to desktop window constraints
  */
-const ResponsiveLayout: React.FC<ResponsiveLayoutProps> = ({
+const ResponsiveLayout: FC<ResponsiveLayoutProps> = ({
   children,
   spacing = 2,
   minContentWidth = 320,
@@ -28,25 +31,25 @@ const ResponsiveLayout: React.FC<ResponsiveLayoutProps> = ({
 }) => {
   const theme = useTheme();
   const { width, size } = useWindowSize();
-  
+
   // Calculate effective sidebar width based on window size
   const effectiveSidebarWidth = typeof sidebarWidth === 'number'
     ? sidebarWidth
     : sidebarWidth[size] ?? sidebarWidth[WindowSize.MD] ?? 280;
-  
+
   // Determine if sidebar should be shown based on window size
   const shouldShowSidebar = typeof showSidebar === 'boolean'
     ? showSidebar
     : showSidebar[size] ?? showSidebar[WindowSize.MD] ?? true;
-  
+
   // Calculate content width
   const paddingSpace = theme.spacing(spacing * 2).replace('px', '');
   const contentWidth = Math.min(
     Math.max(
       width - (shouldShowSidebar ? effectiveSidebarWidth : 0) - parseInt(paddingSpace, 10),
-      minContentWidth
+      minContentWidth,
     ),
-    maxContentWidth
+    maxContentWidth,
   );
 
   return (
@@ -75,7 +78,7 @@ const ResponsiveLayout: React.FC<ResponsiveLayoutProps> = ({
           {sidebar}
         </Box>
       )}
-      
+
       {/* Main content */}
       <Box
         sx={{
@@ -102,4 +105,4 @@ const ResponsiveLayout: React.FC<ResponsiveLayoutProps> = ({
   );
 };
 
-export default ResponsiveLayout; 
+export default ResponsiveLayout;

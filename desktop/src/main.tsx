@@ -1,13 +1,46 @@
-import React from 'react';
+import * as Sentry from '@sentry/react';
+import React, { StrictMode } from 'react';
 import ReactDOM from 'react-dom/client';
-import { BrowserRouter } from 'react-router-dom';
-import App from './App';
-import './styles.css';
+import { Provider } from 'react-redux';
 
-ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
-  <React.StrictMode>
-    <BrowserRouter>
-      <App />
-    </BrowserRouter>
-  </React.StrictMode>,
-); 
+import App from './App';
+import ErrorFallback from './components/ErrorFallback';
+import { store } from './store';
+import './styles.css';
+import { initSentryRedux } from './utils/sentryRedux';
+
+// Initialize Sentry
+Sentry.init({
+  dsn: 'https://7c6b065ef29904c8b0bf1576cd4209a0@o1131065.ingest.us.sentry.io/4508991947800576',
+  integrations: [
+    Sentry.browserTracingIntegration(),
+    Sentry.replayIntegration(),
+  ],
+  // Performance Monitoring
+  tracesSampleRate: 1.0, // Capture 100% of transactions, lower in production
+  // Session Replay
+  replaysSessionSampleRate: 0.1, // Sample rate for session replays (10%)
+  replaysOnErrorSampleRate: 1.0, // Sample rate for replays when errors occur (100%)
+  environment: process.env.NODE_ENV || 'development',
+});
+
+// Initialize Sentry Redux integration
+initSentryRedux(store);
+
+// Add error boundary for root level errors
+const rootElement = document.getElementById('root');
+if (!rootElement) {
+  throw new Error('Failed to find the root element');
+}
+
+const root = ReactDOM.createRoot(rootElement);
+
+root.render(
+  <StrictMode>
+    <Provider store={store}>
+      <Sentry.ErrorBoundary fallback={<ErrorFallback />}>
+        <App />
+      </Sentry.ErrorBoundary>
+    </Provider>
+  </StrictMode>,
+);

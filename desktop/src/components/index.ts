@@ -1,18 +1,38 @@
-export { default as TitleBar } from './title-bar';
-export { default as WindowControls } from './WindowControls';
-export { default as SettingsPanel } from './settings-panel';
-export { default as OfflineIndicator } from './offline-indicator';
-export { default as UpdateNotification } from './update-notification';
-export { default as Navigation } from './Navigation';
-export { default as MainLayout } from './MainLayout';
-export { default as Footer } from './Footer';
-export { default as ResponsiveLayout } from './ResponsiveLayout';
-export { default as ShortcutChallenge } from './ShortcutChallenge';
-export { default as IDESimulator } from './IDESimulator';
-export { default as CurriculumView } from './CurriculumView';
-export { default as LevelProgressBar } from './LevelProgressBar';
-export { default as StreakDisplay } from './StreakDisplay';
-export { default as LevelUpNotification } from './LevelUpNotification';
-export { default as AchievementNotification } from './AchievementNotification';
-export { default as AchievementsList } from './AchievementsList';
-export { default as AchievementBadge } from './AchievementBadge'; 
+// Layout Components
+export * from './layout';
+
+// UI Components
+export * from './ui';
+
+// Curriculum Components
+export * from './curriculum';
+
+// Exercise Components
+export * from './exercises';
+
+// Gamification Components
+export * from './gamification';
+
+// Statistics Components
+export * from './statistics';
+
+// ProfilePage Components
+export * from './profile';
+
+// Settings Components
+export * from './settings';
+
+// Notification Components
+export * from './notifications';
+
+// Testing and Development Components
+export { default as SentryTest } from './SentryTest';
+
+// Existing subdirectories
+export * from './keyboard';
+export * from './effects';
+export * from './shortcuts';
+export * from './review';
+
+// Export components
+export { default as ReduxExample } from './ReduxExample';

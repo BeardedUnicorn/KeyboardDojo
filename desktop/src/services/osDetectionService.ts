@@ -5,6 +5,8 @@
  * and handling OS-specific features like keyboard shortcuts.
  */
 
+import { loggerService } from './loggerService';
+
 export type OperatingSystem = 'windows' | 'macos' | 'linux' | 'unknown';
 
 export interface OSInfo {
@@ -27,43 +29,21 @@ class OSDetectionService {
     if (this._initialized) return;
 
     try {
-      // Detect OS
-      const platform = navigator.platform.toLowerCase();
-      
-      if (platform.includes('win')) {
+      // Detect OS using browser information
+      if (navigator.userAgent.indexOf('Win') !== -1) {
         this._os = 'windows';
-      } else if (platform.includes('mac')) {
+      } else if (navigator.userAgent.indexOf('Mac') !== -1) {
         this._os = 'macos';
-      } else if (platform.includes('linux')) {
+      } else if (navigator.userAgent.indexOf('Linux') !== -1) {
         this._os = 'linux';
       }
 
-      // Alternative detection using user agent if platform is not reliable
-      if (this._os === 'unknown') {
-        const userAgent = navigator.userAgent.toLowerCase();
-        
-        if (userAgent.includes('windows')) {
-          this._os = 'windows';
-        } else if (userAgent.includes('mac os x') || userAgent.includes('macintosh')) {
-          this._os = 'macos';
-        } else if (userAgent.includes('linux')) {
-          this._os = 'linux';
-        }
-      }
-
-      // Try to get more accurate info from Tauri if available
-      try {
-        // This would be replaced with actual Tauri API call in a real implementation
-        // const os = await invoke('get_os');
-        // this._os = os as OperatingSystem;
-      } catch (error) {
-        console.warn('Could not get OS information from Tauri:', error);
-      }
-
       this._initialized = true;
-      console.log(`Detected operating system: ${this._os}`);
+      this._notifyOSChange();
+      
+      loggerService.info('Detected operating system:', { os: this._os });
     } catch (error) {
-      console.error('Error detecting operating system:', error);
+      loggerService.error('Error detecting operating system:', { error });
     }
   }
 
@@ -72,7 +52,7 @@ class OSDetectionService {
    */
   public getOS(): OperatingSystem {
     if (!this._initialized) {
-      console.warn('OS detection not initialized, initializing now...');
+      loggerService.warn('OS detection not initialized, initializing now...');
       this.initialize();
     }
     return this._os;

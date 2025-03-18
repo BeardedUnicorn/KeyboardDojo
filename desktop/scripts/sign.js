@@ -7,8 +7,8 @@
 
 import { execSync } from 'child_process';
 import fs from 'fs';
-import path from 'path';
 import os from 'os';
+import path from 'path';
 import { fileURLToPath } from 'url';
 
 // Get __dirname equivalent in ES modules
@@ -155,19 +155,22 @@ async function sign() {
     // Check if we're signing for a specific platform
     if (targetPlatform) {
       switch (targetPlatform) {
-        case 'macos':
+        case 'macos': {
           const macAppPath = path.join(config.buildDir, 'macos', `${config.appName}.app`);
           await signMacOS(macAppPath);
           break;
-        case 'windows':
+        }
+        case 'windows': {
           const msiPath = path.join(config.buildDir, 'msi', `${config.appName}_${config.appVersion}_x64_en-US.msi`);
           await signWindows(msiPath);
           break;
-        case 'linux':
+        }
+        case 'linux': {
           const debPath = path.join(config.buildDir, 'deb', `${config.appName.toLowerCase()}_${config.appVersion}_amd64.deb`);
           const appImagePath = path.join(config.buildDir, 'appimage', `${config.appName.toLowerCase()}_${config.appVersion}_amd64.AppImage`);
           await signLinux(debPath, appImagePath);
           break;
+        }
         default:
           throw new Error(`Unknown platform: ${targetPlatform}`);
       }
@@ -199,7 +202,7 @@ async function sign() {
 }
 
 // Run the signing process
-sign().catch(error => {
+sign().catch((error) => {
   console.error(`\n❌ Signing failed: ${error.message}\n`);
   process.exit(1);
 });

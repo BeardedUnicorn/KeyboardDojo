@@ -1,76 +1,84 @@
-import React, { useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
-import { 
-  Box, 
-  List, 
-  ListItem, 
-  ListItemButton, 
-  ListItemIcon, 
-  ListItemText, 
+import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
+import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
+import HomeIcon from '@mui/icons-material/Home';
+import MenuIcon from '@mui/icons-material/Menu';
+import PersonIcon from '@mui/icons-material/Person';
+import SchoolIcon from '@mui/icons-material/School';
+import SettingsIcon from '@mui/icons-material/Settings';
+import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
+import WorkspacePremiumIcon from '@mui/icons-material/WorkspacePremium';
+import {
+  Box,
+  List,
+  ListItem,
+  ListItemButton,
+  ListItemIcon,
+  ListItemText,
   Divider,
   IconButton,
   Tooltip,
-  useTheme
+  useTheme,
 } from '@mui/material';
-import HomeIcon from '@mui/icons-material/Home';
-import SchoolIcon from '@mui/icons-material/School';
-import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
-import SettingsIcon from '@mui/icons-material/Settings';
-import PersonIcon from '@mui/icons-material/Person';
-import MenuIcon from '@mui/icons-material/Menu';
-import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
-import WorkspacePremiumIcon from '@mui/icons-material/WorkspacePremium';
+import React, { useState, useCallback, useMemo, memo } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+
 import { useSubscription } from '../contexts/SubscriptionContext';
-import { useThemeContext } from '../contexts/ThemeContext';
-import { isDesktop } from '../../../shared/src/utils';
+import { useThemeRedux } from '../hooks/useThemeRedux';
 
-// Drawer widths
+import CurrencyDisplay from './CurrencyDisplay';
+
+import type { ReactNode, FC } from 'react';
+
+// Drawer width when open
 const drawerWidth = 240;
-const miniDrawerWidth = 56;
+// Drawer width when closed (mini variant)
+const miniDrawerWidth = 64;
 
-interface NavigationItem {
-  text: string;
+interface NavItem {
   path: string;
-  icon: React.ReactNode;
+  label: string;
+  icon: ReactNode;
 }
 
-const Navigation: React.FC = () => {
+export const Navigation: FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const theme = useTheme();
-  const { mode } = useThemeContext();
   const { hasPremium } = useSubscription();
-  
-  // Get saved drawer state from localStorage or default to mini
-  const getSavedDrawerState = (): boolean => {
-    const savedState = localStorage.getItem('drawerOpen');
-    return savedState ? savedState === 'true' : false; // Default to mini/collapsed
-  };
-  
-  const [open, setOpen] = useState(getSavedDrawerState());
 
-  const handleDrawerToggle = () => {
+  // Get saved drawer state from localStorage or default to mini
+  const savedDrawerState = localStorage.getItem('drawerOpen');
+  const [open, setOpen] = useState(savedDrawerState === 'true');
+
+  const handleDrawerToggle = useCallback(() => {
     const newState = !open;
     setOpen(newState);
     localStorage.setItem('drawerOpen', String(newState));
-  };
+  }, [open]);
 
-  const navItems = [
+  const isActive = useCallback((path: string) => {
+    return location.pathname === path;
+  }, [location.pathname]);
+
+  const isDesktop = useCallback(() => {
+    return window.innerWidth >= 600;
+  }, []);
+
+  // Navigation items
+  const navItems = useMemo<NavItem[]>(() => [
     { path: '/', label: 'Home', icon: <HomeIcon /> },
-    { path: '/lessons', label: 'Lessons', icon: <SchoolIcon /> },
+    { path: '/curriculum', label: 'Lessons', icon: <SchoolIcon /> },
     { path: '/achievements', label: 'Achievements', icon: <EmojiEventsIcon /> },
     { path: '/profile', label: 'Profile', icon: <PersonIcon /> },
-  ];
-
-  const isActive = (path: string) => {
-    if (path === '/' && location.pathname === '/') {
-      return true;
-    }
-    return path !== '/' && location.pathname.startsWith(path);
-  };
+    { path: '/store', label: 'Store', icon: <ShoppingCartIcon /> },
+  ], []);
 
   // Calculate top offset for the drawer based on whether we're in desktop mode
-  const topOffset = isDesktop() ? 48 : 0; // 48px is the height of our AppTopBar
+  const topOffset = useMemo(() => isDesktop() ? 48 : 0, [isDesktop]); // 48px is the height of our AppTopBar
+
+  const handleNavigation = useCallback((path: string) => {
+    navigate(path);
+  }, [navigate]);
 
   return (
     <Box
@@ -88,6 +96,7 @@ const Navigation: React.FC = () => {
         }),
         // Adjust top position to account for the AppTopBar
         height: '100%',
+        marginTop: `${topOffset}px`,
       }}
     >
       {/* Drawer header with toggle button */}
@@ -105,26 +114,25 @@ const Navigation: React.FC = () => {
           {open ? <ChevronLeftIcon /> : <MenuIcon />}
         </IconButton>
       </Box>
-      
+
       <Divider />
-      
+
       {/* Navigation items */}
       <List>
         {navItems.map((item) => (
-          <ListItem key={item.label} disablePadding sx={{ display: 'block' }}>
-            <Tooltip title={open ? '' : item.label} placement="right">
+          <ListItem key={item.path} disablePadding sx={{ display: 'block' }}>
+            <Tooltip title={open ? '' : item.label} placement="right" arrow>
               <ListItemButton
+                onClick={() => handleNavigation(item.path)}
                 selected={isActive(item.path)}
-                onClick={() => {
-                  navigate(item.path);
-                  if (window.innerWidth < 600) {
-                    setOpen(false);
-                  }
-                }}
                 sx={{
                   minHeight: 48,
                   justifyContent: open ? 'initial' : 'center',
                   px: 2.5,
+                  backgroundColor: isActive(item.path) ? theme.palette.action.selected : 'transparent',
+                  '&:hover': {
+                    backgroundColor: theme.palette.action.hover,
+                  },
                 }}
               >
                 <ListItemIcon
@@ -132,103 +140,123 @@ const Navigation: React.FC = () => {
                     minWidth: 0,
                     mr: open ? 3 : 'auto',
                     justifyContent: 'center',
-                    color: isActive(item.path) ? 'primary.main' : 'inherit'
+                    color: isActive(item.path) ? theme.palette.primary.main : theme.palette.text.primary,
                   }}
                 >
                   {item.icon}
                 </ListItemIcon>
-                <ListItemText 
-                  primary={item.label} 
-                  sx={{ 
+                <ListItemText
+                  primary={item.label}
+                  sx={{
                     opacity: open ? 1 : 0,
-                    transition: theme.transitions.create('opacity', {
-                      duration: theme.transitions.duration.shorter,
-                    })
-                  }} 
+                    color: isActive(item.path) ? theme.palette.primary.main : theme.palette.text.primary,
+                  }}
                 />
               </ListItemButton>
             </Tooltip>
           </ListItem>
         ))}
       </List>
-      
+
       <Divider />
-      
+
+      {/* Currency display */}
+      {open && (
+        <Box sx={{ p: 2 }}>
+          <CurrencyDisplay variant="default" />
+        </Box>
+      )}
+
+      {!open && (
+        <ListItem disablePadding sx={{ display: 'block' }}>
+          <Tooltip title="Currency" placement="right">
+            <ListItemButton
+              sx={{
+                minHeight: 48,
+                justifyContent: 'center',
+                px: 2.5,
+              }}
+            >
+              <CurrencyDisplay showLabel={false} variant="compact" />
+            </ListItemButton>
+          </Tooltip>
+        </ListItem>
+      )}
+
+      <Divider />
+
       {/* Bottom navigation items */}
       <List>
-        {/* Premium/Subscription */}
+        {/* Settings */}
         <ListItem disablePadding sx={{ display: 'block' }}>
           <ListItemButton
-            selected={location.pathname === '/subscription'}
-            onClick={() => {
-              navigate('/subscription');
-              if (window.innerWidth < 600) {
-                setOpen(false);
-              }
-            }}
+            onClick={() => handleNavigation('/settings')}
+            selected={isActive('/settings')}
             sx={{
               minHeight: 48,
               justifyContent: open ? 'initial' : 'center',
               px: 2.5,
+              backgroundColor: isActive('/settings') ? theme.palette.action.selected : 'transparent',
+              '&:hover': {
+                backgroundColor: theme.palette.action.hover,
+              },
             }}
           >
-            <Tooltip title={hasPremium ? 'Premium Active' : 'Upgrade to Premium'}>
+            <Tooltip title={open ? '' : 'Settings'} placement="right" arrow>
               <ListItemIcon
                 sx={{
                   minWidth: 0,
                   mr: open ? 3 : 'auto',
                   justifyContent: 'center',
-                  color: hasPremium ? 'warning.main' : 'inherit',
+                  color: isActive('/settings') ? theme.palette.primary.main : theme.palette.text.primary,
                 }}
               >
-                <WorkspacePremiumIcon />
+                <SettingsIcon />
               </ListItemIcon>
             </Tooltip>
-            <ListItemText 
-              primary={hasPremium ? 'Premium Active' : 'Upgrade'} 
-              sx={{ 
+            <ListItemText
+              primary="Settings"
+              sx={{
                 opacity: open ? 1 : 0,
-                transition: theme.transitions.create('opacity'),
-                '& .MuiTypography-root': {
-                  color: hasPremium ? theme.palette.warning.main : 'inherit',
-                  fontWeight: hasPremium ? 'bold' : 'regular',
-                }
-              }} 
+                color: isActive('/settings') ? theme.palette.primary.main : theme.palette.text.primary,
+              }}
             />
           </ListItemButton>
         </ListItem>
-        
-        {/* Settings */}
+
+        {/* Subscription */}
         <ListItem disablePadding sx={{ display: 'block' }}>
           <ListItemButton
-            selected={location.pathname === '/settings'}
-            onClick={() => {
-              navigate('/settings');
-              if (window.innerWidth < 600) {
-                setOpen(false);
-              }
-            }}
+            onClick={() => handleNavigation('/subscription')}
+            selected={isActive('/subscription')}
             sx={{
               minHeight: 48,
               justifyContent: open ? 'initial' : 'center',
               px: 2.5,
+              backgroundColor: isActive('/subscription') ? theme.palette.action.selected : 'transparent',
+              '&:hover': {
+                backgroundColor: theme.palette.action.hover,
+              },
             }}
           >
-            <ListItemIcon
+            <Tooltip title={open ? '' : 'Subscription'} placement="right" arrow>
+              <ListItemIcon
+                sx={{
+                  minWidth: 0,
+                  mr: open ? 3 : 'auto',
+                  justifyContent: 'center',
+                  color: isActive('/subscription') ? theme.palette.primary.main : theme.palette.text.primary,
+                }}
+              >
+                <WorkspacePremiumIcon color={hasPremium ? 'primary' : 'inherit'} />
+              </ListItemIcon>
+            </Tooltip>
+            <ListItemText
+              primary="Subscription"
               sx={{
-                minWidth: 0,
-                mr: open ? 3 : 'auto',
-                justifyContent: 'center',
-              }}
-            >
-              <SettingsIcon />
-            </ListItemIcon>
-            <ListItemText 
-              primary="Settings" 
-              sx={{ 
                 opacity: open ? 1 : 0,
-                transition: theme.transitions.create('opacity'),
-              }} 
+                color: isActive('/subscription') ? theme.palette.primary.main : theme.palette.text.primary,
+              }}
             />
           </ListItemButton>
         </ListItem>
@@ -237,4 +265,4 @@ const Navigation: React.FC = () => {
   );
 };
 
-export default Navigation; 
+export default memo(Navigation);

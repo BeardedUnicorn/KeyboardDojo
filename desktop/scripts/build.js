@@ -8,7 +8,6 @@
 import { execSync } from 'child_process';
 import fs from 'fs';
 import path from 'path';
-import os from 'os';
 import { fileURLToPath } from 'url';
 
 // Get __dirname equivalent in ES modules
@@ -60,7 +59,7 @@ async function buildForPlatform(platform) {
 
     // Platform-specific build options
     let buildCommand = 'npm run tauri:build';
-    
+
     switch (platform) {
       case 'macos':
         buildCommand += ' -- --target aarch64-apple-darwin';
@@ -75,7 +74,7 @@ async function buildForPlatform(platform) {
 
     // Run the build
     runCommand(buildCommand, { env });
-    
+
     console.log(`\n✅ Successfully built for ${platform}\n`);
   } catch (error) {
     console.error(`\n❌ Failed to build for ${platform}: ${error.message}\n`);
@@ -88,23 +87,23 @@ async function buildForPlatform(platform) {
  */
 async function build() {
   const targetPlatform = process.argv[2];
-  
+
   // Check if we're building for a specific platform
   if (targetPlatform && config.platforms.includes(targetPlatform)) {
     await buildForPlatform(targetPlatform);
     return;
   }
-  
+
   // Build for all platforms
   for (const platform of config.platforms) {
     await buildForPlatform(platform);
   }
-  
+
   console.log('\n=== All builds completed ===\n');
 }
 
 // Run the build
-build().catch(error => {
+build().catch((error) => {
   console.error(`\n❌ Build failed: ${error.message}\n`);
   process.exit(1);
-}); 
+});

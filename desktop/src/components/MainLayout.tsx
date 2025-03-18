@@ -1,54 +1,81 @@
-import React, { useState } from 'react';
 import { Box } from '@mui/material';
-import Navigation from './Navigation';
-import Footer from './Footer';
-import { isDesktop } from '../../../shared/src/utils';
+import React, { useState, useEffect } from 'react';
+
+import { useXP } from '../hooks/useXP';
+
 import AppTopBar from './AppTopBar';
-import UserInfo from './UserInfo';
-import { useThemeContext } from '../contexts/ThemeContext';
-import SettingsPanel from './settings-panel';
+import { CurrencyNotification } from './CurrencyNotification';
+import Footer from './Footer';
+import LevelUpNotification from './LevelUpNotification';
+import { Navigation } from './Navigation';
+import { SettingsPanel } from './settings';
+
+import type { ReactNode, FC } from 'react';
 
 interface MainLayoutProps {
-  children: React.ReactNode;
+  children: ReactNode;
 }
 
-const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
-  const { mode, toggleTheme } = useThemeContext();
+const MainLayout: FC<MainLayoutProps> = ({ children }) => {
+  const { isLevelingUp, level, levelTitle } = useXP();
   const [settingsOpen, setSettingsOpen] = useState(false);
-  
+  const [showLevelUp, setShowLevelUp] = useState(false);
+
+  // Check if we're on desktop
+  const [isDesktopView, setIsDesktopView] = useState(window.innerWidth >= 600);
+
+  // Handle opening settings panel
   const handleOpenSettings = () => {
     setSettingsOpen(true);
   };
-  
+
+  // Handle closing settings panel
   const handleCloseSettings = () => {
     setSettingsOpen(false);
   };
-  
+
+  // Show level up notification when level changes
+  useEffect(() => {
+    if (isLevelingUp) {
+      setShowLevelUp(true);
+    }
+  }, [isLevelingUp]);
+
+  // Update isDesktopView when window is resized
+  useEffect(() => {
+    const handleResize = () => {
+      setIsDesktopView(window.innerWidth >= 600);
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   return (
     <Box
       sx={{
         display: 'flex',
         flexDirection: 'column',
-        height: '100vh',
-        overflow: 'hidden',
+        minHeight: '100vh',
         bgcolor: 'background.default',
         color: 'text.primary',
       }}
     >
       {/* App Top Bar (desktop only) */}
-      {isDesktop() && <AppTopBar onOpenSettings={handleOpenSettings} />}
-      
+      {isDesktopView && <AppTopBar onOpenSettings={handleOpenSettings} />}
+
       {/* Main content area with navigation */}
       <Box
         sx={{
           display: 'flex',
-          flexGrow: 1,
+          flex: 1,
           overflow: 'hidden',
+          // pt: isDesktopView ? '48px' : 0, // Add padding top for the AppTopBar on desktop
         }}
       >
-        {/* Navigation drawer */}
+        {/* Side Navigation */}
         <Navigation />
-        
+
         {/* Main content */}
         <Box
           component="main"
@@ -56,44 +83,36 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
             flexGrow: 1,
             p: 3,
             overflow: 'auto',
-            transition: (theme) => theme.transitions.create('margin', {
-              easing: theme.transitions.easing.sharp,
-              duration: theme.transitions.duration.leavingScreen,
-            }),
+            height: isDesktopView ? 'calc(100vh - 48px)' : '100vh',
           }}
         >
-          {/* Header with user info */}
-          <Box 
-            sx={{ 
-              display: 'flex', 
-              justifyContent: 'space-between', 
-              alignItems: 'center',
-              mb: 3
-            }}
-          >
-            <Box>
-              {/* Left side - can be used for breadcrumbs or page title */}
-            </Box>
-            
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-              <UserInfo />
-            </Box>
-          </Box>
-          
-          {/* Content */}
-          <Box sx={{ flexGrow: 1 }}>
-            {children}
-          </Box>
-          
-          {/* Footer */}
-          <Footer />
+          {children}
+
+          {/* Footer (mobile only) */}
+          {!isDesktopView && <Footer />}
         </Box>
       </Box>
-      
+
       {/* Settings Panel */}
-      <SettingsPanel open={settingsOpen} onClose={handleCloseSettings} />
+      <SettingsPanel
+        open={settingsOpen}
+        onClose={handleCloseSettings}
+      />
+
+      {/* Level Up Notification */}
+      {showLevelUp && (
+        <LevelUpNotification
+          level={level}
+          title={levelTitle}
+          onClose={() => setShowLevelUp(false)}
+          autoHideDuration={5000}
+        />
+      )}
+
+      {/* Currency Notification */}
+      <CurrencyNotification />
     </Box>
   );
 };
 
-export default MainLayout; 
+export default MainLayout;

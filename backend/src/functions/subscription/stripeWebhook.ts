@@ -26,10 +26,10 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         body: JSON.stringify({ message: 'Missing Stripe signature' }),
       };
     }
-    
+
     // Get the raw request body for signature verification
     const payload = event.body || '';
-    
+
     // Verify the event with Stripe
     let stripeEvent: Stripe.Event;
     try {
@@ -45,7 +45,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         body: JSON.stringify({ message: 'Invalid signature' }),
       };
     }
-    
+
     // Handle different event types
     switch (stripeEvent.type) {
       case 'checkout.session.completed': {
@@ -53,48 +53,48 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         await handleCheckoutSessionCompleted(session);
         break;
       }
-      
+
       case 'customer.subscription.created':
       case 'customer.subscription.updated': {
         const subscription = stripeEvent.data.object as Stripe.Subscription;
         await handleSubscriptionUpdated(subscription);
         break;
       }
-      
+
       case 'customer.subscription.deleted': {
         const subscription = stripeEvent.data.object as Stripe.Subscription;
         await handleSubscriptionDeleted(subscription);
         break;
       }
-      
+
       case 'invoice.payment_succeeded': {
         const invoice = stripeEvent.data.object as Stripe.Invoice;
         await handleInvoicePaymentSucceeded(invoice);
         break;
       }
-      
+
       case 'invoice.payment_failed': {
         const invoice = stripeEvent.data.object as Stripe.Invoice;
         await handleInvoicePaymentFailed(invoice);
         break;
       }
-      
+
       default:
         console.log(`Unhandled event type: ${stripeEvent.type}`);
     }
-    
+
     // Return a success response
     return {
       statusCode: 200,
       body: JSON.stringify({ received: true }),
     };
-    
+
   } catch (error) {
     console.error('Error handling webhook:', error);
-    
+
     return {
       statusCode: 500,
-      body: JSON.stringify({ 
+      body: JSON.stringify({
         message: 'Error handling webhook',
         error: error instanceof Error ? error.message : String(error),
       }),
@@ -109,24 +109,24 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session):
   try {
     // Skip if not a subscription checkout
     if (session.mode !== 'subscription') return;
-    
+
     // Get the subscription details
     const subscription = await stripe.subscriptions.retrieve(session.subscription as string);
-    
+
     // Get customer ID and user ID from the session
     const customerId = session.customer as string;
     const userId = session.metadata?.userId;
-    
+
     if (!userId) {
       console.error('No userId found in session metadata');
       return;
     }
-    
+
     // Create a new subscription record in DynamoDB
     const timestamp = new Date().toISOString();
     const subscriptionId = `sub_${Date.now()}`;
-    
-    // Store subscription in DynamoDB
+
+    // StorePage subscription in DynamoDB
     await dynamoDB.put({
       TableName: subscriptionsTable,
       Item: {
@@ -143,13 +143,13 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session):
         updatedAt: timestamp,
       },
     }).promise();
-    
+
     // Update the user record with the Stripe customer ID if not already set
     const userResponse = await dynamoDB.get({
       TableName: usersTable,
       Key: { id: userId },
     }).promise();
-    
+
     const user = userResponse.Item;
     if (user && !user.stripeCustomerId) {
       await dynamoDB.update({
@@ -161,7 +161,7 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session):
         },
       }).promise();
     }
-    
+
   } catch (error) {
     console.error('Error handling checkout.session.completed:', error);
     throw error;
@@ -182,16 +182,16 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription): Pro
         ':stripeSubscriptionId': subscription.id,
       },
     }).promise();
-    
+
     if (!subscriptions || subscriptions.length === 0) {
       console.log(`No subscription found for Stripe subscription ID: ${subscription.id}`);
       return;
     }
-    
+
     // Update the subscription record in DynamoDB
     const dbSubscription = subscriptions[0];
     const timestamp = new Date().toISOString();
-    
+
     await dynamoDB.update({
       TableName: subscriptionsTable,
       Key: { id: dbSubscription.id },
@@ -207,7 +207,7 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription): Pro
         ':updatedAt': timestamp,
       },
     }).promise();
-    
+
   } catch (error) {
     console.error('Error handling subscription update:', error);
     throw error;
@@ -228,16 +228,16 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription): Pro
         ':stripeSubscriptionId': subscription.id,
       },
     }).promise();
-    
+
     if (!subscriptions || subscriptions.length === 0) {
       console.log(`No subscription found for Stripe subscription ID: ${subscription.id}`);
       return;
     }
-    
+
     // Update the subscription record in DynamoDB
     const dbSubscription = subscriptions[0];
     const timestamp = new Date().toISOString();
-    
+
     await dynamoDB.update({
       TableName: subscriptionsTable,
       Key: { id: dbSubscription.id },
@@ -251,7 +251,7 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription): Pro
         ':updatedAt': timestamp,
       },
     }).promise();
-    
+
   } catch (error) {
     console.error('Error handling subscription deletion:', error);
     throw error;
@@ -265,7 +265,7 @@ async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice): Promise<v
   try {
     // Skip if not a subscription invoice
     if (!invoice.subscription) return;
-    
+
     // Query DynamoDB to find the subscription record
     const { Items: subscriptions } = await dynamoDB.query({
       TableName: subscriptionsTable,
@@ -275,17 +275,17 @@ async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice): Promise<v
         ':stripeSubscriptionId': invoice.subscription as string,
       },
     }).promise();
-    
+
     if (!subscriptions || subscriptions.length === 0) {
       console.log(`No subscription found for Stripe subscription ID: ${invoice.subscription}`);
       return;
     }
-    
+
     // If needed, update the subscription status in DynamoDB
     const dbSubscription = subscriptions[0];
     if (dbSubscription.status !== 'active') {
       const timestamp = new Date().toISOString();
-      
+
       await dynamoDB.update({
         TableName: subscriptionsTable,
         Key: { id: dbSubscription.id },
@@ -299,7 +299,7 @@ async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice): Promise<v
         },
       }).promise();
     }
-    
+
   } catch (error) {
     console.error('Error handling invoice payment succeeded:', error);
     throw error;
@@ -313,7 +313,7 @@ async function handleInvoicePaymentFailed(invoice: Stripe.Invoice): Promise<void
   try {
     // Skip if not a subscription invoice
     if (!invoice.subscription) return;
-    
+
     // Query DynamoDB to find the subscription record
     const { Items: subscriptions } = await dynamoDB.query({
       TableName: subscriptionsTable,
@@ -323,16 +323,16 @@ async function handleInvoicePaymentFailed(invoice: Stripe.Invoice): Promise<void
         ':stripeSubscriptionId': invoice.subscription as string,
       },
     }).promise();
-    
+
     if (!subscriptions || subscriptions.length === 0) {
       console.log(`No subscription found for Stripe subscription ID: ${invoice.subscription}`);
       return;
     }
-    
+
     // Update the subscription status in DynamoDB
     const dbSubscription = subscriptions[0];
     const timestamp = new Date().toISOString();
-    
+
     await dynamoDB.update({
       TableName: subscriptionsTable,
       Key: { id: dbSubscription.id },
@@ -345,9 +345,9 @@ async function handleInvoicePaymentFailed(invoice: Stripe.Invoice): Promise<void
         ':updatedAt': timestamp,
       },
     }).promise();
-    
+
   } catch (error) {
     console.error('Error handling invoice payment failed:', error);
     throw error;
   }
-} 
+}

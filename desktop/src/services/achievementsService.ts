@@ -1,34 +1,20 @@
 /**
  * Achievements Service
- * 
+ *
  * This service manages user achievements, including tracking progress,
  * unlocking achievements, and providing achievement data.
  */
 
+import { AchievementCategory } from '@/types/achievements/AchievementCategory';
+import { AchievementRarity } from '@/types/achievements/AchievementRarity';
+
+import { loggerService } from './loggerService';
 import { userProgressService } from './userProgressService';
 
-// Achievement types
-export type AchievementCategory = 'practice' | 'streak' | 'mastery' | 'speed' | 'exploration';
-export type AchievementRarity = 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary';
+import type { IAchievement as AchievementType } from '@/types/achievements/IAchievement';
 
 // Achievement interface
-export interface Achievement {
-  id: string;
-  title: string;
-  description: string;
-  category: AchievementCategory;
-  rarity: AchievementRarity;
-  xpReward: number;
-  heartsReward?: number;
-  icon?: string;
-  secret?: boolean;
-  criteria: {
-    type: 'practice' | 'streak' | 'mastery' | 'speed' | 'exploration';
-    value: number;
-    trackId?: string;
-    moduleId?: string;
-  };
-}
+export type Achievement = AchievementType
 
 // Achievement progress interface
 export interface AchievementProgress {
@@ -45,349 +31,356 @@ const defaultAchievements: Achievement[] = [
     id: 'practice-1',
     title: 'First Steps',
     description: 'Complete your first practice session',
-    category: 'practice',
-    rarity: 'common',
-    xpReward: 50,
-    heartsReward: 1,
-    criteria: {
+    category: AchievementCategory.LESSONS,
+    rarity: AchievementRarity.COMMON,
+    xpReward: 100,
+    icon: 'FitnessCenter',
+    condition: {
       type: 'practice',
-      value: 1
-    }
+      target: 1,
+    },
   },
   {
-    id: 'practice-10',
+    id: 'practice-2',
     title: 'Practice Makes Perfect',
     description: 'Complete 10 practice sessions',
-    category: 'practice',
-    rarity: 'uncommon',
+    category: AchievementCategory.LESSONS,
+    rarity: AchievementRarity.UNCOMMON,
     xpReward: 100,
-    criteria: {
+    icon: 'FitnessCenter',
+    condition: {
       type: 'practice',
-      value: 10
-    }
+      target: 10,
+    },
   },
   {
-    id: 'practice-50',
+    id: 'practice-3',
     title: 'Dedicated Learner',
     description: 'Complete 50 practice sessions',
-    category: 'practice',
-    rarity: 'rare',
+    category: AchievementCategory.LESSONS,
+    rarity: AchievementRarity.RARE,
     xpReward: 250,
-    criteria: {
+    icon: 'FitnessCenter',
+    condition: {
       type: 'practice',
-      value: 50
-    }
+      target: 50,
+    },
   },
   {
-    id: 'practice-100',
+    id: 'practice-4',
     title: 'Keyboard Warrior',
     description: 'Complete 100 practice sessions',
-    category: 'practice',
-    rarity: 'epic',
+    category: AchievementCategory.LESSONS,
+    rarity: AchievementRarity.EPIC,
     xpReward: 500,
-    criteria: {
+    icon: 'FitnessCenter',
+    condition: {
       type: 'practice',
-      value: 100
-    }
+      target: 100,
+    },
   },
-  
+
   // Streak achievements
   {
-    id: 'streak-3',
+    id: 'streak-1',
     title: 'Getting Into Rhythm',
     description: 'Maintain a 3-day practice streak',
-    category: 'streak',
-    rarity: 'common',
+    category: AchievementCategory.STREAKS,
+    rarity: AchievementRarity.COMMON,
     xpReward: 75,
-    criteria: {
+    icon: 'LocalFireDepartment',
+    condition: {
       type: 'streak',
-      value: 3
-    }
+      target: 3,
+    },
   },
   {
-    id: 'streak-7',
+    id: 'streak-2',
     title: 'Weekly Warrior',
     description: 'Maintain a 7-day practice streak',
-    category: 'streak',
-    rarity: 'uncommon',
+    category: AchievementCategory.STREAKS,
+    rarity: AchievementRarity.UNCOMMON,
     xpReward: 100,
-    heartsReward: 2,
-    criteria: {
+    icon: 'LocalFireDepartment',
+    condition: {
       type: 'streak',
-      value: 7
-    }
+      target: 7,
+    },
   },
   {
-    id: 'streak-30',
+    id: 'streak-3',
     title: 'Monthly Master',
     description: 'Maintain a 30-day practice streak',
-    category: 'streak',
-    rarity: 'rare',
+    category: AchievementCategory.STREAKS,
+    rarity: AchievementRarity.RARE,
     xpReward: 500,
-    criteria: {
+    icon: 'LocalFireDepartment',
+    condition: {
       type: 'streak',
-      value: 30
-    }
+      target: 30,
+    },
   },
   {
-    id: 'streak-100',
+    id: 'streak-4',
     title: 'Unstoppable',
     description: 'Maintain a 100-day practice streak',
-    category: 'streak',
-    rarity: 'legendary',
+    category: AchievementCategory.STREAKS,
+    rarity: AchievementRarity.LEGENDARY,
     xpReward: 1000,
-    criteria: {
+    icon: 'LocalFireDepartment',
+    condition: {
       type: 'streak',
-      value: 100
-    }
+      target: 100,
+    },
   },
-  
+
   // Mastery achievements
   {
-    id: 'mastery-module-1',
+    id: 'mastery-1',
     title: 'Module Master',
     description: 'Complete all lessons in a module',
-    category: 'mastery',
-    rarity: 'uncommon',
+    category: AchievementCategory.MASTERY,
+    rarity: AchievementRarity.UNCOMMON,
     xpReward: 200,
-    criteria: {
+    icon: 'EmojiEvents',
+    condition: {
       type: 'mastery',
-      value: 1
-    }
+      target: 1,
+    },
   },
   {
-    id: 'mastery-track-1',
+    id: 'mastery-2',
     title: 'Track Champion',
     description: 'Complete all modules in a track',
-    category: 'mastery',
-    rarity: 'epic',
+    category: AchievementCategory.MASTERY,
+    rarity: AchievementRarity.EPIC,
     xpReward: 750,
-    criteria: {
+    icon: 'EmojiEvents',
+    condition: {
       type: 'mastery',
-      value: 1
-    }
+      target: 1,
+    },
   },
   {
-    id: 'mastery-1',
+    id: 'mastery-3',
     title: 'Mastery Begins',
     description: 'Complete your first mastery challenge',
-    category: 'mastery',
-    rarity: 'uncommon',
+    category: AchievementCategory.MASTERY,
+    rarity: AchievementRarity.UNCOMMON,
     xpReward: 150,
-    heartsReward: 1,
-    criteria: {
+    icon: 'EmojiEvents',
+    condition: {
       type: 'mastery',
-      value: 1
-    }
+      target: 1,
+    },
   },
-  
+
   // Speed achievements
   {
-    id: 'speed-shortcut-10',
+    id: 'speed-1',
     title: 'Quick Fingers',
     description: 'Execute 10 shortcuts in under 1 second each',
-    category: 'speed',
-    rarity: 'uncommon',
+    category: AchievementCategory.SHORTCUTS,
+    rarity: AchievementRarity.UNCOMMON,
     xpReward: 150,
-    criteria: {
+    icon: 'Speed',
+    condition: {
       type: 'speed',
-      value: 10
-    }
+      target: 10,
+    },
   },
   {
-    id: 'speed-shortcut-50',
+    id: 'speed-2',
     title: 'Lightning Hands',
     description: 'Execute 50 shortcuts in under 0.8 seconds each',
-    category: 'speed',
-    rarity: 'rare',
+    category: AchievementCategory.SHORTCUTS,
+    rarity: AchievementRarity.RARE,
     xpReward: 300,
-    criteria: {
+    icon: 'Speed',
+    condition: {
       type: 'speed',
-      value: 50
-    }
+      target: 50,
+    },
   },
-  
+
   // Exploration achievements
   {
-    id: 'exploration-all-sections',
+    id: 'explore-1',
     title: 'Explorer',
     description: 'Visit all sections of the app',
-    category: 'exploration',
-    rarity: 'common',
+    category: AchievementCategory.GENERAL,
+    rarity: AchievementRarity.COMMON,
     xpReward: 100,
-    criteria: {
+    icon: 'Explore',
+    condition: {
       type: 'exploration',
-      value: 5
-    }
+      target: 5,
+    },
   },
   {
-    id: 'exploration-secret',
+    id: 'explore-2',
     title: 'Secret Finder',
     description: 'Discover a hidden feature',
-    category: 'exploration',
-    rarity: 'rare',
+    category: AchievementCategory.GENERAL,
+    rarity: AchievementRarity.RARE,
     xpReward: 250,
+    icon: 'Explore',
     secret: true,
-    criteria: {
+    condition: {
       type: 'exploration',
-      value: 1
-    }
+      target: 1,
+    },
   },
-  
+
   // Legendary achievements
   {
-    id: 'legendary-1',
+    id: 'mastery-4',
     title: 'Keyboard Grandmaster',
     description: 'Complete all mastery challenges with perfect scores',
-    category: 'mastery',
-    rarity: 'legendary',
+    category: AchievementCategory.MASTERY,
+    rarity: AchievementRarity.LEGENDARY,
     xpReward: 1000,
-    heartsReward: 5,
-    criteria: {
+    icon: 'EmojiEvents',
+    condition: {
       type: 'mastery',
-      value: 100
-    }
-  }
+      target: 100,
+    },
+  },
 ];
 
 // Storage keys
 const ACHIEVEMENTS_STORAGE_KEY = 'keyboard-dojo-achievements';
-const ACHIEVEMENT_LISTENERS_KEY = 'achievement-listeners';
 
 // Achievement service
 class AchievementsService {
   private listeners: ((achievements: AchievementProgress[]) => void)[] = [];
-  
+
   constructor() {
     // Initialize listeners array
     this.listeners = [];
   }
-  
+
   // Get all achievements with progress
   getAchievements(): AchievementProgress[] {
     try {
       const savedAchievements = localStorage.getItem(ACHIEVEMENTS_STORAGE_KEY);
-      
+
       if (!savedAchievements) {
         // Initialize achievements with default progress
-        const initialAchievements = defaultAchievements.map(achievement => ({
+        const initialAchievements = defaultAchievements.map((achievement) => ({
           achievement,
           progress: 0,
-          completed: false
+          completed: false,
         }));
-        
+
         localStorage.setItem(ACHIEVEMENTS_STORAGE_KEY, JSON.stringify(initialAchievements));
         return initialAchievements;
       }
-      
+
       return JSON.parse(savedAchievements);
     } catch (error) {
-      console.error('Error getting achievements:', error);
+      loggerService.error('Error getting achievements:', { error });
       return [];
     }
   }
-  
+
   // Update achievement progress
   updateAchievementProgress(achievementId: string, progress: number): AchievementProgress | null {
     const achievements = this.getAchievements();
-    const achievementIndex = achievements.findIndex(a => a.achievement.id === achievementId);
-    
+    const achievementIndex = achievements.findIndex((a) => a.achievement.id === achievementId);
+
     if (achievementIndex === -1) {
       return null;
     }
-    
+
     const achievement = achievements[achievementIndex];
     const wasCompleted = achievement.completed;
-    
+
     // Update progress
     achievement.progress = Math.max(achievement.progress, progress);
-    
+
     // Check if completed
-    if (!wasCompleted && achievement.progress >= achievement.achievement.criteria.value) {
+    if (!wasCompleted && achievement.progress >= achievement.achievement.condition.target) {
       achievement.completed = true;
       achievement.completedDate = new Date().toISOString();
-      
+
       // Award XP
       userProgressService.addXP(achievement.achievement.xpReward);
     }
-    
+
     // Save updated achievements
     localStorage.setItem(ACHIEVEMENTS_STORAGE_KEY, JSON.stringify(achievements));
-    
+
     // Notify listeners
     this.notifyListeners(achievements);
-    
+
     return achievement;
   }
-  
+
   // Check for achievements based on user progress
   checkAchievements(type: AchievementCategory, value: number, metadata?: any): AchievementProgress[] {
     const achievements = this.getAchievements();
     const unlockedAchievements: AchievementProgress[] = [];
-    
+
     // Filter achievements by type
     const relevantAchievements = achievements.filter(
-      a => a.achievement.criteria.type === type && !a.completed
+      (a) => a.achievement.category === type && !a.completed,
     );
-    
+
     // Check each achievement
-    relevantAchievements.forEach(achievement => {
+    relevantAchievements.forEach((achievement) => {
       // Check if criteria matches
-      if (value >= achievement.achievement.criteria.value) {
+      if (value >= achievement.achievement.condition.target) {
         // Check additional criteria if needed
         let criteriaMatched = true;
-        
-        if (achievement.achievement.criteria.trackId && metadata?.trackId) {
-          criteriaMatched = achievement.achievement.criteria.trackId === metadata.trackId;
+
+        if (achievement.achievement.condition.trackId && metadata?.trackId) {
+          criteriaMatched = achievement.achievement.condition.trackId === metadata.trackId;
         }
-        
-        if (achievement.achievement.criteria.moduleId && metadata?.moduleId) {
-          criteriaMatched = criteriaMatched && achievement.achievement.criteria.moduleId === metadata.moduleId;
-        }
-        
+
         if (criteriaMatched) {
-          // Update achievement
+          // Update progress and check for completion
           const updated = this.updateAchievementProgress(
-            achievement.achievement.id, 
-            achievement.achievement.criteria.value
+            achievement.achievement.id,
+            achievement.achievement.condition.target,
           );
-          
-          if (updated && updated.completed) {
+
+          if (updated) {
             unlockedAchievements.push(updated);
           }
         }
       }
     });
-    
+
     return unlockedAchievements;
   }
-  
+
   // Add listener for achievement updates
   addListener(callback: (achievements: AchievementProgress[]) => void): void {
     this.listeners.push(callback);
   }
-  
+
   // Remove listener
   removeListener(callback: (achievements: AchievementProgress[]) => void): void {
-    this.listeners = this.listeners.filter(listener => listener !== callback);
+    this.listeners = this.listeners.filter((listener) => listener !== callback);
   }
-  
+
   // Notify all listeners
   private notifyListeners(achievements: AchievementProgress[]): void {
-    this.listeners.forEach(listener => listener(achievements));
+    this.listeners.forEach((listener) => listener(achievements));
   }
-  
+
   // Reset all achievements (for testing)
   resetAchievements(): void {
-    const initialAchievements = defaultAchievements.map(achievement => ({
+    const initialAchievements = defaultAchievements.map((achievement) => ({
       achievement,
       progress: 0,
-      completed: false
+      completed: false,
     }));
-    
+
     localStorage.setItem(ACHIEVEMENTS_STORAGE_KEY, JSON.stringify(initialAchievements));
     this.notifyListeners(initialAchievements);
   }
 }
 
-export const achievementsService = new AchievementsService(); 
+export const achievementsService = new AchievementsService();

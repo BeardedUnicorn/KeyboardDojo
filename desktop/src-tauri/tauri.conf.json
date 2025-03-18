@@ -4,7 +4,7 @@
   "version": "0.1.0",
   "identifier": "com.keyboard-dojo.dev",
   "build": {
-    "beforeDevCommand": "npm run build",
+    "beforeDevCommand": "npm run dev",
     "beforeBuildCommand": "npm run build",
     "frontendDist": "../dist",
     "devUrl": "http://localhost:1420"
@@ -21,7 +21,8 @@
         "minWidth": 800,
         "minHeight": 600,
         "decorations": false,
-        "transparent": false
+        "transparent": false,
+        "visible": true
       }
     ],
     "security": {

@@ -1,24 +1,30 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { 
-  Box, 
-  Paper, 
-  Typography, 
-  Button, 
-  LinearProgress, 
-  Chip,
-  Stack,
-  Fade,
-  useTheme
-} from '@mui/material';
 import {
   CheckCircleOutline as CheckIcon,
   HighlightOff as ErrorIcon,
   Refresh as RefreshIcon,
-  EmojiEvents as TrophyIcon,
-  Lightbulb as HintIcon
+  Lightbulb as HintIcon,
 } from '@mui/icons-material';
-import { shortcutDetector, formatShortcut, parseShortcut, matchesShortcut, getActiveModifiers } from '../utils/shortcutDetector';
+import {
+  Box,
+  Paper,
+  Typography,
+  Button,
+  LinearProgress,
+  Chip,
+  Stack,
+  Fade,
+  useTheme,
+} from '@mui/material';
+import React, { useState, useEffect, useRef, useCallback, useMemo, memo } from 'react';
+
+import { useCurrency } from '../hooks/useCurrency';
+import { useXP } from '../hooks/useXP';
+import { CURRENCY_REWARDS } from '../services/currencyService';
 import { osDetectionService } from '../services/osDetectionService';
+import { XP_REWARDS } from '../services/xpService';
+import { shortcutDetector, formatShortcut, parseShortcut, matchesShortcut, getActiveModifiers } from '../utils/shortcutDetector';
+
+import type { FC } from 'react';
 
 export interface ShortcutChallengeProps {
   shortcut: string;
@@ -33,7 +39,7 @@ export interface ShortcutChallengeProps {
   showKeyboard?: boolean;
 }
 
-const ShortcutChallenge: React.FC<ShortcutChallengeProps> = ({
+const ShortcutChallenge: FC<ShortcutChallengeProps> = memo(({
   shortcut,
   shortcutMac,
   shortcutLinux,
@@ -51,28 +57,103 @@ const ShortcutChallenge: React.FC<ShortcutChallengeProps> = ({
   const [lastAttempt, setLastAttempt] = useState('');
   const [showHint, setShowHint] = useState(false);
   const [timeElapsed, setTimeElapsed] = useState(0);
+  const [consecutiveCorrect, setConsecutiveCorrect] = useState(0);
   const [startTime] = useState(Date.now());
   const successHandled = useRef(false);
-  
+  const { addXP } = useXP();
+  const { addCurrency } = useCurrency();
+
   // Get OS-specific shortcut
-  const osSpecificShortcut = osDetectionService.formatShortcut(
-    shortcut,
-    shortcutMac || shortcut.replace(/Ctrl\+/g, '⌘+').replace(/Alt\+/g, '⌥+'),
-    shortcutLinux
+  const osSpecificShortcut = useMemo(() =>
+    osDetectionService.formatShortcut(
+      shortcut,
+      shortcutMac || shortcut.replace(/Ctrl\+/g, '⌘+').replace(/Alt\+/g, '⌥+'),
+      shortcutLinux,
+    ),
+    [shortcut, shortcutMac, shortcutLinux],
   );
-  
+
   // Parse the shortcut
-  const parsedShortcut = parseShortcut(osSpecificShortcut);
-  
+  const parsedShortcut = useMemo(() =>
+    parseShortcut(osSpecificShortcut),
+    [osSpecificShortcut],
+  );
+
+  // Handle successful shortcut match
+  const handleShortcutSuccess = useCallback(() => {
+    if (!successHandled.current) {
+      successHandled.current = true;
+      onSuccess?.();
+
+      // Award XP for correct answer
+      addXP(XP_REWARDS.CORRECT_ANSWER, 'shortcut_correct');
+
+      // Award combo bonus if applicable
+      if (consecutiveCorrect > 1) {
+        addXP(XP_REWARDS.COMBO_BONUS * Math.min(consecutiveCorrect, 5), 'combo_bonus');
+      }
+
+      // Award currency for completing the challenge
+      addCurrency(
+        CURRENCY_REWARDS.CHALLENGE_COMPLETE,
+        'challenge_complete',
+        'Completed shortcut challenge',
+      );
+
+      // Award bonus currency for consecutive correct answers
+      if (consecutiveCorrect > 1 && consecutiveCorrect % 5 === 0) {
+        addCurrency(
+          CURRENCY_REWARDS.CHALLENGE_COMPLETE * 2,
+          'challenge_streak',
+          `${consecutiveCorrect} shortcuts in a row!`,
+        );
+      }
+    }
+  }, [addXP, addCurrency, consecutiveCorrect, onSuccess]);
+
+  // Helper to check if only modifier keys are pressed
+  const isModifierOnly = useCallback((event: KeyboardEvent) => {
+    return ['Control', 'Alt', 'Shift', 'Meta'].includes(event.key);
+  }, []);
+
+  // Handle key down event
+  const handleKeyDown = useCallback((event: KeyboardEvent) => {
+    // Ignore if already successful and handled
+    if (status === 'success' && successHandled.current) return;
+
+    // Check if the shortcut matches
+    if (matchesShortcut(event, parsedShortcut)) {
+      setStatus('success');
+      setAttempts((prev) => prev + 1);
+      setConsecutiveCorrect((prev) => prev + 1);
+      handleShortcutSuccess();
+      event.preventDefault();
+    } else if (!isModifierOnly(event)) {
+      // Only count non-modifier keys as attempts
+      setStatus('error');
+      setAttempts((prev) => prev + 1);
+      setConsecutiveCorrect(0); // Reset consecutive correct counter on error
+      setLastAttempt(formatShortcut({
+        key: event.key,
+        modifiers: getActiveModifiers(event),
+      }));
+
+      // Reset status after a delay
+      setTimeout(() => {
+        setStatus('waiting');
+      }, 1500);
+    }
+  }, [status, parsedShortcut, isModifierOnly, handleShortcutSuccess]);
+
   // Update time elapsed
   useEffect(() => {
     const timer = setInterval(() => {
       setTimeElapsed(Math.floor((Date.now() - startTime) / 1000));
     }, 1000);
-    
+
     return () => clearInterval(timer);
   }, [startTime]);
-  
+
   // Reset state when shortcut changes
   useEffect(() => {
     setStatus('waiting');
@@ -81,65 +162,23 @@ const ShortcutChallenge: React.FC<ShortcutChallengeProps> = ({
     setShowHint(false);
     successHandled.current = false;
   }, [shortcut, shortcutMac, shortcutLinux]);
-  
+
   // Set up keyboard event listeners
   useEffect(() => {
-    // Initialize the shortcut detector
     shortcutDetector.initialize();
-    
-    const handleKeyDown = (event: KeyboardEvent) => {
-      // Ignore if already successful and handled
-      if (status === 'success' && successHandled.current) return;
-      
-      // Check if the shortcut matches
-      if (matchesShortcut(event, parsedShortcut)) {
-        setStatus('success');
-        setAttempts(prev => prev + 1);
-        
-        // Mark as handled to prevent multiple triggers
-        if (!successHandled.current) {
-          successHandled.current = true;
-          onSuccess?.();
-        }
-        
-        // Prevent default browser behavior
-        event.preventDefault();
-      } else if (!isModifierOnly(event)) {
-        // Only count non-modifier keys as attempts
-        setStatus('error');
-        setAttempts(prev => prev + 1);
-        setLastAttempt(formatShortcut({
-          key: event.key,
-          modifiers: getActiveModifiers(event)
-        }));
-        
-        // Reset status after a delay
-        setTimeout(() => {
-          setStatus('waiting');
-        }, 1500);
-      }
-    };
-    
-    // Helper to check if only modifier keys are pressed
-    const isModifierOnly = (event: KeyboardEvent) => {
-      return ['Control', 'Alt', 'Shift', 'Meta'].includes(event.key);
-    };
-    
-    // Add event listener
     window.addEventListener('keydown', handleKeyDown);
-    
-    // Clean up
+
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
       shortcutDetector.cleanup();
     };
-  }, [shortcut, shortcutMac, shortcutLinux, status, onSuccess, parsedShortcut]);
-  
+  }, [handleKeyDown]);
+
   // Format shortcut for display
-  const formatShortcutForDisplay = (shortcutStr: string) => {
+  const formatShortcutForDisplay = useCallback((shortcutStr: string) => {
     const parts = shortcutStr.split('+');
-    
-    return parts.map(part => {
+
+    return parts.map((part) => {
       // Format special keys based on OS
       switch (part.toLowerCase()) {
         case 'ctrl':
@@ -161,68 +200,69 @@ const ShortcutChallenge: React.FC<ShortcutChallengeProps> = ({
           return <Chip key={part} label={part} size="small" sx={{ mr: 0.5 }} />;
       }
     });
-  };
-  
+  }, []);
+
   // Get application-specific styling
-  const getApplicationStyle = () => {
+  const applicationStyle = useMemo(() => {
     switch (application) {
       case 'vscode':
         return {
           bgcolor: '#1e1e1e',
           color: '#d4d4d4',
-          borderColor: '#007acc'
+          borderColor: '#007acc',
         };
       case 'intellij':
         return {
           bgcolor: '#2b2b2b',
           color: '#a9b7c6',
-          borderColor: '#ff5370'
+          borderColor: '#ff5370',
         };
       case 'cursor':
         return {
           bgcolor: '#1a1a1a',
           color: '#e0e0e0',
-          borderColor: '#6c38bb'
+          borderColor: '#6c38bb',
         };
       default:
         return {};
     }
-  };
-  
+  }, [application]);
+
   // Handle hint button click
-  const handleHintClick = () => {
+  const handleHintClick = useCallback(() => {
     setShowHint(true);
     onHint?.();
-  };
-  
+  }, [onHint]);
+
   // Handle skip button click
-  const handleSkipClick = () => {
+  const handleSkipClick = useCallback(() => {
     onSkip?.();
-  };
-  
+  }, [onSkip]);
+
   return (
-    <Paper 
-      elevation={3} 
-      sx={{ 
-        p: 3, 
+    <Paper
+      elevation={3}
+      sx={{
+        p: 3,
         borderRadius: 2,
         border: 1,
-        borderColor: 'divider'
+        borderColor: 'divider',
+        ...applicationStyle,
       }}
     >
       {/* Challenge header */}
       <Typography variant="h6" gutterBottom>
         Shortcut Challenge
       </Typography>
-      
+
       {/* Application context */}
       {context && (
-        <Box 
-          sx={{ 
-            p: 2, 
-            mb: 3, 
+        <Box
+          sx={{
+            p: 2,
+            mb: 3,
             borderRadius: 1,
-            ...getApplicationStyle()
+            ...applicationStyle,
           }}
         >
           <Typography variant="body2" sx={{ fontFamily: 'monospace' }}>
@@ -230,12 +270,12 @@ const ShortcutChallenge: React.FC<ShortcutChallengeProps> = ({
           </Typography>
         </Box>
       )}
-      
+
       {/* Challenge description */}
       <Typography variant="body1" gutterBottom>
         {description}
       </Typography>
-      
+
       {/* Shortcut to press */}
       <Box sx={{ my: 3, textAlign: 'center' }}>
         <Typography variant="subtitle2" gutterBottom>
@@ -245,7 +285,7 @@ const ShortcutChallenge: React.FC<ShortcutChallengeProps> = ({
           {formatShortcutForDisplay(osSpecificShortcut)}
         </Box>
       </Box>
-      
+
       {/* Progress and status */}
       <Box sx={{ mb: 3 }}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
@@ -256,26 +296,26 @@ const ShortcutChallenge: React.FC<ShortcutChallengeProps> = ({
             Time: {timeElapsed}s
           </Typography>
         </Box>
-        <LinearProgress 
-          variant="determinate" 
-          value={status === 'success' ? 100 : 0} 
+        <LinearProgress
+          variant="determinate"
+          value={status === 'success' ? 100 : 0}
           color={status === 'error' ? 'error' : 'primary'}
           sx={{ height: 8, borderRadius: 4 }}
         />
       </Box>
-      
+
       {/* Success message */}
       {status === 'success' && (
-        <Fade in={true}>
-          <Box 
-            sx={{ 
-              p: 2, 
-              mb: 3, 
-              bgcolor: 'success.light', 
+        <Fade in>
+          <Box
+            sx={{
+              p: 2,
+              mb: 3,
+              bgcolor: 'success.light',
               color: 'success.contrastText',
               borderRadius: 2,
               display: 'flex',
-              alignItems: 'center'
+              alignItems: 'center',
             }}
           >
             <CheckIcon sx={{ mr: 1 }} />
@@ -285,19 +325,19 @@ const ShortcutChallenge: React.FC<ShortcutChallengeProps> = ({
           </Box>
         </Fade>
       )}
-      
+
       {/* Error message */}
       {status === 'error' && (
-        <Fade in={true}>
-          <Box 
-            sx={{ 
-              p: 2, 
-              mb: 3, 
-              bgcolor: 'error.light', 
+        <Fade in>
+          <Box
+            sx={{
+              p: 2,
+              mb: 3,
+              bgcolor: 'error.light',
               color: 'error.contrastText',
               borderRadius: 2,
               display: 'flex',
-              alignItems: 'center'
+              alignItems: 'center',
             }}
           >
             <ErrorIcon sx={{ mr: 1 }} />
@@ -307,18 +347,18 @@ const ShortcutChallenge: React.FC<ShortcutChallengeProps> = ({
           </Box>
         </Fade>
       )}
-      
+
       {/* Hint */}
       {showHint && (
-        <Box 
-          sx={{ 
-            p: 2, 
-            mb: 3, 
-            bgcolor: 'warning.light', 
+        <Box
+          sx={{
+            p: 2,
+            mb: 3,
+            bgcolor: 'warning.light',
             color: 'warning.contrastText',
             borderRadius: 2,
             display: 'flex',
-            alignItems: 'center'
+            alignItems: 'center',
           }}
         >
           <HintIcon sx={{ mr: 1 }} />
@@ -327,12 +367,12 @@ const ShortcutChallenge: React.FC<ShortcutChallengeProps> = ({
           </Typography>
         </Box>
       )}
-      
+
       {/* Action buttons */}
       <Stack direction="row" spacing={2} justifyContent="center" sx={{ mb: 3 }}>
         {!showHint && (
-          <Button 
-            variant="outlined" 
+          <Button
+            variant="outlined"
             startIcon={<HintIcon />}
             onClick={handleHintClick}
             color="warning"
@@ -340,9 +380,9 @@ const ShortcutChallenge: React.FC<ShortcutChallengeProps> = ({
             Hint
           </Button>
         )}
-        
-        <Button 
-          variant="outlined" 
+
+        <Button
+          variant="outlined"
           startIcon={<RefreshIcon />}
           onClick={handleSkipClick}
           color="secondary"
@@ -352,6 +392,8 @@ const ShortcutChallenge: React.FC<ShortcutChallengeProps> = ({
       </Stack>
     </Paper>
   );
-};
+});
 
-export default ShortcutChallenge; 
+ShortcutChallenge.displayName = 'ShortcutChallenge';
+
+export default ShortcutChallenge;

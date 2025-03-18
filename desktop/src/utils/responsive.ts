@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
 import { getCurrentWindow } from '@tauri-apps/api/window';
+import { useState, useEffect } from 'react';
 
 // Window size breakpoints
 export enum WindowSize {
@@ -113,7 +113,7 @@ export const getWindowSizeFromWidth = (width: number): WindowSize => {
  */
 export const isWindowSizeAtLeast = (
   currentSize: WindowSize,
-  minSize: WindowSize
+  minSize: WindowSize,
 ): boolean => {
   const currentValue = breakpoints[currentSize];
   const minValue = breakpoints[minSize];
@@ -128,7 +128,7 @@ export const isWindowSizeAtLeast = (
  */
 export const getResponsiveValue = <T>(
   values: Partial<Record<WindowSize, T>>,
-  currentSize: WindowSize
+  currentSize: WindowSize,
 ): T | undefined => {
   // Try current size first
   if (values[currentSize] !== undefined) {

@@ -5,63 +5,98 @@
  * It allows controlling the window (minimize, maximize, close) and system tray integration.
  */
 
-// In a real implementation, we would import Tauri API
-// import { appWindow } from '@tauri-apps/api/window';
+// Import Tauri API
+import { getCurrentWindow } from '@tauri-apps/api/window';
 
-class WindowService {
+import { BaseService } from './BaseService';
+import { loggerService } from './loggerService';
+import { serviceFactory } from './ServiceFactory';
+
+class WindowService extends BaseService {
+  private window: ReturnType<typeof getCurrentWindow>;
+
+  constructor() {
+    super();
+    this.window = getCurrentWindow();
+  }
+
+  /**
+   * Initialize the window service
+   */
+  async initialize(): Promise<void> {
+    await super.initialize();
+    
+    // Additional initialization if needed
+    loggerService.info('Window service initialized', { component: 'WindowService' });
+  }
+
+  /**
+   * Clean up the window service
+   */
+  cleanup(): void {
+    // No specific cleanup needed for window service
+    super.cleanup();
+  }
+
+  /**
+   * Set the window title
+   * @param title The new window title
+   */
+  setTitle(title: string): void {
+    this.window.setTitle(title)
+      .catch((error) => {
+        loggerService.error('Failed to set window title', error, { component: 'WindowService' });
+      });
+  }
+
   /**
    * Minimize the window
    */
   minimize(): void {
-    // In a real implementation, we would use Tauri API to minimize the window
-    console.log('Minimizing window');
-    
-    // Example of how this would be implemented with Tauri:
-    /*
-    appWindow.minimize()
+    this.window.minimize()
       .catch((error) => {
-        console.error('Failed to minimize window', error);
+        loggerService.error('Failed to minimize window', error, { component: 'WindowService' });
       });
-    */
+  }
+
+  /**
+   * Maximize the window
+   */
+  maximize(): void {
+    this.window.maximize()
+      .catch((error) => {
+        loggerService.error('Failed to maximize window', error, { component: 'WindowService' });
+      });
+  }
+
+  /**
+   * Restore (unmaximize) the window
+   */
+  restore(): void {
+    this.window.unmaximize()
+      .catch((error) => {
+        loggerService.error('Failed to restore window', error, { component: 'WindowService' });
+      });
   }
   
   /**
-   * Maximize or restore the window
+   * Toggle maximize/restore state
    */
   toggleMaximize(): void {
-    // In a real implementation, we would use Tauri API to maximize/restore the window
-    console.log('Toggling window maximize state');
-    
-    // Example of how this would be implemented with Tauri:
-    /*
-    appWindow.isMaximized()
-      .then((isMaximized) => {
-        if (isMaximized) {
-          return appWindow.unmaximize();
-        } else {
-          return appWindow.maximize();
-        }
-      })
+    this.window.toggleMaximize()
       .catch((error) => {
-        console.error('Failed to toggle window maximize state', error);
+        loggerService.error('Failed to toggle window maximize state', error, { component: 'WindowService' });
       });
-    */
   }
   
   /**
    * Close the window
    */
   close(): void {
-    // In a real implementation, we would use Tauri API to close the window
-    console.log('Closing window');
-    
-    // Example of how this would be implemented with Tauri:
-    /*
-    appWindow.close()
+    this.window.close()
       .catch((error) => {
-        console.error('Failed to close window', error);
+        loggerService.error('Failed to close window', error, { component: 'WindowService' });
       });
-    */
   }
   
   /**
@@ -69,30 +104,35 @@ class WindowService {
    * @returns Promise that resolves to true if the window is maximized, false otherwise
    */
   isMaximized(): Promise<boolean> {
-    // In a real implementation, we would use Tauri API to check if the window is maximized
-    console.log('Checking if window is maximized');
-    
-    // Example of how this would be implemented with Tauri:
-    /*
-    return appWindow.isMaximized();
-    */
-    
-    // For now, return a mock value
-    return Promise.resolve(false);
+    return this.window.isMaximized();
+  }
+
+  /**
+   * Listen for window events
+   * @param event The event to listen for
+   * @param callback The callback to execute
+   * @returns A function to remove the listener
+   */
+  listen(event: string, callback: () => void): () => void {
+    try {
+      const unlisten = this.window.listen(event, callback);
+      return () => {
+        unlisten.then((fn: () => void) => fn()).catch((err: Error) => {
+          console.error(`Failed to remove listener for ${event}:`, err);
+        });
+      };
+    } catch (error) {
+      console.error(`Failed to add listener for ${event}:`, error);
+      return () => {};
+    }
   }
   
   /**
    * Set up system tray
    */
   setupSystemTray(): void {
-    // In a real implementation, we would use Tauri API to set up the system tray
-    console.log('Setting up system tray');
-    
-    // Example of how this would be implemented with Tauri:
-    /*
-    // This would typically be done in the Rust code (main.rs)
-    // But we could also use the Tauri API to update the tray menu
-    */
+    // System tray is configured in tauri.conf.json
+    loggerService.info('System tray is configured in tauri.conf.json', { component: 'WindowService' });
   }
   
   /**
@@ -101,27 +141,28 @@ class WindowService {
    * @param body The notification body
    */
   showNotification(title: string, body: string): void {
-    // In a real implementation, we would use Tauri API to show a notification
-    console.log(`Showing notification: ${title} - ${body}`);
-    
-    // Example of how this would be implemented with Tauri:
-    /*
-    import { isPermissionGranted, requestPermission, sendNotification } from '@tauri-apps/api/notification';
-    
-    isPermissionGranted().then((granted) => {
-      if (granted) {
-        sendNotification({ title, body });
-      } else {
-        requestPermission().then((permission) => {
-          if (permission === 'granted') {
-            sendNotification({ title, body });
-          }
-        });
-      }
+    // Notification API is not used in this implementation
+    loggerService.info(`Showing notification: ${title} - ${body}`, { 
+      component: 'WindowService',
+      title,
+      body,
     });
-    */
+  }
+
+  /**
+   * Start dragging the window
+   */
+  startDragging(): void {
+    this.window.startDragging()
+      .catch((error) => {
+        loggerService.error('Failed to start window dragging', error, { component: 'WindowService' });
+      });
   }
 }
 
-// Export a singleton instance
-export const windowService = new WindowService(); 
+// Create and register the service
+const windowService = new WindowService();
+serviceFactory.register('windowService', windowService);
+
+// Export the singleton instance
+export { windowService }; 

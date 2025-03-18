@@ -61,7 +61,7 @@ When you first launch Keyboard Dojo Desktop, you'll be greeted with a welcome sc
 2. **Create a new account** if you're new to Keyboard Dojo
 3. **Continue as guest** to explore the app before creating an account
 
-### Home Screen
+### HomePage Screen
 
 The home screen provides quick access to:
 
@@ -92,7 +92,7 @@ Practice sessions allow you to:
 - See real-time feedback on your typing
 - View a keyboard visualization to improve technique
 
-### Profile
+### ProfilePage
 
 Your profile shows:
 

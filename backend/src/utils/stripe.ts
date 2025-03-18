@@ -66,7 +66,7 @@ export const getOrCreateStripeCustomer = async (
     }).promise();
 
     const user = userResult.Item;
-    
+
     if (user && user.stripeCustomerId) {
       return user.stripeCustomerId;
     }
@@ -115,7 +115,7 @@ export const createCheckoutSession = async (
 
     // Get the price ID based on the plan
     const priceId = process.env[plan] || '';
-    
+
     if (!priceId) {
       throw new Error(`Price ID for plan ${plan} not found`);
     }
@@ -156,7 +156,7 @@ export const createSubscription = async (
 ): Promise<Subscription> => {
   try {
     const now = Date.now();
-    
+
     const subscription: Subscription = {
       id: `sub_${userId}_${now}`,
       userId,
@@ -171,7 +171,7 @@ export const createSubscription = async (
       updatedAt: now,
     };
 
-    // Store the subscription in DynamoDB
+    // StorePage the subscription in DynamoDB
     await dynamoDb.put({
       TableName: subscriptionsTable,
       Item: subscription,
@@ -204,13 +204,13 @@ export const updateSubscription = async (
   try {
     // Get the user ID from the subscription's customer metadata
     const customer = await stripe.customers.retrieve(stripeSubscription.customer as string);
-    
+
     if (!customer || customer.deleted) {
       throw new Error('Customer not found or deleted');
     }
-    
+
     const userId = customer.metadata.userId;
-    
+
     if (!userId) {
       throw new Error('User ID not found in customer metadata');
     }
@@ -232,7 +232,7 @@ export const updateSubscription = async (
 
     const subscriptionRecord = subscriptionResult.Items[0] as Subscription;
     const now = Date.now();
-    
+
     // Update subscription record
     const updatedSubscription: Subscription = {
       ...subscriptionRecord,
@@ -249,9 +249,9 @@ export const updateSubscription = async (
     }).promise();
 
     // Update user premium status based on subscription status
-    const isPremium = stripeSubscription.status === 'active' || 
+    const isPremium = stripeSubscription.status === 'active' ||
                      stripeSubscription.status === 'trialing';
-    
+
     await dynamoDb.update({
       TableName: usersTable,
       Key: { userId },
@@ -303,12 +303,12 @@ export const cancelSubscription = async (
       const cancelledSubscription = await stripe.subscriptions.cancel(
         subscription.stripeSubscriptionId
       );
-      
+
       return updateSubscription(cancelledSubscription);
     } else {
       // If cancelling at period end, just update the cancelAtPeriodEnd flag
       const now = Date.now();
-      
+
       const updatedSubscription: Subscription = {
         ...subscription,
         cancelAtPeriodEnd: true,
@@ -365,7 +365,7 @@ export const verifyWebhookSignature = (
   signature: string
 ): Stripe.Event => {
   const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET || '';
-  
+
   if (!webhookSecret) {
     throw new Error('STRIPE_WEBHOOK_SECRET is not set');
   }
@@ -375,4 +375,4 @@ export const verifyWebhookSignature = (
     signature,
     webhookSecret
   );
-}; 
+};

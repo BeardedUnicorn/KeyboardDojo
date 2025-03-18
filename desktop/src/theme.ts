@@ -1,8 +1,35 @@
-import { createTheme, ThemeOptions } from '@mui/material/styles';
-import { PaletteMode } from '@mui/material';
+import { createTheme } from '@mui/material/styles';
+
+import type { ThemeOptions, PaletteMode } from '@mui/material/styles';
+
+// Define spacing constants
+const SPACING = {
+  xs: 4,
+  sm: 8,
+  md: 16,
+  lg: 24,
+  xl: 32,
+  xxl: 48,
+};
+
+// Define elevation constants
+const ELEVATION = {
+  low: '0 2px 4px rgba(0,0,0,0.1)',
+  medium: '0 4px 8px rgba(0,0,0,0.15)',
+  high: '0 8px 16px rgba(0,0,0,0.2)',
+  focused: '0 0 0 3px rgba(25, 118, 210, 0.2)',
+  hover: '0 6px 12px rgba(0,0,0,0.17)',
+};
+
+// Define animation constants
+const TRANSITIONS = {
+  quick: 'all 0.2s ease',
+  medium: 'all 0.3s ease',
+  slow: 'all 0.5s ease',
+};
 
 // Common theme settings
-const getThemeOptions = (mode: PaletteMode): ThemeOptions => {
+export const getThemeOptions = (mode: PaletteMode): ThemeOptions => {
   const isDark = mode === 'dark';
   
   return {
@@ -54,6 +81,10 @@ const getThemeOptions = (mode: PaletteMode): ThemeOptions => {
         disabled: isDark ? 'rgba(255, 255, 255, 0.38)' : 'rgba(0, 0, 0, 0.38)',
       },
     },
+    spacing: SPACING.sm,
+    shape: {
+      borderRadius: 8,
+    },
     typography: {
       fontFamily: [
         '-apple-system',
@@ -67,6 +98,71 @@ const getThemeOptions = (mode: PaletteMode): ThemeOptions => {
         '"Segoe UI Emoji"',
         '"Segoe UI Symbol"',
       ].join(','),
+      h1: {
+        fontSize: '2.5rem',
+        fontWeight: 700,
+        lineHeight: 1.2,
+        letterSpacing: '-0.01em',
+      },
+      h2: {
+        fontSize: '2rem',
+        fontWeight: 700,
+        lineHeight: 1.3,
+        letterSpacing: '-0.01em',
+      },
+      h3: {
+        fontSize: '1.75rem',
+        fontWeight: 600,
+        lineHeight: 1.3,
+      },
+      h4: {
+        fontSize: '1.5rem',
+        fontWeight: 600,
+        lineHeight: 1.4,
+      },
+      h5: {
+        fontSize: '1.25rem',
+        fontWeight: 600,
+        lineHeight: 1.4,
+      },
+      h6: {
+        fontSize: '1.125rem',
+        fontWeight: 600,
+        lineHeight: 1.4,
+      },
+      subtitle1: {
+        fontSize: '1rem',
+        fontWeight: 500,
+        lineHeight: 1.5,
+        letterSpacing: '0.01em',
+      },
+      subtitle2: {
+        fontSize: '0.875rem',
+        fontWeight: 500,
+        lineHeight: 1.5,
+        letterSpacing: '0.01em',
+      },
+      body1: {
+        fontSize: '1rem',
+        lineHeight: 1.6,
+        letterSpacing: '0.01em',
+      },
+      body2: {
+        fontSize: '0.875rem',
+        lineHeight: 1.6,
+        letterSpacing: '0.01em',
+      },
+      button: {
+        fontSize: '0.875rem',
+        fontWeight: 600,
+        letterSpacing: '0.02em',
+        textTransform: 'none',
+      },
+      caption: {
+        fontSize: '0.75rem',
+        lineHeight: 1.5,
+        letterSpacing: '0.02em',
+      },
     },
     components: {
       MuiCssBaseline: {
@@ -75,14 +171,72 @@ const getThemeOptions = (mode: PaletteMode): ThemeOptions => {
             margin: 0,
             padding: 0,
             overflow: 'hidden',
-            transition: 'background-color 0.3s ease, color 0.3s ease',
+            transition: TRANSITIONS.medium,
+            WebkitFontSmoothing: 'antialiased',
+            MozOsxFontSmoothing: 'grayscale',
           },
         },
       },
       MuiButton: {
+        defaultProps: {
+          disableElevation: true,
+        },
         styleOverrides: {
           root: {
             textTransform: 'none',
+            borderRadius: 8,
+            padding: `${SPACING.sm}px ${SPACING.md}px`,
+            transition: TRANSITIONS.quick,
+            '&:hover': {
+              transform: 'translateY(-1px)',
+              boxShadow: ELEVATION.hover,
+            },
+          },
+          contained: {
+            boxShadow: ELEVATION.low,
+            '&:hover': {
+              boxShadow: ELEVATION.hover,
+            },
+          },
+          outlined: {
+            borderWidth: 2,
+            '&:hover': {
+              borderWidth: 2,
+            },
+          },
+        },
+      },
+      MuiPaper: {
+        defaultProps: {
+          elevation: 0,
+        },
+        styleOverrides: {
+          root: {
+            backgroundImage: 'none',
+            transition: TRANSITIONS.medium,
+            borderRadius: 12,
+          },
+          elevation1: {
+            boxShadow: ELEVATION.low,
+          },
+          elevation2: {
+            boxShadow: ELEVATION.medium,
+          },
+          elevation3: {
+            boxShadow: ELEVATION.high,
+          },
+        },
+      },
+      MuiCard: {
+        styleOverrides: {
+          root: {
+            borderRadius: 12,
+            boxShadow: ELEVATION.low,
+            transition: TRANSITIONS.quick,
+            '&:hover': {
+              transform: 'translateY(-2px)',
+              boxShadow: ELEVATION.hover,
+            },
           },
         },
       },
@@ -90,14 +244,96 @@ const getThemeOptions = (mode: PaletteMode): ThemeOptions => {
         styleOverrides: {
           paper: {
             backgroundColor: isDark ? '#1e1e1e' : '#ffffff',
-            transition: 'width 225ms cubic-bezier(0.4, 0, 0.6, 1) 0ms, background-color 0.3s ease',
+            transition: TRANSITIONS.medium,
+            borderRadius: 0,
           },
         },
       },
       MuiListItemButton: {
         styleOverrides: {
           root: {
-            transition: 'padding 225ms cubic-bezier(0.4, 0, 0.6, 1) 0ms',
+            borderRadius: 8,
+            transition: TRANSITIONS.quick,
+            '&:hover': {
+              backgroundColor: isDark 
+                ? 'rgba(255, 255, 255, 0.08)'
+                : 'rgba(0, 0, 0, 0.04)',
+            },
+            '&.Mui-selected': {
+              backgroundColor: isDark 
+                ? 'rgba(25, 118, 210, 0.16)'
+                : 'rgba(25, 118, 210, 0.08)',
+              '&:hover': {
+                backgroundColor: isDark 
+                  ? 'rgba(25, 118, 210, 0.24)'
+                  : 'rgba(25, 118, 210, 0.12)',
+              },
+            },
+          },
+        },
+      },
+      MuiTextField: {
+        defaultProps: {
+          variant: 'outlined',
+        },
+        styleOverrides: {
+          root: {
+            '& .MuiOutlinedInput-root': {
+              borderRadius: 8,
+              transition: TRANSITIONS.quick,
+              '&:hover': {
+                boxShadow: ELEVATION.low,
+              },
+              '&.Mui-focused': {
+                boxShadow: ELEVATION.focused,
+              },
+            },
+          },
+        },
+      },
+      MuiTooltip: {
+        styleOverrides: {
+          tooltip: {
+            backgroundColor: isDark ? '#424242' : '#616161',
+            color: '#ffffff',
+            fontSize: '0.75rem',
+            padding: `${SPACING.xs}px ${SPACING.sm}px`,
+            borderRadius: 4,
+          },
+          arrow: {
+            color: isDark ? '#424242' : '#616161',
+          },
+        },
+      },
+      MuiChip: {
+        styleOverrides: {
+          root: {
+            borderRadius: 8,
+            transition: TRANSITIONS.quick,
+            '&:hover': {
+              transform: 'translateY(-1px)',
+              boxShadow: ELEVATION.low,
+            },
+          },
+        },
+      },
+      MuiAlert: {
+        styleOverrides: {
+          root: {
+            borderRadius: 8,
+            boxShadow: ELEVATION.low,
+          },
+          standardSuccess: {
+            backgroundColor: isDark ? 'rgba(46, 125, 50, 0.15)' : 'rgba(76, 175, 80, 0.1)',
+          },
+          standardError: {
+            backgroundColor: isDark ? 'rgba(211, 47, 47, 0.15)' : 'rgba(239, 83, 80, 0.1)',
+          },
+          standardWarning: {
+            backgroundColor: isDark ? 'rgba(237, 108, 2, 0.15)' : 'rgba(255, 152, 0, 0.1)',
+          },
+          standardInfo: {
+            backgroundColor: isDark ? 'rgba(2, 136, 209, 0.15)' : 'rgba(3, 169, 244, 0.1)',
           },
         },
       },
@@ -105,9 +341,12 @@ const getThemeOptions = (mode: PaletteMode): ThemeOptions => {
   };
 };
 
-// Create light and dark themes
-export const lightTheme = createTheme(getThemeOptions('light'));
-export const darkTheme = createTheme(getThemeOptions('dark'));
+// Create and export the theme
+export const createAppTheme = (mode: PaletteMode) => createTheme(getThemeOptions(mode));
 
-// Default theme (dark mode)
-export const theme = darkTheme; 
+// Export spacing and elevation constants for use in components
+export { SPACING, ELEVATION, TRANSITIONS };
+
+// Export pre-configured themes
+export const darkTheme = createAppTheme('dark');
+export const lightTheme = createAppTheme('light'); 

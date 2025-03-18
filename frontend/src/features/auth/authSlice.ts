@@ -1,8 +1,8 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { RootState } from '../../store/store';
-import { 
-  loginWithEmail, 
-  registerWithEmail, 
+import {
+  loginWithEmail,
+  registerWithEmail,
   processOAuthCallback,
   setAuthData,
   clearAuthData
@@ -47,7 +47,7 @@ const loadAuthStateFromStorage = (): Partial<AuthState> => {
   try {
     const token = localStorage.getItem('token');
     const user = localStorage.getItem('user');
-    
+
     if (token && user) {
       return {
         token,
@@ -58,7 +58,7 @@ const loadAuthStateFromStorage = (): Partial<AuthState> => {
   } catch (error) {
     console.error('Failed to parse auth data from localStorage:', error);
   }
-  
+
   return {};
 };
 
@@ -76,10 +76,10 @@ export const login = createAsyncThunk(
     try {
       // Use the actual API service function
       const data = await loginWithEmail(email, password);
-      
-      // Store in localStorage for persistence
+
+      // StorePage in localStorage for persistence
       setAuthData(data.token, data.user);
-      
+
       return data;
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Network error or server is down';
@@ -97,10 +97,10 @@ export const register = createAsyncThunk(
     try {
       // Use the actual API service function
       const data = await registerWithEmail(name, email, password);
-      
-      // Store in localStorage for persistence
+
+      // StorePage in localStorage for persistence
       setAuthData(data.token, data.user);
-      
+
       return data;
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Registration failed';
@@ -118,10 +118,10 @@ export const oauthLogin = createAsyncThunk(
     try {
       // Use the actual API service function
       const data = await processOAuthCallback(provider, code);
-      
-      // Store in localStorage for persistence
+
+      // StorePage in localStorage for persistence
       setAuthData(data.token, data.user);
-      
+
       return data;
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'OAuth login failed';
@@ -161,7 +161,7 @@ const authSlice = createSlice({
         state.isLoading = false;
         state.error = action.payload as string || 'Login failed';
       })
-      
+
       // Register
       .addCase(register.pending, (state) => {
         state.isLoading = true;
@@ -177,7 +177,7 @@ const authSlice = createSlice({
         state.isLoading = false;
         state.error = action.payload as string || 'Registration failed';
       })
-      
+
       // OAuth Login
       .addCase(oauthLogin.pending, (state) => {
         state.isLoading = true;
@@ -193,7 +193,7 @@ const authSlice = createSlice({
         state.isLoading = false;
         state.error = action.payload as string || 'OAuth login failed';
       })
-      
+
       // Logout
       .addCase(logout.fulfilled, (state) => {
         state.isAuthenticated = false;
@@ -213,4 +213,4 @@ export const selectIsAuthenticated = (state: RootState) => state.auth.isAuthenti
 export const selectAuthLoading = (state: RootState) => state.auth.isLoading;
 export const selectAuthError = (state: RootState) => state.auth.error;
 
-export default authSlice.reducer; 
+export default authSlice.reducer;

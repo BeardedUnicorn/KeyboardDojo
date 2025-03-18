@@ -1,10 +1,43 @@
 /**
  * Cursor Track Data
- * 
+ *
  * This file contains sample data for the Cursor application track.
  */
 
-import { ApplicationTrack, ShortcutCategory } from '../types/curriculum';
+import { ApplicationType } from '@/types/progress/ICurriculum';
+import { cursorPath } from '@data/paths';
+
+import type { ILesson } from '@/types/curriculum/lesson/ILesson';
+import type { ShortcutCategory } from '@/types/curriculum/ShortcutCategory';
+import type { IApplicationTrack } from '@/types/progress/ICurriculum';
+
+// Helper function to create a complete lesson object
+const createCompleteLesson = (lesson: Partial<ILesson>): ILesson => {
+  return {
+    id: lesson.id || '',
+    title: lesson.title || '',
+    description: lesson.description || '',
+    shortcuts: lesson.shortcuts || [],
+    difficulty: lesson.difficulty || 'beginner',
+    category: lesson.category || 'other',
+    xpReward: lesson.xpReward || 50,
+    currencyReward: lesson.currencyReward || 10,
+    estimatedTime: lesson.estimatedTime || 10,
+    heartsRequired: lesson.heartsRequired || 1,
+    maxStars: lesson.maxStars || 3,
+    order: lesson.order || 0,
+    introduction: lesson.introduction || {
+      title: `Introduction to ${lesson.title || 'Lesson'}`,
+      description: 'Learn essential shortcuts to boost your productivity.',
+    },
+    exercises: lesson.exercises || [],
+    steps: lesson.steps || [],
+    summary: lesson.summary || {
+      title: 'Lesson Complete',
+      description: 'You have successfully completed this lesson.',
+    },
+  };
+};
 
 // Cursor shortcuts by category
 const aiShortcuts = [
@@ -182,11 +215,11 @@ const editingShortcuts = [
 ];
 
 // Cursor modules
-export const cursorTrack: ApplicationTrack = {
-  id: 'cursor',
-  name: 'Cursor',
-  description: 'Learn keyboard shortcuts for Cursor, a code editor with built-in AI capabilities.',
-  icon: '🟣',
+export const cursorTrack: IApplicationTrack = {
+  id: ApplicationType.CURSOR,
+  name: 'Cursor IDE',
+  description: 'Learn shortcuts for Cursor IDE to boost your productivity with AI-assisted coding.',
+  icon: 'cursor-icon.svg',
   version: '1.0.0',
   isActive: true,
   modules: [
@@ -198,7 +231,7 @@ export const cursorTrack: ApplicationTrack = {
       difficulty: 'beginner' as const,
       order: 0,
       lessons: [
-        {
+        createCompleteLesson({
           id: 'cursor-basics-1',
           title: 'Navigation Fundamentals',
           description: 'Learn how to navigate efficiently in Cursor.',
@@ -209,8 +242,8 @@ export const cursorTrack: ApplicationTrack = {
           estimatedTime: 10,
           order: 0,
           steps: [],
-        },
-        {
+        }),
+        createCompleteLesson({
           id: 'cursor-basics-2',
           title: 'Basic Editing',
           description: 'Learn the essential editing shortcuts in Cursor.',
@@ -220,12 +253,10 @@ export const cursorTrack: ApplicationTrack = {
           xpReward: 50,
           estimatedTime: 10,
           order: 1,
-          unlockRequirements: {
-            previousLessons: ['cursor-basics-1'],
-          },
+          prerequisites: ['cursor-basics-1'],
           steps: [],
-        },
-        {
+        }),
+        createCompleteLesson({
           id: 'cursor-basics-3',
           title: 'AI Fundamentals',
           description: 'Learn the basic AI shortcuts in Cursor.',
@@ -235,11 +266,9 @@ export const cursorTrack: ApplicationTrack = {
           xpReward: 50,
           estimatedTime: 10,
           order: 2,
-          unlockRequirements: {
-            previousLessons: ['cursor-basics-2'],
-          },
+          prerequisites: ['cursor-basics-2'],
           steps: [],
-        },
+        }),
       ],
     },
     {
@@ -249,40 +278,35 @@ export const cursorTrack: ApplicationTrack = {
       category: 'ai' as ShortcutCategory,
       difficulty: 'intermediate' as const,
       order: 1,
-      unlockRequirements: {
-        previousModules: ['cursor-basics'],
-        xpRequired: 100,
-      },
       lessons: [
-        {
-          id: 'cursor-intermediate-1',
+        createCompleteLesson({
+          id: 'cursor-navigation-1',
           title: 'Advanced Navigation',
-          description: 'Learn advanced navigation techniques in Cursor.',
-          shortcuts: navigationShortcuts.slice(3, 5),
+          description: 'Master advanced navigation techniques in Cursor.',
+          shortcuts: navigationShortcuts.slice(3, 6),
           difficulty: 'intermediate' as const,
           category: 'navigation' as ShortcutCategory,
           xpReward: 75,
           estimatedTime: 15,
           order: 0,
+          prerequisites: ['cursor-basics-3'],
           steps: [],
-        },
-        {
-          id: 'cursor-intermediate-2',
+        }),
+        createCompleteLesson({
+          id: 'cursor-editing-1',
           title: 'Advanced Editing',
-          description: 'Learn advanced editing shortcuts in Cursor.',
-          shortcuts: editingShortcuts.slice(3, 5),
+          description: 'Master advanced editing techniques in Cursor.',
+          shortcuts: editingShortcuts.slice(3, 6),
           difficulty: 'intermediate' as const,
           category: 'editing' as ShortcutCategory,
-          xpReward: 75,
-          estimatedTime: 15,
+          xpReward: 100,
+          estimatedTime: 20,
           order: 1,
-          unlockRequirements: {
-            previousLessons: ['cursor-intermediate-1'],
-          },
+          prerequisites: ['cursor-editing-1'],
           steps: [],
-        },
-        {
-          id: 'cursor-intermediate-3',
+        }),
+        createCompleteLesson({
+          id: 'cursor-ai-1',
           title: 'Advanced AI Features',
           description: 'Learn advanced AI shortcuts in Cursor.',
           shortcuts: aiShortcuts.slice(3, 5),
@@ -291,12 +315,73 @@ export const cursorTrack: ApplicationTrack = {
           xpReward: 75,
           estimatedTime: 15,
           order: 2,
-          unlockRequirements: {
-            previousLessons: ['cursor-intermediate-2'],
-          },
+          prerequisites: ['cursor-ai-1'],
           steps: [],
-        },
+        }),
+      ],
+    },
+    {
+      id: 'cursor-mastery',
+      title: 'Cursor Mastery Challenges',
+      description: 'Test your knowledge of Cursor shortcuts with these comprehensive mastery challenges.',
+      category: 'other' as ShortcutCategory,
+      difficulty: 'advanced' as const,
+      order: 3,
+      lessons: [
+        createCompleteLesson({
+          id: 'cursor-navigation-2',
+          title: 'Navigation Mastery Challenge',
+          description: 'Test your mastery of Cursor navigation shortcuts.',
+          shortcuts: navigationShortcuts,
+          difficulty: 'advanced' as const,
+          category: 'navigation' as ShortcutCategory,
+          xpReward: 150,
+          estimatedTime: 20,
+          order: 0,
+          prerequisites: ['cursor-navigation-1'],
+          steps: [],
+        }),
+        createCompleteLesson({
+          id: 'cursor-editing-2',
+          title: 'Editing Mastery Challenge',
+          description: 'Test your mastery of Cursor editing shortcuts.',
+          shortcuts: editingShortcuts,
+          difficulty: 'advanced' as const,
+          category: 'editing' as ShortcutCategory,
+          xpReward: 150,
+          estimatedTime: 20,
+          order: 1,
+          prerequisites: ['cursor-editing-1'],
+          steps: [],
+        }),
+        createCompleteLesson({
+          id: 'cursor-ai-2',
+          title: 'AI Features Mastery Challenge',
+          description: 'Test your mastery of Cursor AI-specific shortcuts and features.',
+          shortcuts: aiShortcuts,
+          difficulty: 'advanced' as const,
+          category: 'ai' as ShortcutCategory,
+          xpReward: 150,
+          estimatedTime: 20,
+          order: 2,
+          prerequisites: ['cursor-ai-1'],
+          steps: [],
+        }),
+        createCompleteLesson({
+          id: 'cursor-mastery-comprehensive',
+          title: 'Comprehensive Mastery Challenge',
+          description: 'The ultimate test of your Cursor shortcut knowledge. This challenge covers all categories of shortcuts.',
+          shortcuts: [...navigationShortcuts, ...editingShortcuts, ...aiShortcuts],
+          difficulty: 'expert' as const,
+          category: 'other' as ShortcutCategory,
+          xpReward: 300,
+          estimatedTime: 30,
+          order: 3,
+          prerequisites: ['cursor-navigation-2', 'cursor-editing-2', 'cursor-ai-2'],
+          steps: [],
+        }),
       ],
     },
   ],
-}; 
+  path: cursorPath,
+};

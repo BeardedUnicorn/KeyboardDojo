@@ -1,285 +1,254 @@
 /**
  * Curriculum Service
- * 
+ *
  * This service manages the curriculum data, including application tracks,
  * lessons, and user progress.
  */
 
-import { 
-  Curriculum, 
-  ApplicationTrack, 
-  Module, 
-  Lesson, 
-  Shortcut,
-  ApplicationType,
-  UserProgress,
-  MasteryChallenge,
-  CurriculumType,
-  CurriculumMetadata,
-  LessonStep,
-  LessonStepType
-} from '../types/curriculum';
+// Import the curriculum registry and loader
 
-// Import sample data
-import { vscodeTrack } from '../data/vscode-track';
-import { intellijTrack } from '../data/intellij-track';
-import { cursorTrack } from '../data/cursor-track';
+import {
+  curriculumRegistry,
+  initializeCurriculum,
+  findLessonById,
+  findPathNodeById,
+  getAllShortcuts,
+  validateCurriculum,
+  getNextLesson,
+  getNextPathNode,
+} from '@data/curriculum';
+
+import type { IShortcut } from '@/types/curriculum/IShortcut';
+import type { ILesson } from '@/types/curriculum/lesson/ILesson';
+import type {
+  ApplicationType,
+  IApplicationTrack,
+  ICurriculum,
+  ICurriculumMetadata,
+  IModule, IPath, PathNode,
+} from '@/types/progress/ICurriculum';
+import type { IUserProgress } from '@/types/progress/IUserProgress';
 
 class CurriculumService {
-  private curriculums: Curriculum[];
-  private activeCurriculumId: string;
-  private userProgress: UserProgress | null = null;
-  
+  private userProgress: IUserProgress | null = null;
+
   constructor() {
-    // Initialize with IDE shortcuts curriculum
-    const ideShortcutsCurriculum: Curriculum = {
-      id: 'ide-shortcuts-2023',
-      metadata: {
-        id: 'ide-shortcuts-2023',
-        name: 'IDE Shortcuts Mastery',
-        description: 'Master keyboard shortcuts for popular code editors',
-        type: CurriculumType.IDE_SHORTCUTS,
-        icon: 'keyboard',
-        version: '1.0.0',
-        lastUpdated: new Date().toISOString(),
-        author: 'Keyboard Dojo Team',
-        tags: ['shortcuts', 'productivity', 'ide'],
-        isActive: true,
-        isDefault: true
-      },
-      tracks: [vscodeTrack, intellijTrack, cursorTrack]
-    };
-    
-    this.curriculums = [ideShortcutsCurriculum];
-    this.activeCurriculumId = ideShortcutsCurriculum.id;
+    // Initialize the curriculum registry
+    initializeCurriculum();
   }
-  
+
   /**
    * Get all available curriculums
    */
-  getAllCurriculums(): Curriculum[] {
-    return this.curriculums;
+  getAllCurriculums(): ICurriculum[] {
+    return curriculumRegistry.getAllCurriculums();
   }
-  
+
   /**
    * Get curriculum metadata for all curriculums
    */
-  getCurriculumMetadata(): CurriculumMetadata[] {
-    return this.curriculums.map(curriculum => curriculum.metadata);
+  getCurriculumMetadata(): ICurriculumMetadata[] {
+    return this.getAllCurriculums().map((curriculum) => curriculum.metadata);
   }
-  
+
   /**
    * Get a specific curriculum by ID
    */
-  getCurriculumById(curriculumId: string): Curriculum | undefined {
-    return this.curriculums.find(curriculum => curriculum.id === curriculumId);
+  getCurriculumById(curriculumId: string): ICurriculum | undefined {
+    return curriculumRegistry.getCurriculumById(curriculumId);
   }
-  
+
   /**
    * Get the active curriculum
    */
-  getActiveCurriculum(): Curriculum {
-    const activeCurriculum = this.curriculums.find(
-      curriculum => curriculum.id === this.activeCurriculumId
-    );
-    
+  getActiveCurriculum(): ICurriculum {
+    const activeCurriculum = curriculumRegistry.getActiveCurriculum();
+
     if (!activeCurriculum) {
-      // Fallback to the first curriculum if active one is not found
-      return this.curriculums[0];
+      throw new Error('No active curriculum found');
     }
-    
+
     return activeCurriculum;
   }
-  
+
   /**
    * Set the active curriculum
    */
   setActiveCurriculum(curriculumId: string): boolean {
-    const curriculumExists = this.curriculums.some(
-      curriculum => curriculum.id === curriculumId
-    );
-    
-    if (curriculumExists) {
-      this.activeCurriculumId = curriculumId;
-      return true;
-    }
-    
-    return false;
+    return curriculumRegistry.setActiveCurriculum(curriculumId);
   }
-  
+
   /**
    * Register a new curriculum
    */
-  registerCurriculum(curriculum: Curriculum): boolean {
-    // Check if curriculum with same ID already exists
-    const exists = this.curriculums.some(c => c.id === curriculum.id);
-    
-    if (exists) {
+  registerCurriculum(curriculum: ICurriculum): boolean {
+    // Validate the curriculum before registering
+    const validationErrors = validateCurriculum(curriculum);
+    if (validationErrors.length > 0) {
+      console.error('Curriculum validation failed:', validationErrors);
       return false;
     }
-    
-    this.curriculums.push(curriculum);
-    return true;
+
+    return curriculumRegistry.registerCurriculum(curriculum);
   }
-  
+
   /**
    * Update an existing curriculum
    */
-  updateCurriculum(curriculum: Curriculum): boolean {
-    const index = this.curriculums.findIndex(c => c.id === curriculum.id);
-    
-    if (index === -1) {
+  updateCurriculum(curriculum: ICurriculum): boolean {
+    // Validate the curriculum before updating
+    const validationErrors = validateCurriculum(curriculum);
+    if (validationErrors.length > 0) {
+      console.error('Curriculum validation failed:', validationErrors);
       return false;
     }
-    
-    this.curriculums[index] = curriculum;
-    return true;
+
+    // Remove the old curriculum and add the new one
+    curriculumRegistry.clear();
+    return curriculumRegistry.registerCurriculum(curriculum);
   }
-  
+
   /**
-   * Get all application tracks from the active curriculum
+   * Get all application tracks
    */
-  getApplicationTracks(): ApplicationTrack[] {
-    return this.getActiveCurriculum().tracks;
+  getApplicationTracks(): IApplicationTrack[] {
+    return curriculumRegistry.getAllTracks();
   }
-  
+
   /**
-   * Get a specific application track by ID from the active curriculum
+   * Get a specific application track
    */
-  getApplicationTrack(trackId: ApplicationType): ApplicationTrack | undefined {
-    return this.getActiveCurriculum().tracks.find(track => track.id === trackId);
+  getApplicationTrack(trackId: ApplicationType): IApplicationTrack | undefined {
+    return curriculumRegistry.getTrackById(trackId);
   }
-  
+
   /**
-   * Get all modules for a specific application track
+   * Get all modules for a track
    */
-  getModules(trackId: ApplicationType): Module[] {
+  getModules(trackId: ApplicationType): IModule[] {
     const track = this.getApplicationTrack(trackId);
     return track ? track.modules : [];
   }
-  
+
   /**
-   * Get a specific module by ID
+   * Get a specific module
    */
-  getModule(trackId: ApplicationType, moduleId: string): Module | undefined {
+  getModule(trackId: ApplicationType, moduleId: string): IModule | undefined {
     const modules = this.getModules(trackId);
-    return modules.find(module => module.id === moduleId);
+    return modules.find((module) => module.id === moduleId);
   }
-  
+
   /**
-   * Get all lessons for a specific module
+   * Get all lessons for a module
    */
-  getLessons(trackId: ApplicationType, moduleId: string): Lesson[] {
+  getLessons(trackId: ApplicationType, moduleId: string): ILesson[] {
     const module = this.getModule(trackId, moduleId);
     return module ? module.lessons : [];
   }
-  
+
   /**
-   * Get a specific lesson by ID
+   * Get a specific lesson
    */
-  getLesson(curriculumId: string, trackId: ApplicationType, lessonId: string): Lesson | undefined {
-    // Find the curriculum
-    const curriculum = this.getCurriculumById(curriculumId);
-    if (!curriculum) return undefined;
-    
-    // Find the track
-    const track = curriculum.tracks.find(t => t.id === trackId);
-    if (!track) return undefined;
-    
-    // Search through all modules to find the lesson
-    for (const module of track.modules) {
-      const lesson = module.lessons.find(l => l.id === lessonId);
-      if (lesson) {
-        // If the lesson doesn't have steps, create some sample steps
-        if (!lesson.steps || lesson.steps.length === 0) {
-          lesson.steps = this.createSampleSteps(lesson);
-        }
-        return lesson;
-      }
-    }
-    
-    return undefined;
+  getLesson(trackId: ApplicationType, moduleId: string, lessonId: string): ILesson | undefined {
+    const lessons = this.getLessons(trackId, moduleId);
+    return lessons.find((lesson) => lesson.id === lessonId);
   }
-  
+
   /**
-   * Create sample steps for a lesson (for demo purposes)
+   * Find a lesson by ID across all tracks
    */
-  private createSampleSteps(lesson: Lesson): LessonStep[] {
-    const steps: LessonStep[] = [];
-    
-    // Add a text step
-    steps.push({
-      id: `${lesson.id}-step-1`,
-      title: 'Introduction',
-      type: LessonStepType.TEXT,
-      description: `Welcome to the lesson on ${lesson.title}. In this lesson, you will learn about various shortcuts related to ${lesson.category}.`
-    });
-    
-    // Add shortcut steps based on the lesson's shortcuts
-    lesson.shortcuts.forEach((shortcut, index) => {
-      steps.push({
-        id: `${lesson.id}-step-${index + 2}`,
-        title: shortcut.name,
-        type: LessonStepType.SHORTCUT,
-        description: shortcut.description,
-        instructions: `Try using the ${shortcut.name} shortcut. ${shortcut.context || ''}`,
-        shortcut: {
-          windows: shortcut.shortcutWindows,
-          mac: shortcut.shortcutMac || shortcut.shortcutWindows,
-          linux: shortcut.shortcutLinux || shortcut.shortcutWindows
-        }
-      });
-    });
-    
-    // Add a quiz step
-    steps.push({
-      id: `${lesson.id}-step-${lesson.shortcuts.length + 2}`,
-      title: 'Knowledge Check',
-      type: LessonStepType.QUIZ,
-      description: 'Let\'s test your knowledge of the shortcuts you just learned.',
-      question: `Which shortcut is used for ${lesson.shortcuts[0].name}?`,
-      options: [
-        lesson.shortcuts[0].shortcutWindows,
-        'Ctrl+X',
-        'Alt+F4',
-        'Shift+Tab'
-      ],
-      correctAnswer: 0
-    });
-    
-    return steps;
+  findLessonById(lessonId: string): ILesson | undefined {
+    return findLessonById(lessonId);
   }
-  
+
+  /**
+   * Get all paths
+   */
+  getAllPaths(): IPath[] {
+    return curriculumRegistry.getAllPaths();
+  }
+
+  /**
+   * Get paths for a specific track
+   */
+  getPathsByTrackId(trackId: ApplicationType): IPath[] {
+    return curriculumRegistry.getPathsByTrackId(trackId);
+  }
+
+  /**
+   * Get a specific path
+   */
+  getPathById(pathId: string): IPath | undefined {
+    return curriculumRegistry.getPathById(pathId);
+  }
+
+  /**
+   * Find a path node by ID
+   */
+  findPathNodeById(nodeId: string): PathNode | undefined {
+    return findPathNodeById(nodeId);
+  }
+
   /**
    * Get user progress
    */
-  getUserProgress(): UserProgress | null {
+  getUserProgress(): IUserProgress | null {
     return this.userProgress;
   }
-  
+
   /**
    * Set user progress
    */
-  setUserProgress(progress: UserProgress): void {
+  setUserProgress(progress: IUserProgress): void {
     this.userProgress = progress;
   }
-  
+
   /**
    * Check if a module is unlocked
    */
-  isModuleUnlocked(trackId: ApplicationType, moduleId: string): boolean {
-    // For demo purposes, all modules are unlocked
+  isModuleUnlocked(): boolean {
+    // For now, just return true
+    // In a real implementation, this would check user progress and prerequisites
     return true;
   }
-  
+
   /**
    * Check if a lesson is unlocked
    */
-  isLessonUnlocked(trackId: ApplicationType, moduleId: string, lessonId: string): boolean {
-    // For demo purposes, all lessons are unlocked
+  isLessonUnlocked(): boolean {
+    // For now, just return true
+    // In a real implementation, this would check user progress and prerequisites
     return true;
+  }
+
+  /**
+   * Get all shortcuts
+   */
+  getAllShortcuts(): IShortcut[] {
+    return getAllShortcuts();
+  }
+
+  /**
+   * Get shortcuts by category
+   */
+  getShortcutsByCategory(category: string): IShortcut[] {
+    return this.getAllShortcuts().filter((shortcut) => shortcut.category === category);
+  }
+
+  /**
+   * Get the next lesson in a module
+   */
+  getNextLesson(moduleId: string, currentLessonId: string): ILesson | undefined {
+    return getNextLesson(moduleId, currentLessonId);
+  }
+
+  /**
+   * Get the next node in a path
+   */
+  getNextPathNode(pathId: string, currentNodeId: string): PathNode | undefined {
+    return getNextPathNode(pathId, currentNodeId);
   }
 }
 
-// Export singleton instance
-export const curriculumService = new CurriculumService(); 
+// Create and export a singleton instance
+export const curriculumService = new CurriculumService();

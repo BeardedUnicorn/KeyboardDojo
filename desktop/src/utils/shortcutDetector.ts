@@ -1,9 +1,11 @@
 /**
  * Shortcut Detector Utility
- * 
+ *
  * This utility provides functionality for detecting and handling keyboard shortcuts,
  * including multi-key combinations (e.g., Ctrl+Shift+P).
  */
+
+import { loggerService } from '@/services/loggerService';
 
 // Types for shortcut handling
 export type Modifier = 'Ctrl' | 'Alt' | 'Shift' | 'Meta';
@@ -42,7 +44,7 @@ export const parseShortcut = (shortcutStr: string): ShortcutKey => {
   const parts = shortcutStr.split('+');
   const key = parts.pop() || '';
   const modifiers = parts as Modifier[];
-  
+
   return { key, modifiers };
 };
 
@@ -127,12 +129,12 @@ export const isModifier = (key: string): boolean => {
  */
 export const getActiveModifiers = (event: KeyboardEvent): Modifier[] => {
   const modifiers: Modifier[] = [];
-  
+
   if (event.ctrlKey) modifiers.push('Ctrl');
   if (event.altKey) modifiers.push('Alt');
   if (event.shiftKey) modifiers.push('Shift');
   if (event.metaKey) modifiers.push('Meta');
-  
+
   return modifiers;
 };
 
@@ -145,19 +147,19 @@ export const getActiveModifiers = (event: KeyboardEvent): Modifier[] => {
 export const matchesShortcut = (event: KeyboardEvent, shortcut: ShortcutKey): boolean => {
   // Get active modifiers
   const activeModifiers = getActiveModifiers(event);
-  
+
   // Check if all required modifiers are active
-  const allModifiersActive = shortcut.modifiers.every(mod => activeModifiers.includes(mod));
-  
+  const allModifiersActive = shortcut.modifiers.every((mod) => activeModifiers.includes(mod));
+
   // Check if no extra modifiers are active
-  const noExtraModifiers = activeModifiers.every(mod => shortcut.modifiers.includes(mod));
-  
+  const noExtraModifiers = activeModifiers.every((mod) => shortcut.modifiers.includes(mod));
+
   // Normalize the key
   const normalizedKey = normalizeKey(event.key);
-  
+
   // Check if the key matches
   const keyMatches = normalizedKey === shortcut.key;
-  
+
   return allModifiersActive && noExtraModifiers && keyMatches;
 };
 
@@ -169,15 +171,15 @@ export const matchesShortcut = (event: KeyboardEvent, shortcut: ShortcutKey): bo
  */
 export const debounce = <T extends (...args: any[]) => any>(
   func: T,
-  wait: number
+  wait: number,
 ): ((...args: Parameters<T>) => void) => {
   let timeout: number | null = null;
-  
+
   return (...args: Parameters<T>) => {
     if (timeout !== null) {
       clearTimeout(timeout);
     }
-    
+
     timeout = window.setTimeout(() => {
       func(...args);
       timeout = null;
@@ -193,13 +195,13 @@ export const debounce = <T extends (...args: any[]) => any>(
  */
 export const throttle = <T extends (...args: any[]) => any>(
   func: T,
-  limit: number
+  limit: number,
 ): ((...args: Parameters<T>) => void) => {
   let lastCall = 0;
-  
+
   return (...args: Parameters<T>) => {
     const now = Date.now();
-    
+
     if (now - lastCall >= limit) {
       func(...args);
       lastCall = now;
@@ -208,13 +210,24 @@ export const throttle = <T extends (...args: any[]) => any>(
 };
 
 export class ShortcutDetector {
-  private shortcuts: RegisteredShortcut[] = [];
+  private shortcuts: Map<string, RegisteredShortcut> = new Map();
   private activeKeys: Set<string> = new Set();
   private isInitialized: boolean = false;
   private keyMappings: KeyMapping[] = [];
-  private throttleTime: number = 100; // Default throttle time in ms
-  private debounceTime: number = 300; // Default debounce time in ms
-  
+  private throttleTime: number = 0;
+  private debounceTime: number = 0;
+  private lastKeyTime: number = 0;
+  private logger = {
+    debug: (message: string, context?: any) => 
+      loggerService.debug(message, { ...context, component: 'ShortcutDetector' }),
+    info: (message: string, context?: any) => 
+      loggerService.info(message, { ...context, component: 'ShortcutDetector' }),
+    warn: (message: string, context?: any) => 
+      loggerService.warn(message, { ...context, component: 'ShortcutDetector' }),
+    error: (message: string, error?: Error | unknown, context?: any) => 
+      loggerService.error(message, error, { ...context, component: 'ShortcutDetector' }),
+  };
+
   /**
    * Initialize the shortcut detector
    * This sets up event listeners for keyboard events
@@ -223,16 +236,16 @@ export class ShortcutDetector {
     if (this.isInitialized) {
       return;
     }
-    
+
     // Add event listeners
     window.addEventListener('keydown', this.handleKeyDown);
     window.addEventListener('keyup', this.handleKeyUp);
     window.addEventListener('blur', this.handleBlur);
-    
+
     this.isInitialized = true;
-    console.log('Shortcut detector initialized');
+    this.logger.debug('Shortcut detector initialized');
   }
-  
+
   /**
    * Clean up the shortcut detector
    * This removes event listeners
@@ -241,16 +254,16 @@ export class ShortcutDetector {
     if (!this.isInitialized) {
       return;
     }
-    
+
     // Remove event listeners
     window.removeEventListener('keydown', this.handleKeyDown);
     window.removeEventListener('keyup', this.handleKeyUp);
     window.removeEventListener('blur', this.handleBlur);
-    
+
     this.isInitialized = false;
-    console.log('Shortcut detector cleaned up');
+    this.logger.debug('Shortcut detector cleaned up');
   }
-  
+
   /**
    * Register a shortcut
    * @param id Shortcut ID
@@ -260,66 +273,65 @@ export class ShortcutDetector {
    */
   registerShortcut(id: string, shortcutStr: string, callback: ShortcutCallback): RegisteredShortcut {
     const shortcut = parseShortcut(shortcutStr);
-    
+
     const registeredShortcut: RegisteredShortcut = {
       id,
       shortcut,
-      callback
+      callback,
     };
-    
-    this.shortcuts.push(registeredShortcut);
-    console.log(`Registered shortcut: ${formatShortcut(shortcut)} (${id})`);
-    
+
+    this.shortcuts.set(id, registeredShortcut);
+    this.logger.debug(`Registered shortcut: ${formatShortcut(shortcut)} (${id})`);
+
     return registeredShortcut;
   }
-  
+
   /**
    * Unregister a shortcut
    * @param id Shortcut ID
    * @returns Whether the shortcut was unregistered
    */
   unregisterShortcut(id: string): boolean {
-    const index = this.shortcuts.findIndex(s => s.id === id);
-    
-    if (index !== -1) {
-      const shortcut = this.shortcuts[index];
-      this.shortcuts.splice(index, 1);
-      console.log(`Unregistered shortcut: ${formatShortcut(shortcut.shortcut)} (${id})`);
+    const shortcut = this.shortcuts.get(id);
+
+    if (shortcut) {
+      this.shortcuts.delete(id);
+      this.logger.debug(`Unregistered shortcut: ${formatShortcut(shortcut.shortcut)} (${id})`);
       return true;
     }
-    
+
     return false;
   }
-  
+
   /**
    * Get all registered shortcuts
    * @returns Array of registered shortcuts
    */
   getShortcuts(): RegisteredShortcut[] {
-    return [...this.shortcuts];
+    return [...this.shortcuts.values()];
   }
-  
+
   /**
    * Set the throttle time for keyboard events
    * @param time Throttle time in milliseconds
    */
   setThrottleTime(time: number): void {
     this.throttleTime = time;
-    console.log(`Set throttle time to ${time}ms`);
-    
+    this.logger.debug(`Set throttle time to ${time}ms`);
+
     // Re-create the throttled handler
     this.handleKeyDown = throttle(this.handleKeyDownImpl, this.throttleTime);
   }
-  
+
   /**
    * Set the debounce time for keyboard events
    * @param time Debounce time in milliseconds
    */
   setDebounceTime(time: number): void {
     this.debounceTime = time;
-    console.log(`Set debounce time to ${time}ms`);
+    this.logger.debug(`Set debounce time to ${time}ms`);
   }
-  
+
   /**
    * Add a custom key mapping
    * @param from Key to map from
@@ -327,80 +339,79 @@ export class ShortcutDetector {
    */
   addKeyMapping(from: string, to: string): void {
     this.keyMappings.push({ from, to });
-    console.log(`Added key mapping: ${from} -> ${to}`);
+    this.logger.debug(`Added key mapping: ${from} -> ${to}`);
   }
-  
+
   /**
    * Remove a custom key mapping
    * @param from Key to remove mapping for
    * @returns Whether the mapping was removed
    */
   removeKeyMapping(from: string): boolean {
-    const index = this.keyMappings.findIndex(m => m.from === from);
-    
+    const index = this.keyMappings.findIndex((mapping) => mapping.from === from);
+
     if (index !== -1) {
       const mapping = this.keyMappings[index];
       this.keyMappings.splice(index, 1);
-      console.log(`Removed key mapping: ${mapping.from} -> ${mapping.to}`);
+      this.logger.debug(`Removed key mapping: ${mapping.from} -> ${mapping.to}`);
       return true;
     }
-    
+
     return false;
   }
-  
+
   /**
    * Clear all custom key mappings
    */
   clearKeyMappings(): void {
     this.keyMappings = [];
-    console.log('Cleared all key mappings');
+    this.logger.debug('Cleared all key mappings');
   }
-  
+
   /**
    * Apply key mappings to a key
    * @param key Key to map
    * @returns Mapped key
    */
   private applyKeyMappings(key: string): string {
-    const mapping = this.keyMappings.find(m => m.from === key);
+    const mapping = this.keyMappings.find((m) => m.from === key);
     return mapping ? mapping.to : key;
   }
-  
+
   /**
-   * Handle key down event (throttled implementation)
-   * @param event Keyboard event
+   * Handle key down event
    */
   private handleKeyDownImpl = (event: KeyboardEvent): void => {
-    // Apply key mappings
-    const mappedKey = this.applyKeyMappings(normalizeKey(event.key));
-    
+    // Map the key if needed
+    const mappedKey = this.applyKeyMappings(event.key);
+
     // Add to active keys
     this.activeKeys.add(mappedKey);
-    
+
     // Check for matching shortcuts
-    for (const shortcut of this.shortcuts) {
+    for (const [id, shortcut] of this.shortcuts.entries()) {
       if (matchesShortcut(event, shortcut.shortcut)) {
         // Create shortcut event
         const shortcutEvent: ShortcutEvent = {
           shortcut: shortcut.shortcut,
-          event
+          event,
         };
-        
+
         // Call the callback
         shortcut.callback(shortcutEvent);
-        
+
         // Prevent default if it's a shortcut
         event.preventDefault();
-        event.stopPropagation();
+        return;
       }
     }
   };
-  
+
   /**
    * Handle key down event (throttled)
    */
   private handleKeyDown = throttle(this.handleKeyDownImpl, this.throttleTime);
-  
+
   /**
    * Handle key up event
    * @param event Keyboard event
@@ -408,11 +419,11 @@ export class ShortcutDetector {
   private handleKeyUp = (event: KeyboardEvent): void => {
     // Apply key mappings
     const mappedKey = this.applyKeyMappings(normalizeKey(event.key));
-    
+
     // Remove from active keys
     this.activeKeys.delete(mappedKey);
   };
-  
+
   /**
    * Handle blur event
    * This clears all active keys when the window loses focus
@@ -420,7 +431,7 @@ export class ShortcutDetector {
   private handleBlur = (): void => {
     this.activeKeys.clear();
   };
-  
+
   /**
    * Check if a key is currently pressed
    * @param key The key to check
@@ -429,7 +440,7 @@ export class ShortcutDetector {
   isKeyPressed(key: string): boolean {
     return this.activeKeys.has(normalizeKey(key));
   }
-  
+
   /**
    * Get all currently pressed keys
    * @returns Set of pressed keys
@@ -437,7 +448,7 @@ export class ShortcutDetector {
   getPressedKeys(): Set<string> {
     return new Set(this.activeKeys);
   }
-  
+
   /**
    * Create a debounced callback
    * @param callback The callback to debounce
@@ -446,7 +457,7 @@ export class ShortcutDetector {
   debounceCallback(callback: ShortcutCallback): ShortcutCallback {
     return debounce(callback, this.debounceTime);
   }
-  
+
   /**
    * Create a throttled callback
    * @param callback The callback to throttle
@@ -458,4 +469,4 @@ export class ShortcutDetector {
 }
 
 // Export a singleton instance
-export const shortcutDetector = new ShortcutDetector(); 
+export const shortcutDetector = new ShortcutDetector();

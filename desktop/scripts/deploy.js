@@ -6,11 +6,9 @@
  */
 
 import { execSync } from 'child_process';
-import fs from 'fs';
-import path from 'path';
-import os from 'os';
+import fs, { createReadStream } from 'fs';
 import https from 'https';
-import { createReadStream } from 'fs';
+import path from 'path';
 import { fileURLToPath } from 'url';
 
 // Get __dirname equivalent in ES modules
@@ -33,6 +31,7 @@ const config = {
  * @param {object} options Options for child_process.execSync
  * @returns {Buffer} The command output
  */
+// eslint-disable-next-line no-unused-vars
 function runCommand(command, options = {}) {
   console.log(`Running: ${command}`);
   return execSync(command, {
@@ -52,7 +51,7 @@ function uploadFile(filePath, platform, arch) {
   return new Promise((resolve, reject) => {
     const fileName = path.basename(filePath);
     const fileSize = fs.statSync(filePath).size;
-    
+
     const options = {
       hostname: new URL(config.releaseServer).hostname,
       port: 443,
@@ -92,7 +91,7 @@ function uploadFile(filePath, platform, arch) {
 
     const readStream = createReadStream(filePath);
     readStream.pipe(req);
-    
+
     readStream.on('error', (error) => {
       reject(new Error(`Failed to read file: ${error.message}`));
     });
@@ -108,7 +107,7 @@ async function deployMacOS() {
   try {
     // Find the DMG file
     const dmgPath = path.join(config.buildDir, 'dmg', `${config.appName}_${config.appVersion}_universal.dmg`);
-    
+
     if (!fs.existsSync(dmgPath)) {
       throw new Error(`DMG not found at ${dmgPath}`);
     }
@@ -120,12 +119,12 @@ async function deployMacOS() {
     // Find the updater files
     const updaterPath = path.join(config.buildDir, 'macos', `${config.appName}.app.tar.gz`);
     const sigPath = path.join(config.buildDir, 'macos', `${config.appName}.app.tar.gz.sig`);
-    
+
     if (fs.existsSync(updaterPath) && fs.existsSync(sigPath)) {
       // Upload the updater files
       const updaterUrl = await uploadFile(updaterPath, 'macos', 'universal');
       console.log(`Uploaded updater to: ${updaterUrl}`);
-      
+
       const sigUrl = await uploadFile(sigPath, 'macos', 'universal');
       console.log(`Uploaded signature to: ${sigUrl}`);
     } else {
@@ -148,7 +147,7 @@ async function deployWindows() {
   try {
     // Find the MSI file
     const msiPath = path.join(config.buildDir, 'msi', `${config.appName}_${config.appVersion}_x64_en-US.msi`);
-    
+
     if (!fs.existsSync(msiPath)) {
       throw new Error(`MSI not found at ${msiPath}`);
     }
@@ -160,12 +159,12 @@ async function deployWindows() {
     // Find the updater files
     const updaterPath = path.join(config.buildDir, 'windows', `${config.appName}_${config.appVersion}_x64_en-US.msi.zip`);
     const sigPath = path.join(config.buildDir, 'windows', `${config.appName}_${config.appVersion}_x64_en-US.msi.zip.sig`);
-    
+
     if (fs.existsSync(updaterPath) && fs.existsSync(sigPath)) {
       // Upload the updater files
       const updaterUrl = await uploadFile(updaterPath, 'windows', 'x64');
       console.log(`Uploaded updater to: ${updaterUrl}`);
-      
+
       const sigUrl = await uploadFile(sigPath, 'windows', 'x64');
       console.log(`Uploaded signature to: ${sigUrl}`);
     } else {
@@ -188,7 +187,7 @@ async function deployLinux() {
   try {
     // Find the AppImage file
     const appImagePath = path.join(config.buildDir, 'appimage', `${config.appName.toLowerCase()}_${config.appVersion}_amd64.AppImage`);
-    
+
     if (!fs.existsSync(appImagePath)) {
       throw new Error(`AppImage not found at ${appImagePath}`);
     }
@@ -199,7 +198,7 @@ async function deployLinux() {
 
     // Find the DEB file
     const debPath = path.join(config.buildDir, 'deb', `${config.appName.toLowerCase()}_${config.appVersion}_amd64.deb`);
-    
+
     if (fs.existsSync(debPath)) {
       // Upload the DEB
       const debUrl = await uploadFile(debPath, 'linux', 'x64');
@@ -211,12 +210,12 @@ async function deployLinux() {
     // Find the updater files
     const updaterPath = path.join(config.buildDir, 'appimage', `${config.appName.toLowerCase()}_${config.appVersion}_amd64.AppImage.tar.gz`);
     const sigPath = path.join(config.buildDir, 'appimage', `${config.appName.toLowerCase()}_${config.appVersion}_amd64.AppImage.tar.gz.sig`);
-    
+
     if (fs.existsSync(updaterPath) && fs.existsSync(sigPath)) {
       // Upload the updater files
       const updaterUrl = await uploadFile(updaterPath, 'linux', 'x64');
       console.log(`Uploaded updater to: ${updaterUrl}`);
-      
+
       const sigUrl = await uploadFile(sigPath, 'linux', 'x64');
       console.log(`Uploaded signature to: ${sigUrl}`);
     } else {
@@ -235,13 +234,13 @@ async function deployLinux() {
  */
 async function deploy() {
   const targetPlatform = process.argv[2];
-  
+
   // Check if API key is set
   if (!config.releaseApiKey) {
     console.error('\n❌ RELEASE_API_KEY environment variable not set\n');
     process.exit(1);
   }
-  
+
   try {
     // Check if we're deploying for a specific platform
     if (targetPlatform) {
@@ -260,12 +259,12 @@ async function deploy() {
       }
       return;
     }
-    
+
     // Deploy for all platforms
     await deployMacOS();
     await deployWindows();
     await deployLinux();
-    
+
     console.log('\n=== All deployments completed ===\n');
   } catch (error) {
     console.error(`\n❌ Deployment failed: ${error.message}\n`);
@@ -274,7 +273,7 @@ async function deploy() {
 }
 
 // Run the deployment process
-deploy().catch(error => {
+deploy().catch((error) => {
   console.error(`\n❌ Deployment failed: ${error.message}\n`);
   process.exit(1);
 });

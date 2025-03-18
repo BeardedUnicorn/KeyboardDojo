@@ -1,34 +1,37 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  AppBar, 
-  Toolbar, 
-  Typography, 
-  IconButton, 
-  Box, 
-  useTheme,
-  Tooltip
-} from '@mui/material';
 import {
   SettingsOutlined as SettingsIcon,
   Keyboard as KeyboardIcon,
   DarkMode as DarkModeIcon,
-  LightMode as LightModeIcon
+  LightMode as LightModeIcon,
 } from '@mui/icons-material';
-import { windowManager } from '../utils/windowManager';
-import { useThemeContext } from '../contexts/ThemeContext';
+import {
+  AppBar,
+  Toolbar,
+  Typography,
+  IconButton,
+  Box,
+  useTheme,
+  Tooltip,
+} from '@mui/material';
+import React, { useState, useEffect } from 'react';
+
+import { useThemeRedux } from '../hooks/useThemeRedux';
 import { osDetectionService } from '../services/osDetectionService';
+import { windowManager } from '../utils/windowManager';
+
+import type { FC } from 'react';
 
 interface AppTopBarProps {
   title?: string;
   onOpenSettings?: () => void;
 }
 
-const AppTopBar: React.FC<AppTopBarProps> = ({ 
+const AppTopBar: FC<AppTopBarProps> = ({
   title = 'Keyboard Dojo',
-  onOpenSettings
+  onOpenSettings,
 }) => {
   const theme = useTheme();
-  const { mode, toggleTheme } = useThemeContext();
+  const { mode, toggleTheme } = useThemeRedux();
   const [isMaximized, setIsMaximized] = useState(false);
   const isMacOS = osDetectionService.isMacOS();
 
@@ -73,17 +76,17 @@ const AppTopBar: React.FC<AppTopBarProps> = ({
   // Add a data attribute to help users understand the draggable area
   const dragAreaProps = {
     'data-tauri-drag-region': true,
-    className: 'draggable-area'
+    className: 'draggable-area',
   };
 
   // macOS-style traffic light controls
   const MacOSWindowControls = () => (
-    <Box 
-      sx={{ 
-        display: 'flex', 
+    <Box
+      sx={{
+        display: 'flex',
         WebkitAppRegion: 'no-drag',
         ml: 1.5,
-        mr: 2
+        mr: 2,
       }}
     >
       <Box
@@ -104,8 +107,8 @@ const AppTopBar: React.FC<AppTopBarProps> = ({
               fontSize: '10px',
               color: '#450000',
               fontWeight: 'bold',
-            }
-          }
+            },
+          },
         }}
       />
       <Box
@@ -126,8 +129,8 @@ const AppTopBar: React.FC<AppTopBarProps> = ({
               fontSize: '10px',
               color: '#5a3c00',
               fontWeight: 'bold',
-            }
-          }
+            },
+          },
         }}
       />
       <Box
@@ -148,8 +151,8 @@ const AppTopBar: React.FC<AppTopBarProps> = ({
               fontSize: '10px',
               color: '#003600',
               fontWeight: 'bold',
-            }
-          }
+            },
+          },
         }}
       />
     </Box>
@@ -173,7 +176,7 @@ const AppTopBar: React.FC<AppTopBarProps> = ({
       >
         <Box sx={{ width: 10, height: 1, bgcolor: 'currentColor' }} />
       </IconButton>
-      
+
       <IconButton
         size="small"
         onClick={handleMaximizeRestore}
@@ -187,16 +190,16 @@ const AppTopBar: React.FC<AppTopBarProps> = ({
           },
         }}
       >
-        <Box 
-          sx={{ 
-            width: 10, 
-            height: 10, 
-            border: 1, 
-            borderColor: 'currentColor' 
-          }} 
+        <Box
+          sx={{
+            width: 10,
+            height: 10,
+            border: 1,
+            borderColor: 'currentColor',
+          }}
         />
       </IconButton>
-      
+
       <IconButton
         size="small"
         onClick={handleClose}
@@ -210,10 +213,10 @@ const AppTopBar: React.FC<AppTopBarProps> = ({
           },
         }}
       >
-        <Box 
-          sx={{ 
-            width: 12, 
-            height: 12, 
+        <Box
+          sx={{
+            width: 12,
+            height: 12,
             position: 'relative',
             '&::before, &::after': {
               content: '""',
@@ -230,19 +233,19 @@ const AppTopBar: React.FC<AppTopBarProps> = ({
             },
             '&::after': {
               transform: 'translateX(-50%) rotate(-45deg)',
-            }
-          }} 
+            },
+          }}
         />
       </IconButton>
     </Box>
   );
 
   return (
-    <AppBar 
-      position="static" 
-      color="primary" 
+    <AppBar
+      position="static"
+      color="primary"
       elevation={0}
-      sx={{ 
+      sx={{
         WebkitAppRegion: 'drag',
         userSelect: 'none',
         height: 48,
@@ -251,8 +254,8 @@ const AppTopBar: React.FC<AppTopBarProps> = ({
       }}
       {...dragAreaProps}
     >
-      <Toolbar 
-        variant="dense" 
+      <Toolbar
+        variant="dense"
         sx={{ minHeight: 48, px: 1 }}
         {...dragAreaProps}
       >
@@ -260,7 +263,7 @@ const AppTopBar: React.FC<AppTopBarProps> = ({
         {isMacOS && <MacOSWindowControls />}
 
         {/* App Logo and Title */}
-        <Box 
+        <Box
           sx={{ display: 'flex', alignItems: 'center', mr: 2 }}
           {...dragAreaProps}
         >
@@ -277,8 +280,8 @@ const AppTopBar: React.FC<AppTopBarProps> = ({
         <Box sx={{ display: 'flex', WebkitAppRegion: 'no-drag' }}>
           {/* Theme Toggle */}
           <Tooltip title={`Switch to ${mode === 'dark' ? 'Light' : 'Dark'} Mode`}>
-            <IconButton 
-              color="inherit" 
+            <IconButton
+              color="inherit"
               onClick={toggleTheme}
               size="small"
               sx={{ mx: 0.5 }}
@@ -290,8 +293,8 @@ const AppTopBar: React.FC<AppTopBarProps> = ({
           {/* Settings */}
           {onOpenSettings && (
             <Tooltip title="Settings">
-              <IconButton 
-                color="inherit" 
+              <IconButton
+                color="inherit"
                 onClick={onOpenSettings}
                 size="small"
                 sx={{ mx: 0.5 }}
@@ -309,4 +312,4 @@ const AppTopBar: React.FC<AppTopBarProps> = ({
   );
 };
 
-export default AppTopBar; 
+export default AppTopBar;
