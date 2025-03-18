@@ -1,3 +1,4 @@
+import BarChartIcon from '@mui/icons-material/BarChart';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
 import HomeIcon from '@mui/icons-material/Home';
@@ -68,6 +69,7 @@ export const Navigation: FC = () => {
   const navItems = useMemo<NavItem[]>(() => [
     { path: '/', label: 'Home', icon: <HomeIcon /> },
     { path: '/curriculum', label: 'Lessons', icon: <SchoolIcon /> },
+    { path: '/progress-dashboard', label: 'Progress', icon: <BarChartIcon /> },
     { path: '/achievements', label: 'Achievements', icon: <EmojiEventsIcon /> },
     { path: '/profile', label: 'Profile', icon: <PersonIcon /> },
     { path: '/store', label: 'Store', icon: <ShoppingCartIcon /> },

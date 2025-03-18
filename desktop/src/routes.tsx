@@ -35,6 +35,7 @@ const SentryTest = lazy(() => import('@components/SentryTest'));
 const SentryReduxTest = lazy(() => import('@components/SentryReduxTest'));
 const SentryTransactionExample = lazy(() => import('@components/SentryTransactionExample'));
 const Achievements = lazy(() => import(/* webpackChunkName: "achievements" */ '@pages/AchievementsPage.tsx'));
+const ProgressDashboard = lazy(() => import(/* webpackChunkName: "progress" */ '@pages/ProgressDashboardPage.tsx'));
 
 /**
  * Desktop app routes
@@ -56,6 +57,7 @@ const AppRoutes = () => {
         <Route path="/subscription" element={<Subscription />} />
         <Route path="/store" element={<Store />} />
         <Route path="/review" element={<Review />} />
+        <Route path="/progress-dashboard" element={<ProgressDashboard />} />
         <Route path="/index.html" element={<Navigate to="/" replace />} />
         <Route path="/gamification" element={<GamificationPage />} />
         <Route path="/sentry-test" element={<SentryTest />} />
