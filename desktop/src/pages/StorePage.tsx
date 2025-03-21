@@ -32,7 +32,7 @@ import React, { useState } from 'react';
 import { useCurrency } from '@/hooks';
 import { STORE_ITEMS } from '@/services';
 
-import CurrencyDisplay from '../components/CurrencyDisplay';
+import CurrencyDisplay from '../components/gamification/currency/CurrencyDisplay';
 
 import type { FC, ReactNode, SyntheticEvent } from 'react';
 

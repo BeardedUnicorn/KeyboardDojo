@@ -60,12 +60,29 @@ export interface AnimationConfig {
 }
 
 /**
+ * Check if user prefers reduced motion
+ * This respects the user's system setting for reduced motion
+ * 
+ * @returns Whether the user prefers reduced motion
+ */
+export function shouldReduceMotion(): boolean {
+  return typeof window !== 'undefined' && 
+    window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+}
+
+/**
  * Get animation duration based on intensity
+ * Respects user's preference for reduced motion
  *
  * @param intensity Animation intensity
  * @returns Duration in milliseconds
  */
 export function getAnimationDuration(intensity: AnimationIntensity = 'medium'): number {
+  // If user prefers reduced motion, use minimal durations
+  if (shouldReduceMotion()) {
+    return animationDurations.veryFast;
+  }
+
   switch (intensity) {
     case 'low':
       return animationDurations.fast;
@@ -79,6 +96,7 @@ export function getAnimationDuration(intensity: AnimationIntensity = 'medium'): 
 
 /**
  * Get animation configuration based on type and intensity
+ * Respects user's preference for reduced motion
  *
  * @param type Animation type
  * @param intensity Animation intensity
@@ -89,6 +107,16 @@ export function getAnimationConfig(
   intensity: AnimationIntensity = 'medium',
 ): AnimationConfig {
   const duration = getAnimationDuration(intensity);
+  
+  // If user prefers reduced motion, prefer fade animations over others
+  if (shouldReduceMotion() && type !== 'fade') {
+    return {
+      type: 'fade',
+      duration,
+      easing: animationEasings.easeInOut,
+      intensity: 'low',
+    };
+  }
 
   switch (type) {
     case 'slide':
@@ -141,6 +169,7 @@ export function getAnimationConfig(
 
 /**
  * Get CSS transform value for an animation
+ * Respects user's preference for reduced motion
  *
  * @param type Animation type
  * @param intensity Animation intensity
@@ -152,6 +181,13 @@ export function getAnimationTransform(
   intensity: AnimationIntensity = 'medium',
   direction: AnimationDirection = 'up',
 ): string {
+  // If user prefers reduced motion, return minimal or no transform
+  if (shouldReduceMotion()) {
+    if (type === 'scale') return 'scale(0.98)';
+    if (type === 'slide') return 'translateY(5px)';
+    return '';
+  }
+
   const intensityValues = {
     low: {
       scale: 0.95,
@@ -414,3 +450,134 @@ export const interpolateColor = (
     interpolate(b1, b2, progress),
   );
 };
+
+/**
+ * Run animations in sequence
+ * 
+ * @param animations Array of animations with duration and value
+ * @param onFrame Callback for each frame
+ * @returns Promise that resolves when all animations complete
+ */
+export async function sequence<T>(
+  animations: Array<{ duration: number; value: T }>,
+  onFrame: (value: T) => void,
+): Promise<void> {
+  for (const animation of animations) {
+    onFrame(animation.value);
+    await delay(animation.duration);
+  }
+}
+
+/**
+ * Run animations in parallel
+ * 
+ * @param animations Array of animations with duration and from/to values
+ * @param onFrame Callback for each frame
+ * @returns Promise that resolves when all animations complete
+ */
+export async function parallel(
+  animations: Array<{ duration: number; from: number; to: number }>,
+  onFrame: (values: number[]) => void,
+): Promise<void> {
+  const startTime = Date.now();
+  const values = animations.map((a) => a.from);
+
+  return new Promise((resolve) => {
+    const frame = () => {
+      const currentTime = Date.now();
+      const elapsed = currentTime - startTime;
+      let allDone = true;
+
+      animations.forEach((animation, i) => {
+        const progress = Math.min(elapsed / animation.duration, 1);
+        values[i] = animation.from + (animation.to - animation.from) * progress;
+        if (progress < 1) allDone = false;
+      });
+
+      onFrame([...values]); // Clone values array to ensure consistent snapshots
+
+      if (allDone) {
+        // Ensure final values are exact
+        animations.forEach((animation, i) => {
+          values[i] = animation.to;
+        });
+        onFrame([...values]);
+        resolve();
+      } else {
+        requestAnimationFrame(frame);
+      }
+    };
+
+    frame();
+  });
+}
+
+/**
+ * Delay execution for specified time
+ * 
+ * @param ms Time to delay in milliseconds
+ * @param value Optional value to resolve with
+ * @returns Promise that resolves after delay
+ */
+export function delay<T>(ms: number, value?: T): Promise<T | void> {
+  return new Promise((resolve) => setTimeout(() => resolve(value), ms));
+}
+
+/**
+ * Spring animation configuration
+ */
+export interface SpringConfig {
+  stiffness: number;
+  damping: number;
+  mass: number,
+}
+
+/**
+ * Spring animation result
+ */
+export interface SpringResult {
+  position: number;
+  velocity: number,
+}
+
+/**
+ * Calculate spring physics for animation
+ * 
+ * @param position Current position
+ * @param target Target position
+ * @param velocity Current velocity
+ * @param time Current time
+ * @param deltaTime Time step
+ * @param config Spring configuration
+ * @returns New position and velocity
+ */
+export function spring(
+  position: number,
+  target: number,
+  velocity: number,
+  time: number,
+  deltaTime: number,
+  config: SpringConfig,
+): SpringResult {
+  const { stiffness, damping, mass } = config;
+
+  // Calculate spring force (F = -kx)
+  const displacement = position - target;
+  const springForce = -stiffness * displacement;
+
+  // Calculate damping force (F = -cv)
+  const dampingForce = -damping * velocity;
+
+  // Calculate total force (F = ma)
+  const force = springForce + dampingForce;
+  const acceleration = force / mass;
+
+  // Update velocity and position using semi-implicit Euler integration
+  const newVelocity = velocity + acceleration * deltaTime;
+  const newPosition = position + newVelocity * deltaTime;
+
+  return {
+    position: newPosition,
+    velocity: newVelocity,
+  };
+}

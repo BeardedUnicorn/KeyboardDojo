@@ -26,7 +26,7 @@
       }
     ],
     "security": {
-      "csp": null
+      "csp": "default-src 'self' https: wss: data: tauri: devtools: https://devtools.crabnebula.dev; script-src 'self' 'strict-dynamic' https: devtools: 'nonce-{{nonce}}'; style-src 'self' 'nonce-{{nonce}}' https:; img-src 'self' data: https: tauri: devtools:; font-src 'self' https:; connect-src 'self' https: wss: tauri: devtools: https://devtools.crabnebula.dev data:; worker-src 'self' blob:; base-uri 'self'; frame-ancestors 'self'; form-action 'self';"
     },
     "trayIcon": {
       "iconPath": "icons/icon.png",

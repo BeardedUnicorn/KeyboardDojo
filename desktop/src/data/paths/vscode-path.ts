@@ -348,7 +348,9 @@ export const vscodePath: IPath = {
 };
 
 // Add debug log
-loggerService.debug('VS Code path loaded', {
-  pathId: vscodePath.id,
-  nodesCount: vscodePath.nodes.length,
-});
+if (loggerService && typeof loggerService.debug === 'function') {
+  loggerService.debug('VS Code path loaded', {
+    pathId: vscodePath.id,
+    nodesCount: vscodePath.nodes.length,
+  });
+}

@@ -94,21 +94,27 @@ function useCustomAnimation(
   // eslint-disable-next-line no-undef
   const delayTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
   const loopCountRef = useRef(0);
+  const mountedRef = useRef(true); // Track if component is mounted
 
   const easingFn = typeof easing === 'string' ? easings[easing] : easing;
 
+  // Improved cleanup function that handles all resources
   const cleanup = useCallback(() => {
-    if (frameRef.current) {
+    if (frameRef.current !== undefined) {
       cancelAnimationFrame(frameRef.current);
       frameRef.current = undefined;
     }
-    if (delayTimeoutRef.current) {
+    
+    if (delayTimeoutRef.current !== undefined) {
       clearTimeout(delayTimeoutRef.current);
       delayTimeoutRef.current = undefined;
     }
   }, []);
 
   const animate = useCallback((timestamp: number) => {
+    // Don't proceed if component has been unmounted
+    if (!mountedRef.current) return;
+    
     if (!startTimeRef.current) {
       startTimeRef.current = timestamp;
     }
@@ -121,31 +127,47 @@ function useCustomAnimation(
     }
 
     const currentProgress = easingFn(rawProgress);
-    setProgress(currentProgress);
-    callback(currentProgress);
+    
+    // Only update state and call callback if component is still mounted
+    if (mountedRef.current) {
+      setProgress(currentProgress);
+      callback(currentProgress);
+    }
 
     if (rawProgress < 1) {
-      frameRef.current = requestAnimationFrame(animate);
+      // Continue animation only if component is still mounted
+      if (mountedRef.current) {
+        frameRef.current = requestAnimationFrame(animate);
+      }
     } else {
-      if (loop) {
+      if (loop && mountedRef.current) {
         loopCountRef.current++;
-        onLoop?.();
         
-        if (yoyo) {
+        // Call onLoop callback if component is still mounted
+        if (mountedRef.current) {
+          onLoop?.();
+        }
+        
+        if (yoyo && mountedRef.current) {
           setIsReversed((prev) => !prev);
         }
         
         startTimeRef.current = timestamp;
         frameRef.current = requestAnimationFrame(animate);
       } else {
-        setIsPlaying(false);
-        cleanup();
-        onComplete?.();
+        // Only update state if component is still mounted
+        if (mountedRef.current) {
+          setIsPlaying(false);
+          cleanup();
+          onComplete?.();
+        }
       }
     }
   }, [callback, duration, easingFn, loop, yoyo, isReversed, onComplete, onLoop, cleanup]);
 
   const start = useCallback(() => {
+    if (!mountedRef.current) return;
+    
     cleanup();
     setIsPlaying(true);
     setIsPaused(false);
@@ -154,7 +176,9 @@ function useCustomAnimation(
 
     if (delay > 0) {
       delayTimeoutRef.current = setTimeout(() => {
-        frameRef.current = requestAnimationFrame(animate);
+        if (mountedRef.current) {
+          frameRef.current = requestAnimationFrame(animate);
+        }
       }, delay);
     } else {
       frameRef.current = requestAnimationFrame(animate);
@@ -206,10 +230,17 @@ function useCustomAnimation(
 
   // Start animation if autoplay is true
   useEffect(() => {
+    mountedRef.current = true;
+    
     if (autoplay) {
       start();
     }
-    return cleanup;
+    
+    // Enhanced cleanup on unmount
+    return () => {
+      mountedRef.current = false;
+      cleanup();
+    };
   }, [autoplay, start, cleanup]);
 
   return {

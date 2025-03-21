@@ -6,6 +6,13 @@
  */
 
 import { osDetectionService } from '../services/osDetectionService';
+import { 
+  normalizeKey, 
+  normalizeKeyName as baseNormalizeKeyName, 
+  parseShortcut as baseParseShortcut,
+  formatKeyCombination,
+  isModifierKey,
+} from './keyNormalization';
 
 /**
  * Shortcut representation for different operating systems
@@ -48,48 +55,35 @@ export const getShortcutForCurrentOS = (shortcut: ShortcutDefinition): string =>
 };
 
 /**
- * Normalizes a key name for consistent comparison
+ * Normalizes a key name for consistent comparison (using unified implementation)
  * @param key The key name to normalize
  * @param isMac Whether the current OS is macOS
  * @returns The normalized key name
  */
-export const normalizeKeyName = (key: string, isMac: boolean = osDetectionService.isMacOS()): string => {
-  const lowerKey = key.toLowerCase();
-  
-  switch (lowerKey) {
-    case 'control':
-      return 'ctrl';
-    case 'alt':
-    case 'option':
-      return 'alt';
-    case 'shift':
-      return 'shift';
-    case 'meta':
-    case 'command':
-      return isMac ? 'cmd' : 'win';
-    case 'escape':
-      return 'esc';
-    case ' ':
-      return 'space';
-    default:
-      return lowerKey;
+export const normalizeKeyName = (key: string, isMac = osDetectionService.isMacOS()): string => {
+  // Use a different format option for arrow keys to preserve the 'arrow' prefix
+  if (key.toLowerCase().startsWith('arrow')) {
+    return key.toLowerCase();
   }
+  
+  // Special handling for command/meta keys based on OS
+  const lowerKey = key.toLowerCase();
+  if (['meta', 'command', 'cmd', '⌘', 'super', 'win', 'windows'].includes(lowerKey)) {
+    return isMac ? 'cmd' : 'win';
+  }
+  
+  // For all other keys, use the standard normalization
+  return normalizeKey(key, { isMac, lowercase: true });
 };
 
 /**
- * Parses a shortcut string into individual keys
+ * Parses a shortcut string into individual keys (using unified implementation)
  * @param shortcutStr The shortcut string (e.g., "Ctrl+C")
  * @param isMac Whether the current OS is macOS
  * @returns Array of normalized key names
  */
 export const parseShortcut = (shortcutStr: string, isMac: boolean = osDetectionService.isMacOS()): string[] => {
-  // Normalize the shortcut string first
-  const normalizedShortcut = shortcutStr
-    .replace(/\s+/g, '') // Remove all whitespace
-    .toLowerCase(); // Convert to lowercase for case-insensitive comparison
-
-  // Split by '+' and normalize each key
-  return normalizedShortcut.split('+').map((key) => normalizeKeyName(key, isMac));
+  return baseParseShortcut(shortcutStr, { isMac });
 };
 
 /**

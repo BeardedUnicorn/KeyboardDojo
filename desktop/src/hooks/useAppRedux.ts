@@ -1,4 +1,5 @@
 import { useEffect, useCallback } from 'react';
+import { shallowEqual } from 'react-redux';
 
 import { useAppDispatch, useAppSelector } from '@/store';
 import {
@@ -36,30 +37,33 @@ import type { IAppNotification } from '@/types/IAppNotification';
 export const useAppRedux = () => {
   const dispatch = useAppDispatch();
 
-  // Select app state
-  const app = useAppSelector(selectApp);
+  // Select app state with shallowEqual comparison to prevent unnecessary re-renders
+  const app = useAppSelector(selectApp, shallowEqual);
   const isInitialized = useAppSelector(selectIsInitialized);
   const isLoading = useAppSelector(selectIsLoading);
   const isOnline = useAppSelector(selectIsOnline);
   const isUpdateAvailable = useAppSelector(selectIsUpdateAvailable);
   const updateVersion = useAppSelector(selectUpdateVersion);
-  const errors = useAppSelector(selectErrors);
-  const notifications = useAppSelector(selectNotifications);
-  const unreadNotifications = useAppSelector(selectUnreadNotifications);
+  const errors = useAppSelector(selectErrors, shallowEqual);
+  const notifications = useAppSelector(selectNotifications, shallowEqual);
+  const unreadNotifications = useAppSelector(selectUnreadNotifications, shallowEqual);
   const currentModal = useAppSelector(selectCurrentModal);
-  const modalData = useAppSelector(selectModalData);
+  const modalData = useAppSelector(selectModalData, shallowEqual);
 
-  // Initialize app on component mount
+  // Initialize app on component mount - only if not already initialized
   useEffect(() => {
     if (!isInitialized) {
       dispatch(initializeApp());
     }
   }, [dispatch, isInitialized]);
 
-  // Set up online/offline detection
+  // Set up online/offline detection with proper cleanup
   useEffect(() => {
     const handleOnline = () => dispatch(setOnlineStatus(true));
     const handleOffline = () => dispatch(setOnlineStatus(false));
+
+    // Set initial online status
+    dispatch(setOnlineStatus(navigator.onLine));
 
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
@@ -72,8 +76,10 @@ export const useAppRedux = () => {
 
   // App actions
   const initialize = useCallback(() => {
-    dispatch(initializeApp());
-  }, [dispatch]);
+    if (!isInitialized) {
+      dispatch(initializeApp());
+    }
+  }, [dispatch, isInitialized]);
 
   const checkUpdate = useCallback(() => {
     dispatch(checkForUpdates());

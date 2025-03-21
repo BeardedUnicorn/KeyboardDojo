@@ -8,7 +8,9 @@
 import { AchievementCategory } from '@/types/achievements/AchievementCategory';
 import { AchievementRarity } from '@/types/achievements/AchievementRarity';
 
+import { BaseService } from './BaseService';
 import { loggerService } from './loggerService';
+import { serviceFactory } from './ServiceFactory';
 import { userProgressService } from './userProgressService';
 
 import type { IAchievement as AchievementType } from '@/types/achievements/IAchievement';
@@ -252,14 +254,70 @@ const defaultAchievements: Achievement[] = [
 const ACHIEVEMENTS_STORAGE_KEY = 'keyboard-dojo-achievements';
 
 // Achievement service
-class AchievementsService {
+class AchievementsService extends BaseService {
   private listeners: ((achievements: AchievementProgress[]) => void)[] = [];
 
   constructor() {
-    // Initialize listeners array
-    this.listeners = [];
+    super();
+  }
+  
+  /**
+   * Initialize the service
+   */
+  async initialize(): Promise<void> {
+    await super.initialize();
+    
+    try {
+      // Initialize achievements if they don't exist
+      if (!localStorage.getItem(ACHIEVEMENTS_STORAGE_KEY)) {
+        const initialAchievements = defaultAchievements.map((achievement) => ({
+          achievement,
+          progress: 0,
+          completed: false,
+        }));
+        
+        localStorage.setItem(ACHIEVEMENTS_STORAGE_KEY, JSON.stringify(initialAchievements));
+      }
+      
+      loggerService.info('Achievements service initialized', { 
+        component: 'AchievementsService',
+      });
+      
+      this._status.initialized = true;
+    } catch (error) {
+      loggerService.error('Failed to initialize achievements service', error, { 
+        component: 'AchievementsService',
+      });
+      
+      this._status.error = error instanceof Error ? error : new Error(String(error));
+      this._status.initialized = false;
+      
+      // Rethrow the error to properly signal initialization failure
+      throw error;
+    }
   }
 
+  /**
+   * Clean up the service
+   */
+  cleanup(): void {
+    try {
+      // Clear listeners to prevent memory leaks
+      this.listeners = [];
+      
+      loggerService.info('Achievements service cleaned up', { 
+        component: 'AchievementsService',
+      });
+      
+      super.cleanup();
+    } catch (error) {
+      loggerService.error('Error cleaning up achievements service', error, { 
+        component: 'AchievementsService',
+      });
+      // Don't throw
+    }
+  }
+  
   // Get all achievements with progress
   getAchievements(): AchievementProgress[] {
     try {
@@ -384,3 +442,8 @@ class AchievementsService {
 }
 
 export const achievementsService = new AchievementsService();
+
+// Register with ServiceFactory
+serviceFactory.register('achievementsService', achievementsService);
+
+export default achievementsService;

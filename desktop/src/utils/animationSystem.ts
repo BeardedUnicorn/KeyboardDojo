@@ -286,11 +286,10 @@ export function getAnimationKeyframes(
  * @returns CSS styles object
  */
 export function getAnimationStyles(config: AnimationConfig): CSSProperties {
-  const { type, duration, easing, intensity, direction, delay = 0 } = config;
+  const { type, duration, easing, delay = 0 } = config;
 
   return {
     animation: `${duration}ms ${easing} ${delay}ms forwards`,
-    transform: getAnimationTransform(type, intensity, direction),
     opacity: type === 'fade' ? 0 : undefined,
   };
 }

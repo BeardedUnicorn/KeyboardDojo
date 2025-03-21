@@ -3,11 +3,11 @@ import { runInEnvironment } from './environment';
 /**
  * Update status type
  */
-export type UpdateStatus = 
-  | 'not-available' 
-  | 'available' 
-  | 'downloading' 
-  | 'downloaded' 
+export type UpdateStatus =
+  | 'not-available'
+  | 'available'
+  | 'downloading'
+  | 'downloaded'
   | 'error';
 
 /**
@@ -60,9 +60,9 @@ class UpdaterService {
           // Example of how this would be implemented with Tauri:
           /*
           import { checkUpdate } from '@tauri-apps/api/updater';
-          
+
           const { shouldUpdate, manifest } = await checkUpdate();
-          
+
           if (shouldUpdate) {
             this.updateInfo = {
               version: manifest.version,
@@ -70,7 +70,7 @@ class UpdaterService {
               releaseNotes: manifest.body,
               downloadUrl: manifest.url,
             };
-            
+
             this.currentStatus = 'available';
             this.notifyListeners('available', this.updateInfo);
             return true;
@@ -80,10 +80,10 @@ class UpdaterService {
             return false;
           }
           */
-          
+
           // For demonstration purposes, we'll simulate an update
           const simulateUpdate = Math.random() > 0.5;
-          
+
           if (simulateUpdate) {
             this.updateInfo = {
               version: '1.0.1',
@@ -91,7 +91,7 @@ class UpdaterService {
               releaseNotes: 'Bug fixes and performance improvements',
               downloadUrl: 'https://example.com/update',
             };
-            
+
             this.currentStatus = 'available';
             this.notifyListeners('available', this.updateInfo);
             return true;
@@ -130,35 +130,35 @@ class UpdaterService {
           // Example of how this would be implemented with Tauri:
           /*
           import { installUpdate } from '@tauri-apps/api/updater';
-          
+
           this.currentStatus = 'downloading';
           this.notifyListeners('downloading');
-          
+
           // The installUpdate function in Tauri handles both downloading and installing
           await installUpdate();
-          
+
           this.currentStatus = 'downloaded';
           this.notifyListeners('downloaded');
           */
-          
+
           // For demonstration purposes, we'll simulate downloading an update
           this.currentStatus = 'downloading';
           this.notifyListeners('downloading');
-          
+
           // Simulate download progress
           let percent = 0;
           const interval = setInterval(() => {
             percent += 10;
-            
+
             const progress: UpdateProgress = {
               bytesPerSecond: 1024 * 1024,
               percent,
               total: 1024 * 1024 * 10,
               transferred: 1024 * 1024 * (percent / 100) * 10,
             };
-            
+
             this.notifyListeners('downloading', progress);
-            
+
             if (percent >= 100) {
               clearInterval(interval);
               this.currentStatus = 'downloaded';
@@ -193,14 +193,14 @@ class UpdaterService {
           // Example of how this would be implemented with Tauri:
           /*
           import { relaunch } from '@tauri-apps/api/process';
-          
+
           // The update is already installed by installUpdate(), so we just need to relaunch
           await relaunch();
           */
-          
+
           // For demonstration purposes, we'll simulate installing an update
           console.log('Installing update...');
-          
+
           // In a real implementation, this would restart the app
           setTimeout(() => {
             console.log('App would restart now');
@@ -224,7 +224,7 @@ class UpdaterService {
    */
   async enableAutoUpdates(intervalInMinutes: number = 60): Promise<void> {
     if (this.checkInterval !== null) {
-      this.disableAutoUpdates();
+      await this.disableAutoUpdates();
     }
 
     return runInEnvironment({
@@ -232,7 +232,7 @@ class UpdaterService {
         try {
           // Check for updates immediately
           await this.checkForUpdates();
-          
+
           // Set up interval to check for updates
           this.checkInterval = window.setInterval(() => {
             this.checkForUpdates().catch(error => {
@@ -280,14 +280,14 @@ class UpdaterService {
    */
   addListener(listener: UpdateEventListener): () => void {
     this.listeners.push(listener);
-    
+
     // Notify the listener of the current status
     if (this.currentStatus === 'available' && this.updateInfo) {
       listener('available', this.updateInfo);
     } else {
       listener(this.currentStatus);
     }
-    
+
     return () => {
       this.removeListener(listener);
     };
@@ -321,4 +321,4 @@ class UpdaterService {
 }
 
 // Export a singleton instance
-export const updaterService = new UpdaterService(); 
+export const updaterService = new UpdaterService();

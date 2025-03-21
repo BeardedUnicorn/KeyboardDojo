@@ -6,6 +6,12 @@
  */
 
 import { osDetectionService } from '../services/osDetectionService';
+import { 
+  normalizeKey, 
+  normalizeKeyName as baseNormalizeKeyName, 
+  parseShortcut as baseParseShortcut,
+  isModifierKey as baseIsModifierKey,
+} from './keyNormalization';
 
 /**
  * Represents a keyboard shortcut with OS-specific variations
@@ -52,69 +58,23 @@ export function getOSShortcut(shortcut: ShortcutDefinition): string {
 }
 
 /**
- * Normalize a key name to a standard format
+ * Normalize a key name to a standard format (using unified implementation)
  * 
  * @param key The key name to normalize
  * @returns The normalized key name
  */
 export function normalizeKeyName(key: string): string {
-  const lowerKey = key.toLowerCase();
-  const isMac = osDetectionService.isMacOS();
-  
-  switch (lowerKey) {
-    case 'control':
-    case 'ctrl':
-      return 'ctrl';
-    case 'alt':
-    case 'option':
-      return 'alt';
-    case 'shift':
-      return 'shift';
-    case 'meta':
-    case 'command':
-    case 'cmd':
-    case 'win':
-    case 'windows':
-      return isMac ? 'cmd' : 'win';
-    case 'escape':
-    case 'esc':
-      return 'esc';
-    case ' ':
-      return 'space';
-    case 'arrowup':
-    case 'up':
-      return 'up';
-    case 'arrowdown':
-    case 'down':
-      return 'down';
-    case 'arrowleft':
-    case 'left':
-      return 'left';
-    case 'arrowright':
-    case 'right':
-      return 'right';
-    case 'enter':
-    case 'return':
-      return 'enter';
-    default:
-      return lowerKey;
-  }
+  return normalizeKey(key, { lowercase: true });
 }
 
 /**
- * Parse a shortcut string into an array of individual keys
+ * Parse a shortcut string into an array of individual keys (using unified implementation)
  * 
  * @param shortcutStr The shortcut string (e.g., "Ctrl+Shift+P")
  * @returns Array of normalized key names
  */
 export function parseShortcut(shortcutStr: string): string[] {
-  // Normalize the shortcut string first
-  const normalizedShortcut = shortcutStr
-    .replace(/\s+/g, '') // Remove all whitespace
-    .toLowerCase(); // Convert to lowercase for case-insensitive comparison
-  
-  // Split by '+' and normalize each key
-  return normalizedShortcut.split('+').map(normalizeKeyName);
+  return baseParseShortcut(shortcutStr);
 }
 
 /**
@@ -163,13 +123,13 @@ export function getModifierKeys(): string[] {
 }
 
 /**
- * Check if a key is a modifier key
+ * Check if a key is a modifier key (using unified implementation)
  * 
  * @param key The key to check
- * @returns True if the key is a modifier key
+ * @returns Whether the key is a modifier key
  */
 export function isModifierKey(key: string): boolean {
-  return getModifierKeys().includes(normalizeKeyName(key));
+  return baseIsModifierKey(key);
 }
 
 /**

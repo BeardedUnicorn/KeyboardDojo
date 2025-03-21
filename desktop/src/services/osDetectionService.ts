@@ -5,7 +5,9 @@
  * and handling OS-specific features like keyboard shortcuts.
  */
 
+import { BaseService } from './BaseService';
 import { loggerService } from './loggerService';
+import { serviceFactory } from './ServiceFactory';
 
 export type OperatingSystem = 'windows' | 'macos' | 'linux' | 'unknown';
 
@@ -17,16 +19,15 @@ export interface OSInfo {
 
 type OSChangeListener = () => void;
 
-class OSDetectionService {
+class OSDetectionService extends BaseService {
   private _os: OperatingSystem = 'unknown';
-  private _initialized: boolean = false;
   private _osChangeListeners: OSChangeListener[] = [];
 
   /**
    * Initialize the OS detection
    */
   public async initialize(): Promise<void> {
-    if (this._initialized) return;
+    if (this.isInitialized()) return;
 
     try {
       // Detect OS using browser information
@@ -38,20 +39,39 @@ class OSDetectionService {
         this._os = 'linux';
       }
 
-      this._initialized = true;
       this._notifyOSChange();
-      
       loggerService.info('Detected operating system:', { os: this._os });
+      
+      // Call parent initialize to update status
+      await super.initialize();
     } catch (error) {
       loggerService.error('Error detecting operating system:', { error });
+      throw error;
     }
+  }
+
+  /**
+   * Clean up resources
+   */
+  public override cleanup(): void {
+    this._osChangeListeners = [];
+    super.cleanup();
+  }
+
+  /**
+   * Reset the service
+   */
+  public override reset(): void {
+    this._os = 'unknown';
+    this._osChangeListeners = [];
+    super.reset();
   }
 
   /**
    * Get the detected operating system
    */
   public getOS(): OperatingSystem {
-    if (!this._initialized) {
+    if (!this.isInitialized()) {
       loggerService.warn('OS detection not initialized, initializing now...');
       this.initialize();
     }
@@ -198,10 +218,12 @@ class OSDetectionService {
   }
 }
 
-// Create and export a singleton instance
-export const osDetectionService = new OSDetectionService();
+// Create the singleton instance
+const osDetectionServiceInstance = new OSDetectionService();
 
-// Initialize the service
-osDetectionService.initialize();
+// Register with the service factory
+export const osDetectionService = serviceFactory.register('osDetectionService', osDetectionServiceInstance);
+
+// Don't initialize here, let the service factory handle initialization
 
 export default osDetectionService; 

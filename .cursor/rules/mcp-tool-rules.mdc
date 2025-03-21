@@ -1,0 +1,86 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+This document outlines the rules and guidelines for using the various Model Context Protocol (MCP) servers installed in your Cursor IDE configuration. These rules will help the AI make appropriate decisions about which server to use for specific tasks.
+
+Overview
+Your configuration includes seven MCP servers, each designed for specific types of tasks:
+
+Playwright - Browser automation
+Obsidian - Knowledge base interaction
+SequentialThinking - Structured reasoning
+WebResearch - Web-based research
+Fetch - HTTP requests
+Brave Search - Search engine queries
+GitHub - Repository interactions
+
+Playwright MCP
+The Playwright MCP provides programmatic control over browser automation. Use this tool when:
+You need precise browser control for testing or automation
+You want to automate UI interactions (clicks, form filling, navigation)
+You need to take screenshots or capture page content
+You're scraping data from websites with complex structures
+You need to simulate user interactions with web applications
+
+Obsidian MCP
+The Obsidian MCP provides integration with your Obsidian vault located at "/Users/mike/Documents/FortuneFox". Use this tool when:
+You need to access or modify notes in your Obsidian knowledge base
+You want to create new notes or update existing ones
+You need to query information stored in your vault
+You want to organize information in your knowledge base
+You need to break down a complex problem into sequential steps
+You want to document your thought process clearly
+You're solving problems that require methodical reasoning
+You need to explain your reasoning process to others
+
+WebResearch MCP
+The WebResearch MCP is designed for comprehensive web-based research. Use this tool when:
+You need to gather information on a specific topic from multiple sources
+You want to compile research findings into a structured format
+You need to verify facts or claims across different websites
+You're conducting exploratory research on a new subject area
+
+Fetch MCP
+The Fetch MCP provides a simple interface for making HTTP requests. Use this tool when:
+You need to retrieve data from web APIs
+You want to download files from URLs
+You need to make simple GET, POST, or other HTTP requests
+You're testing API endpoints
+
+Brave Search MCP
+The Brave Search MCP allows you to perform searches using Brave's search engine. Use this tool when:
+You need to search the web for information
+You want privacy-focused search results
+You need to gather search results programmatically
+You're conducting research that requires multiple search queries
+
+Decision Tree for MCP Selection
+When determining which MCP server to use, consider the following:
+For browser interaction and automation:
+Use Playwright for precise control and automation
+
+For knowledge management:
+Use Obsidian to interact with your knowledge base
+
+For problem-solving:
+Use SequentialThinking for methodical reasoning and problem breakdown
+
+For information gathering:
+Use WebResearch for comprehensive multi-source research
+Use Brave Search for quick search queries
+Use Fetch for direct API access or file downloads
+For code and repository management:
+Use GitHub for repository interaction
+
+Best Practices
+Combine tools when necessary: Complex tasks may require using multiple MCP servers in sequence.
+
+Start with the least resource-intensive tool: For simple tasks, use lightweight tools first before escalating to heavier ones.
+
+Be specific with instructions: Provide clear parameters and instructions when using any MCP server.
+
+Handle errors gracefully: Always include error handling when using MCP servers.
+
+Respect rate limits: Particularly with external services like GitHub and Brave Search.

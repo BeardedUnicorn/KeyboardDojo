@@ -162,7 +162,7 @@ logger.component(
 The application includes an ErrorBoundary component that uses the logger:
 
 ```typescript
-import { ErrorBoundary } from '../components/ErrorBoundary';
+import { ErrorBoundary } from '../components/ui/ErrorBoundary';
 
 const App = () => (
   <ErrorBoundary componentName="App">

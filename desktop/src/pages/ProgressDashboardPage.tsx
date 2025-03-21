@@ -10,10 +10,9 @@ import {
 } from '@mui/material';
 import React, { useState } from 'react';
 
-import CurriculumProgressChart from '../components/CurriculumProgressChart';
-import MainLayout from '../components/MainLayout';
-import PracticeHeatmap from '../components/PracticeHeatmap';
-import StatisticsDashboard from '../components/StatisticsDashboard';
+import CurriculumProgressChart from '../components/statistics/CurriculumProgressChart';
+import PracticeHeatmap from '../components/statistics/PracticeHeatmap';
+import StatisticsDashboard from '../components/statistics/StatisticsDashboard';
 
 import type { FC, ReactNode , SyntheticEvent } from 'react';
 
@@ -60,119 +59,117 @@ const ProgressDashboardPage: FC = () => {
   };
 
   return (
-    <MainLayout>
-      <Container maxWidth="lg" sx={{ py: 4 }}>
-        <Typography variant="h4" component="h1" gutterBottom fontWeight="bold">
-          Progress Dashboard
-        </Typography>
+    <Container maxWidth="lg" sx={{ py: 4 }}>
+      <Typography variant="h4" component="h1" gutterBottom fontWeight="bold">
+        Progress Dashboard
+      </Typography>
 
-        <Typography variant="body1" color="text.secondary" paragraph>
-          Track your learning journey and see your progress over time.
-        </Typography>
+      <Typography variant="body1" color="text.secondary" paragraph>
+        Track your learning journey and see your progress over time.
+      </Typography>
 
-        <Paper
-          elevation={0}
+      <Paper
+        elevation={0}
+        sx={{
+          mb: 4,
+          borderRadius: 2,
+          border: 1,
+          borderColor: 'divider',
+          overflow: 'hidden',
+        }}
+      >
+        <Tabs
+          value={tabValue}
+          onChange={handleTabChange}
+          aria-label="progress dashboard tabs"
           sx={{
-            mb: 4,
-            borderRadius: 2,
-            border: 1,
+            borderBottom: 1,
             borderColor: 'divider',
-            overflow: 'hidden',
+            bgcolor: theme.palette.background.default,
           }}
         >
-          <Tabs
-            value={tabValue}
-            onChange={handleTabChange}
-            aria-label="progress dashboard tabs"
-            sx={{
-              borderBottom: 1,
-              borderColor: 'divider',
-              bgcolor: theme.palette.background.default,
-            }}
-          >
-            <Tab label="Overview" {...a11yProps(0)} />
-            <Tab label="Curriculum Progress" {...a11yProps(1)} />
-            <Tab label="Practice Activity" {...a11yProps(2)} />
-            <Tab label="Detailed Stats" {...a11yProps(3)} />
-          </Tabs>
+          <Tab label="Overview" {...a11yProps(0)} />
+          <Tab label="Curriculum Progress" {...a11yProps(1)} />
+          <Tab label="Practice Activity" {...a11yProps(2)} />
+          <Tab label="Detailed Stats" {...a11yProps(3)} />
+        </Tabs>
 
-          {/* Overview Tab */}
-          <TabPanel value={tabValue} index={0}>
-            <Grid container spacing={4}>
-              <Grid item xs={12}>
-                <Typography variant="h6" component="h2" gutterBottom>
-                  Your Statistics
-                </Typography>
-                <StatisticsDashboard showDetailedStats={false} />
-              </Grid>
-
-              <Grid item xs={12}>
-                <Typography variant="h6" component="h2" gutterBottom>
-                  Curriculum Progress
-                </Typography>
-                <CurriculumProgressChart showDetails={false} />
-              </Grid>
-
-              <Grid item xs={12}>
-                <Typography variant="h6" component="h2" gutterBottom>
-                  Recent Practice Activity
-                </Typography>
-                <PracticeHeatmap weeks={8} />
-              </Grid>
-            </Grid>
-          </TabPanel>
-
-          {/* Curriculum Progress Tab */}
-          <TabPanel value={tabValue} index={1}>
-            <Typography variant="h6" component="h2" gutterBottom>
-              Curriculum Progress
-            </Typography>
-            <Typography variant="body2" color="text.secondary" paragraph>
-              Track your progress through each learning track and module.
-            </Typography>
-            <CurriculumProgressChart showDetails />
-          </TabPanel>
-
-          {/* Practice Activity Tab */}
-          <TabPanel value={tabValue} index={2}>
-            <Typography variant="h6" component="h2" gutterBottom>
-              Practice Activity
-            </Typography>
-            <Typography variant="body2" color="text.secondary" paragraph>
-              View your practice session history and activity patterns.
-            </Typography>
-            <PracticeHeatmap weeks={16} />
-
-            <Box sx={{ mt: 4 }}>
-              <Typography variant="body2" color="text.secondary" paragraph>
-                Your most active days are highlighted in darker colors. Hover over each day to see details.
+        {/* Overview Tab */}
+        <TabPanel value={tabValue} index={0}>
+          <Grid container spacing={4}>
+            <Grid item xs={12}>
+              <Typography variant="h6" component="h2" gutterBottom>
+                Your Statistics
               </Typography>
-            </Box>
-          </TabPanel>
+              <StatisticsDashboard showDetailedStats={false} />
+            </Grid>
 
-          {/* Detailed Stats Tab */}
-          <TabPanel value={tabValue} index={3}>
-            <Typography variant="h6" component="h2" gutterBottom>
-              Detailed Statistics
-            </Typography>
+            <Grid item xs={12}>
+              <Typography variant="h6" component="h2" gutterBottom>
+                Curriculum Progress
+              </Typography>
+              <CurriculumProgressChart showDetails={false} />
+            </Grid>
+
+            <Grid item xs={12}>
+              <Typography variant="h6" component="h2" gutterBottom>
+                Recent Practice Activity
+              </Typography>
+              <PracticeHeatmap weeks={8} />
+            </Grid>
+          </Grid>
+        </TabPanel>
+
+        {/* Curriculum Progress Tab */}
+        <TabPanel value={tabValue} index={1}>
+          <Typography variant="h6" component="h2" gutterBottom>
+            Curriculum Progress
+          </Typography>
+          <Typography variant="body2" color="text.secondary" paragraph>
+            Track your progress through each learning track and module.
+          </Typography>
+          <CurriculumProgressChart showDetails />
+        </TabPanel>
+
+        {/* Practice Activity Tab */}
+        <TabPanel value={tabValue} index={2}>
+          <Typography variant="h6" component="h2" gutterBottom>
+            Practice Activity
+          </Typography>
+          <Typography variant="body2" color="text.secondary" paragraph>
+            View your practice session history and activity patterns.
+          </Typography>
+          <PracticeHeatmap weeks={16} />
+
+          <Box sx={{ mt: 4 }}>
             <Typography variant="body2" color="text.secondary" paragraph>
-              Dive deeper into your learning metrics and performance statistics.
+              Your most active days are highlighted in darker colors. Hover over each day to see details.
             </Typography>
-            <StatisticsDashboard showDetailedStats />
-          </TabPanel>
-        </Paper>
+          </Box>
+        </TabPanel>
 
-        <Box sx={{ mt: 4, p: 3, bgcolor: 'background.paper', borderRadius: 2 }}>
-          <Typography variant="subtitle1" fontWeight="medium" gutterBottom>
-            Keep up the good work!
+        {/* Detailed Stats Tab */}
+        <TabPanel value={tabValue} index={3}>
+          <Typography variant="h6" component="h2" gutterBottom>
+            Detailed Statistics
           </Typography>
-          <Typography variant="body2" color="text.secondary">
-            {`Regular practice is key to mastering keyboard shortcuts. 
-            Try to maintain your streak and practice a little each day.`}
+          <Typography variant="body2" color="text.secondary" paragraph>
+            Dive deeper into your learning metrics and performance statistics.
           </Typography>
-        </Box>
-      </Container>
-    </MainLayout>
+          <StatisticsDashboard showDetailedStats />
+        </TabPanel>
+      </Paper>
+
+      <Box sx={{ mt: 4, p: 3, bgcolor: 'background.paper', borderRadius: 2 }}>
+        <Typography variant="subtitle1" fontWeight="medium" gutterBottom>
+          Keep up the good work!
+        </Typography>
+        <Typography variant="body2" color="text.secondary">
+          {`Regular practice is key to mastering keyboard shortcuts. 
+          Try to maintain your streak and practice a little each day.`}
+        </Typography>
+      </Box>
+    </Container>
   );
 };
 

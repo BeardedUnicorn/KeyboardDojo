@@ -4,7 +4,8 @@ import ReactDOM from 'react-dom/client';
 import { Provider } from 'react-redux';
 
 import App from './App';
-import ErrorFallback from './components/ErrorFallback';
+import { ErrorBoundary } from './components/ui/ErrorBoundary';
+import ErrorFallback from './components/ui/ErrorFallback';
 import { store } from './store';
 import './styles.css';
 import { initSentryRedux } from './utils/sentryRedux';
@@ -38,9 +39,18 @@ const root = ReactDOM.createRoot(rootElement);
 root.render(
   <StrictMode>
     <Provider store={store}>
-      <Sentry.ErrorBoundary fallback={<ErrorFallback />}>
+      <ErrorBoundary 
+        componentName="AppRoot" 
+        fallback={(error, resetError) => (
+          <ErrorFallback 
+            error={error} 
+            resetErrorBoundary={resetError} 
+          />
+        )}
+        reportToSentry
+      >
         <App />
-      </Sentry.ErrorBoundary>
+      </ErrorBoundary>
     </Provider>
   </StrictMode>,
 );

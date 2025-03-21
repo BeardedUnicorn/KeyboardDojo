@@ -1,6 +1,8 @@
 import { storageService } from '../../../shared/src/utils';
 
+import { BaseService } from './BaseService';
 import { loggerService } from './loggerService';
+import { serviceFactory } from './ServiceFactory';
 
 // Subscription tiers
 export enum SubscriptionTier {
@@ -109,11 +111,12 @@ const SUBSCRIPTION_STORAGE_KEY = 'keyboard-dojo-subscription';
 /**
  * Service to manage user subscriptions
  */
-class SubscriptionService {
+class SubscriptionService extends BaseService {
   private state: SubscriptionState;
   private listeners: ((state: SubscriptionState) => void)[] = [];
 
   constructor() {
+    super();
     this.state = {
       currentTier: SubscriptionTier.FREE,
       activePlan: null,
@@ -127,25 +130,34 @@ class SubscriptionService {
    * Initialize subscription service
    */
   async initialize(): Promise<void> {
+    await super.initialize();
+    
     try {
       // Load subscription state from storage
       const savedState = await storageService.getItem<SubscriptionState>(SUBSCRIPTION_STORAGE_KEY);
       
       if (!savedState) {
         // Initialize with default state
-        this.state = {
-          currentTier: SubscriptionTier.FREE,
-          activePlan: null,
-          expiresAt: null,
-          paymentMethod: null,
-          autoRenew: false,
-        };
         await this.saveState();
       } else {
         this.state = savedState;
       }
+      
+      loggerService.info('Subscription service initialized', { 
+        component: 'SubscriptionService',
+      });
+      
+      this._status.initialized = true;
     } catch (error) {
-      loggerService.error('Failed to initialize subscription service:', error, { component: 'SubscriptionService' });
+      loggerService.error('Failed to initialize subscription service', error, { 
+        component: 'SubscriptionService',
+      });
+      
+      this._status.error = error instanceof Error ? error : new Error(String(error));
+      this._status.initialized = false;
+      
+      // Rethrow the error to properly signal initialization failure
+      throw error;
     }
   }
 
@@ -299,10 +311,24 @@ class SubscriptionService {
   }
 
   /**
-   * Clean up resources
+   * Clean up the service
    */
   cleanup(): void {
-    this.listeners = [];
+    try {
+      // Clear listeners to prevent memory leaks
+      this.listeners = [];
+      
+      loggerService.info('Subscription service cleaned up', { 
+        component: 'SubscriptionService',
+      });
+      
+      super.cleanup();
+    } catch (error) {
+      loggerService.error('Error cleaning up subscription service', error, { 
+        component: 'SubscriptionService',
+      });
+      // Don't throw
+    }
   }
 
   /**
@@ -324,4 +350,8 @@ class SubscriptionService {
 
 // Export singleton instance
 export const subscriptionService = new SubscriptionService();
+
+// Register with ServiceFactory
+serviceFactory.register('subscriptionService', subscriptionService);
+
 export default subscriptionService; 

@@ -21,29 +21,87 @@ import {
 } from '@mui/material';
 import React, { useState, useEffect, lazy, Suspense } from 'react';
 
-import { usePrefetch } from '@/hooks';
-import { useLogger } from '@/services';
-import { PathNodeType } from '@/types/progress/ICurriculum';
-
 import { LevelProgressBar, StreakDisplay } from '../components';
+import { LevelSelection } from '../components/curriculum';
+import { vscodePath, intellijPath, cursorPath } from '../data/paths';
+import { usePrefetch } from '../hooks';
+import { useLogger } from '../services/loggerService';
+import { PathNodeType } from '../types/progress/ICurriculum';
 
-import type { IPath } from '@/types/progress/ICurriculum';
+import type { IPath } from '../types/progress/ICurriculum';
 import type { FC, SyntheticEvent } from 'react';
 
 // Lazy load components
-const PathView = lazy(() => import('../components/PathView'));
+// const PathView = lazy(() => import('../components/curriculum/PathView'));
 
-// Lazy load path data
-const loadPathData = async (type: string): Promise<IPath> => {
-  switch (type) {
-    case 'vscode':
-      return (await import('../data/paths/vscode-path')).vscodePath;
-    case 'intellij':
-      return (await import('../data/paths/intellij-path')).intellijPath;
-    case 'cursor':
-      return (await import('../data/paths/cursor-path')).cursorPath;
-    default:
-      throw new Error(`Unknown application type: ${type}`);
+// Get path data with timeout handling
+const getPathData = (type: string): Promise<IPath> => {
+  return new Promise((resolve, reject) => {
+    try {
+      switch (type) {
+        case 'vscode':
+          resolve(vscodePath);
+          break;
+        case 'intellij':
+          resolve(intellijPath);
+          break;
+        case 'cursor':
+          resolve(cursorPath);
+          break;
+        default:
+          reject(new Error(`Unknown application type: ${type}`));
+      }
+    } catch (error) {
+      console.error(`Error getting ${type} path data:`, error);
+      reject(new Error(`Failed to get ${type} path data: ${error instanceof Error ? error.message : 'Unknown error'}`));
+    }
+  });
+};
+
+// Fallback to dynamic loading with timeout if needed
+const loadPathDataDynamic = async (type: string): Promise<IPath> => {
+  const timeoutDuration = 5000; // 5 seconds timeout
+
+  // Create a promise that rejects after a timeout
+  const timeoutPromise = new Promise<IPath>((_, reject) => {
+    setTimeout(() => {
+      reject(new Error(`Loading ${type} path data timed out after ${timeoutDuration}ms`));
+    }, timeoutDuration);
+  });
+
+  // Create the actual data loading promise
+  const dataPromise = (async () => {
+    try {
+      switch (type) {
+        case 'vscode':
+          return (await import('../data/paths/vscode-path')).vscodePath;
+        case 'intellij':
+          return (await import('../data/paths/intellij-path')).intellijPath;
+        case 'cursor':
+          return (await import('../data/paths/cursor-path')).cursorPath;
+        default:
+          throw new Error(`Unknown application type: ${type}`);
+      }
+    } catch (error) {
+      // Add more detailed error info
+      console.error(`Error loading ${type} path data:`, error);
+      throw new Error(`Failed to load ${type} path data: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  })();
+
+  // Race the data loading against the timeout
+  return Promise.race([dataPromise, timeoutPromise]);
+};
+
+// Combined function to get path data with fallback
+const getPathDataWithFallback = async (type: string): Promise<IPath> => {
+  try {
+    // First try getting the data directly
+    return await getPathData(type);
+  } catch (error) {
+    console.warn(`Failed to get path data directly, trying dynamic import for ${type}`, error);
+    // Fall back to dynamic loading
+    return await loadPathDataDynamic(type);
   }
 };
 
@@ -80,11 +138,15 @@ const CurriculumPage: FC = () => {
     const loadPath = async () => {
       try {
         setIsLoading(true);
-        const path = await loadPathData('vscode'); // Default to VS Code path
+        const path = await getPathDataWithFallback('vscode'); // Default to VS Code path
         setSelectedPath(path);
+        setError(null);
       } catch (error) {
-        logger.error('Failed to load path data', error);
-        setError('Failed to load initial path data');
+        logger.error('Failed to load initial path data', error);
+        const errorMessage = error instanceof Error 
+          ? error.message 
+          : 'Unknown error loading path data';
+        setError(`Failed to load initial path data: ${errorMessage}`);
       } finally {
         setIsLoading(false);
       }
@@ -96,12 +158,15 @@ const CurriculumPage: FC = () => {
   const loadData = async () => {
     try {
       setIsLoading(true);
-      const path = await loadPathData(activeTrack);
+      const path = await getPathDataWithFallback(activeTrack);
       setSelectedPath(path);
       setError(null);
     } catch (error) {
       logger.error('Failed to load path data', error);
-      setError('Failed to load path data');
+      const errorMessage = error instanceof Error 
+        ? error.message 
+        : 'Unknown error loading path data';
+      setError(`Failed to load path data: ${errorMessage}`);
     } finally {
       setIsLoading(false);
     }
@@ -124,11 +189,15 @@ const CurriculumPage: FC = () => {
     setError(null); // Clear any previous errors when changing tracks
     try {
       setIsLoading(true);
-      const path = await loadPathData(newTrack);
+      // Use direct import instead of dynamic import to avoid circular dependencies
+      const path = await getPathDataWithFallback(newTrack);
       setSelectedPath(path);
     } catch (error) {
       logger.error('Failed to load track', error);
-      setError('Failed to load track data');
+      const errorMessage = error instanceof Error 
+        ? error.message 
+        : 'Unknown error loading track data';
+      setError(`Failed to load track data: ${errorMessage}`);
     } finally {
       setIsLoading(false);
     }
@@ -401,12 +470,12 @@ const CurriculumPage: FC = () => {
                 </Button>
               </Box>
             ) : (
-              <Suspense fallback={<Loading />}>
-                <PathView
+              <Box sx={{ p: 2, height: '100%', width: '100%' }}>
+                <LevelSelection 
                   path={selectedPath}
-                  onSelectNode={(nodeId, nodeType: PathNodeType) => handleNodeSelect(activeTrack, nodeId, nodeType)}
+                  onSelectNode={(trackId, nodeId, nodeType) => handleNodeSelect(trackId, nodeId, nodeType)} 
                 />
-              </Suspense>
+              </Box>
             )}
           </Paper>
         </Stack>

@@ -11,7 +11,7 @@ import React, { useMemo } from 'react';
 import { useAppSelector } from '../../store';
 import { selectUserProgress } from '../../store/slices/userProgressSlice';
 
-import type { FC } from 'react';
+import type { FC, CSSProperties } from 'react';
 
 interface PracticeSession {
   date: Date;
@@ -23,7 +23,28 @@ interface PracticeHeatmapProps {
   title?: string;
   weeks?: number;
   showLabels?: boolean;
+  /**
+   * Unique ID for accessibility purposes
+   */
+  heatmapId?: string;
+  /**
+   * Description for screen readers
+   */
+  accessibilityDescription?: string;
 }
+
+// Style for elements that should be visually hidden but available to screen readers
+const visuallyHiddenStyle: CSSProperties = {
+  border: 0,
+  clip: 'rect(0 0 0 0)',
+  height: '1px',
+  margin: '-1px',
+  overflow: 'hidden',
+  padding: 0,
+  position: 'absolute',
+  width: '1px',
+  whiteSpace: 'nowrap',
+};
 
 /**
  * Component to display a heatmap of practice sessions over time
@@ -32,6 +53,8 @@ const PracticeHeatmap: FC<PracticeHeatmapProps> = ({
   title = 'Practice Activity',
   weeks = 12,
   showLabels = true,
+  heatmapId = 'practice-heatmap',
+  accessibilityDescription,
 }) => {
   const userProgress = useAppSelector(selectUserProgress);
   const { completedLessons, isLoading } = userProgress;
@@ -81,6 +104,7 @@ const PracticeHeatmap: FC<PracticeHeatmapProps> = ({
     return {
       dayLabels,
       grid,
+      startDate,
     };
   }, [practiceData, weeks]);
 
@@ -99,17 +123,52 @@ const PracticeHeatmap: FC<PracticeHeatmapProps> = ({
     return `rgba(${r}, ${g}, ${b}, ${opacity})`;
   };
 
+  // Function to get intensity description for screen readers
+  const getIntensityDescription = (count: number | null): string => {
+    if (!count) return 'No practice';
+    if (count === 1) return 'Light practice';
+    if (count === 2) return 'Moderate practice';
+    return 'Intensive practice';
+  };
+
+  // Function to get formatted date for screen readers
+  const getFormattedDate = (date: Date): string => {
+    return date.toLocaleDateString(undefined, { 
+      weekday: 'long', 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric', 
+    });
+  };
+
+  // Helper to safely focus elements with typechecking
+  const focusElement = (selector: string) => {
+    const element = document.querySelector(selector) as HTMLElement;
+    if (element) {
+      element.focus();
+    }
+  };
+
   if (isLoading) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
-        <CircularProgress />
+      <Box 
+        sx={{ display: 'flex', justifyContent: 'center', p: 3 }}
+        aria-live="polite" 
+        role="status"
+        aria-busy="true"
+      >
+        <CircularProgress aria-label="Loading practice data" />
       </Box>
     );
   }
 
   if (!heatmapData) {
     return (
-      <Box sx={{ p: 3 }}>
+      <Box 
+        sx={{ p: 3 }}
+        aria-live="polite"
+        role="status"
+      >
         <Typography variant="body1" color="text.secondary">
           No practice data available.
         </Typography>
@@ -127,16 +186,50 @@ const PracticeHeatmap: FC<PracticeHeatmapProps> = ({
         borderColor: 'divider',
         borderRadius: 2,
       }}
+      role="region"
+      aria-labelledby={`${heatmapId}-title`}
+      aria-describedby={accessibilityDescription ? `${heatmapId}-description` : undefined}
     >
-      <Typography variant="h6" component="h3" gutterBottom>
+      <Typography 
+        variant="h6" 
+        component="h3" 
+        id={`${heatmapId}-title`}
+        gutterBottom
+      >
         {title}
       </Typography>
 
+      {accessibilityDescription && (
+        <Typography sx={{ display: 'none' }} id={`${heatmapId}-description`}>
+          {accessibilityDescription}
+        </Typography>
+      )}
+
+      {/* Screen reader summary of practice data */}
+      <div aria-live="polite" style={visuallyHiddenStyle}>
+        {practiceData.length > 0 ? (
+          <>
+            You have {practiceData.length} practice sessions over the past {weeks} weeks.
+            {practiceData.length > 0 && ` Your most recent practice was on ${getFormattedDate(practiceData[0].date)}.`}
+          </>
+        ) : (
+          'You have no practice sessions recorded in the past period.'
+        )}
+      </div>
+
       <Box sx={{ overflowX: 'auto' }}>
-        <Box sx={{ display: 'flex', mb: 2 }}>
+        <Box 
+          sx={{ display: 'flex', mb: 2 }}
+          role="grid"
+          aria-label={`${title} heatmap for the past ${weeks} weeks`}
+        >
           {/* Day labels column */}
-          <Box sx={{ width: 40, flexShrink: 0 }}>
-            <Box sx={{ height: 30 }} /> {/* Empty space for alignment */}
+          <Box 
+            sx={{ width: 40, flexShrink: 0 }}
+            role="rowgroup"
+            aria-label="Days of the week"
+          >
+            <Box sx={{ height: 30 }} role="row" /> {/* Empty space for alignment */}
             {heatmapData.dayLabels.map((day, index) => (
               <Box
                 key={day}
@@ -149,6 +242,8 @@ const PracticeHeatmap: FC<PracticeHeatmapProps> = ({
                   fontSize: '0.75rem',
                   color: 'text.secondary',
                 }}
+                role="rowheader"
+                id={`${heatmapId}-day-${index}`}
               >
                 {day}
               </Box>
@@ -156,65 +251,126 @@ const PracticeHeatmap: FC<PracticeHeatmapProps> = ({
           </Box>
 
           {/* Heatmap grid */}
-          <Box sx={{ display: 'flex', flexGrow: 1 }}>
-            {Array(weeks).fill(null).map((_, weekIndex) => (
-              <Box key={weekIndex} sx={{ width: 30, flexShrink: 0 }}>
-                {/* Week label */}
-                <Box
-                  sx={{
-                    height: 30,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: '0.75rem',
-                    color: 'text.secondary',
-                  }}
+          <Box 
+            sx={{ display: 'flex', flexGrow: 1 }}
+            role="rowgroup"
+          >
+            {Array(weeks).fill(null).map((_, weekIndex) => {
+              // Calculate the start date for this week column
+              const weekStartDate = new Date(heatmapData.startDate);
+              weekStartDate.setDate(weekStartDate.getDate() + (weekIndex * 7));
+              
+              return (
+                <Box 
+                  key={weekIndex} 
+                  sx={{ width: 30, flexShrink: 0 }}
+                  role="row"
+                  aria-label={`Week ${Math.floor(weekIndex / 4) + 1}`}
                 >
-                  {weekIndex % 4 === 0 ? `W${Math.floor(weekIndex / 4) + 1}` : ''}
-                </Box>
+                  {/* Week label */}
+                  <Box
+                    sx={{
+                      height: 30,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: '0.75rem',
+                      color: 'text.secondary',
+                    }}
+                    role="columnheader"
+                    id={`${heatmapId}-week-${weekIndex}`}
+                  >
+                    {weekIndex % 4 === 0 ? `W${Math.floor(weekIndex / 4) + 1}` : ''}
+                  </Box>
 
-                {/* Days in the week */}
-                {heatmapData.grid.map((row, dayIndex) => {
-                  const session = row[weekIndex];
-                  return (
-                    <Tooltip
-                      key={dayIndex}
-                      title={session ?
-                        `${session.date.toLocaleDateString()}: ${session.count} session${session.count !== 1 ? 's' : ''}, ${session.xpEarned} XP earned` :
-                        'No practice'
-                      }
-                      arrow
-                    >
-                      <Box
-                        sx={{
-                          height: 30,
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                        }}
+                  {/* Days in the week */}
+                  {heatmapData.grid.map((row, dayIndex) => {
+                    const session = row[weekIndex];
+                    const dayDate = new Date(weekStartDate);
+                    dayDate.setDate(dayDate.getDate() + dayIndex);
+                    
+                    const dayFormatted = getFormattedDate(dayDate);
+                    const intensity = session ? session.count : 0;
+                    const xpEarned = session?.xpEarned || 0;
+                    
+                    const cellId = `${heatmapId}-cell-${weekIndex}-${dayIndex}`;
+                    
+                    return (
+                      <Tooltip
+                        key={dayIndex}
+                        title={session ?
+                          `${dayFormatted}: ${session.count} session${session.count !== 1 ? 's' : ''}, ${session.xpEarned} XP earned` :
+                          `${dayFormatted}: No practice`
+                        }
+                        arrow
                       >
                         <Box
                           sx={{
-                            width: 20,
-                            height: 20,
-                            borderRadius: 1,
-                            bgcolor: getColorByIntensity(session?.count || null),
-                            border: 1,
-                            borderColor: 'divider',
+                            height: 30,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
                           }}
-                        />
-                      </Box>
-                    </Tooltip>
-                  );
-                })}
-              </Box>
-            ))}
+                          role="gridcell"
+                          tabIndex={0}
+                          aria-labelledby={`${heatmapId}-day-${dayIndex} ${heatmapId}-week-${weekIndex}`}
+                          aria-describedby={cellId}
+                          onKeyDown={(e) => {
+                            // Handle keyboard navigation
+                            if (e.key === 'ArrowRight' && weekIndex < weeks - 1) {
+                              focusElement(`[aria-labelledby="${heatmapId}-day-${dayIndex} ${heatmapId}-week-${weekIndex + 1}"]`);
+                            } else if (e.key === 'ArrowLeft' && weekIndex > 0) {
+                              focusElement(`[aria-labelledby="${heatmapId}-day-${dayIndex} ${heatmapId}-week-${weekIndex - 1}"]`);
+                            } else if (e.key === 'ArrowDown' && dayIndex < 6) {
+                              focusElement(`[aria-labelledby="${heatmapId}-day-${dayIndex + 1} ${heatmapId}-week-${weekIndex}"]`);
+                            } else if (e.key === 'ArrowUp' && dayIndex > 0) {
+                              focusElement(`[aria-labelledby="${heatmapId}-day-${dayIndex - 1} ${heatmapId}-week-${weekIndex}"]`);
+                            }
+                          }}
+                        >
+                          <Box
+                            sx={{
+                              width: 20,
+                              height: 20,
+                              borderRadius: 1,
+                              bgcolor: getColorByIntensity(session?.count || null),
+                              border: 1,
+                              borderColor: 'divider',
+                              '&:focus-within': {
+                                outline: `2px solid ${theme.palette.primary.main}`,
+                                outlineOffset: '2px',
+                              },
+                            }}
+                          />
+                          
+                          {/* Hidden description for screen readers */}
+                          <Typography 
+                            sx={{ display: 'none' }} 
+                            id={cellId}
+                          >
+                            {dayFormatted}: {getIntensityDescription(intensity)}
+                            {intensity > 0 && `, ${xpEarned} XP earned`}
+                          </Typography>
+                        </Box>
+                      </Tooltip>
+                    );
+                  })}
+                </Box>
+              );
+            })}
           </Box>
         </Box>
 
         {/* Legend */}
-        <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2, gap: 2 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+        <Box 
+          sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2, gap: 2 }}
+          role="list"
+          aria-label="Heatmap intensity legend"
+        >
+          <Box 
+            sx={{ display: 'flex', alignItems: 'center' }}
+            role="listitem"
+          >
             <Box
               sx={{
                 width: 16,
@@ -225,13 +381,17 @@ const PracticeHeatmap: FC<PracticeHeatmapProps> = ({
                 borderColor: 'divider',
                 mr: 1,
               }}
+              aria-hidden="true"
             />
             <Typography variant="caption" color="text.secondary">
               No practice
             </Typography>
           </Box>
 
-          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+          <Box 
+            sx={{ display: 'flex', alignItems: 'center' }}
+            role="listitem"
+          >
             <Box
               sx={{
                 width: 16,
@@ -242,13 +402,38 @@ const PracticeHeatmap: FC<PracticeHeatmapProps> = ({
                 borderColor: 'divider',
                 mr: 1,
               }}
+              aria-hidden="true"
             />
             <Typography variant="caption" color="text.secondary">
               Light
             </Typography>
           </Box>
 
-          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+          <Box 
+            sx={{ display: 'flex', alignItems: 'center' }}
+            role="listitem"
+          >
+            <Box
+              sx={{
+                width: 16,
+                height: 16,
+                borderRadius: 0.5,
+                bgcolor: getColorByIntensity(2),
+                border: 1,
+                borderColor: 'divider',
+                mr: 1,
+              }}
+              aria-hidden="true"
+            />
+            <Typography variant="caption" color="text.secondary">
+              Medium
+            </Typography>
+          </Box>
+
+          <Box 
+            sx={{ display: 'flex', alignItems: 'center' }}
+            role="listitem"
+          >
             <Box
               sx={{
                 width: 16,
@@ -259,26 +444,10 @@ const PracticeHeatmap: FC<PracticeHeatmapProps> = ({
                 borderColor: 'divider',
                 mr: 1,
               }}
+              aria-hidden="true"
             />
             <Typography variant="caption" color="text.secondary">
-              Medium
-            </Typography>
-          </Box>
-
-          <Box sx={{ display: 'flex', alignItems: 'center' }}>
-            <Box
-              sx={{
-                width: 16,
-                height: 16,
-                borderRadius: 0.5,
-                bgcolor: getColorByIntensity(5),
-                border: 1,
-                borderColor: 'divider',
-                mr: 1,
-              }}
-            />
-            <Typography variant="caption" color="text.secondary">
-              Intense
+              High
             </Typography>
           </Box>
         </Box>

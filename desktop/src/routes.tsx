@@ -1,8 +1,26 @@
 import { Box, CircularProgress } from '@mui/material';
-import { lazy, Suspense } from 'react';
+import { Suspense } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 
+// Import components directly instead of using lazy loading
+import SentryReduxTest from '@components/SentryReduxTest';
+import SentryTest from '@components/SentryTest';
+import SentryTransactionExample from '@components/SentryTransactionExample';
+import Achievements from '@pages/AchievementsPage.tsx';
+import Checkpoint from '@pages/CheckpointPage.tsx';
+import Curriculum from '@pages/CurriculumPage.tsx';
 import GamificationPage from '@pages/GamificationPage.tsx';
+import Home from '@pages/HomePage.tsx';
+import Lesson from '@pages/LessonPage.tsx';
+import NotFound from '@pages/NotFoundPage.tsx';
+import Profile from '@pages/ProfilePage.tsx';
+import ProgressDashboard from '@pages/ProgressDashboardPage.tsx';
+import Settings from '@pages/SettingsPage.tsx';
+import ShortcutChallenge from '@pages/ShortcutChallengePage.tsx';
+import Store from '@pages/StorePage.tsx';
+import Subscription from '@pages/SubscriptionPage.tsx';
+
+import Review from './pages/ReviewPage';
 
 // Loading component
 const Loading = () => (
@@ -18,24 +36,6 @@ const Loading = () => (
     <CircularProgress />
   </Box>
 );
-
-// Lazy-loaded components with explicit chunk names
-const Home = lazy(() => import(/* webpackChunkName: "home" */ '@pages/HomePage.tsx'));
-const Settings = lazy(() => import(/* webpackChunkName: "settings" */ '@pages/SettingsPage.tsx'));
-const Profile = lazy(() => import(/* webpackChunkName: "profile" */ '@pages/ProfilePage.tsx'));
-const ShortcutChallenge = lazy(() => import(/* webpackChunkName: "shortcuts" */ '@pages/ShortcutChallengePage.tsx'));
-const Curriculum = lazy(() => import(/* webpackChunkName: "curriculum" */ '@pages/CurriculumPage.tsx'));
-const Lesson = lazy(() => import(/* webpackChunkName: "lesson" */ '@pages/LessonPage.tsx'));
-const Checkpoint = lazy(() => import(/* webpackChunkName: "checkpoint" */ '@pages/CheckpointPage.tsx'));
-const Subscription = lazy(() => import(/* webpackChunkName: "subscription" */ '@pages/SubscriptionPage.tsx'));
-const Store = lazy(() => import(/* webpackChunkName: "store" */ '@pages/StorePage.tsx'));
-const Review = lazy(() => import(/* webpackChunkName: "review" */ './pages/ReviewPage'));
-const NotFound = lazy(() => import(/* webpackChunkName: "not-found" */ '@pages/NotFoundPage.tsx'));
-const SentryTest = lazy(() => import('@components/SentryTest'));
-const SentryReduxTest = lazy(() => import('@components/SentryReduxTest'));
-const SentryTransactionExample = lazy(() => import('@components/SentryTransactionExample'));
-const Achievements = lazy(() => import(/* webpackChunkName: "achievements" */ '@pages/AchievementsPage.tsx'));
-const ProgressDashboard = lazy(() => import(/* webpackChunkName: "progress" */ '@pages/ProgressDashboardPage.tsx'));
 
 /**
  * Desktop app routes

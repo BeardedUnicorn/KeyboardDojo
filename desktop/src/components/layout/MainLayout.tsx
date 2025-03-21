@@ -1,7 +1,7 @@
 import { Box } from '@mui/material';
 import React, { useState, useEffect } from 'react';
 
-import SettingsPanel from '../SettingsPanel';
+import { SettingsPanel } from '../settings';
 
 import AppTopBar from './AppTopBar';
 import Footer from './Footer';

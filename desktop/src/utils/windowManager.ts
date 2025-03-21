@@ -14,7 +14,13 @@ class WindowManager {
   private appWindow: Window;
 
   constructor() {
-    this.appWindow = Window.getCurrent();
+    try {
+      this.appWindow = Window.getCurrent();
+    } catch (error) {
+      console.error('Failed to get current window:', error);
+      // Create a fallback for error handling
+      this.appWindow = {} as Window;
+    }
   }
 
   /**
@@ -23,9 +29,16 @@ class WindowManager {
    */
   async setTitle(title: string): Promise<void> {
     try {
+      if (!this.appWindow.setTitle) {
+        // Fallback for when window API is not available
+        document.title = title;
+        return;
+      }
       await this.appWindow.setTitle(title);
     } catch (error) {
       console.error('Failed to set window title:', error);
+      // Fallback to document.title if the Tauri API fails
+      document.title = title;
     }
   }
 
@@ -34,6 +47,7 @@ class WindowManager {
    */
   async minimize(): Promise<void> {
     try {
+      if (!this.appWindow.minimize) return;
       await this.appWindow.minimize();
     } catch (error) {
       console.error('Failed to minimize window:', error);
@@ -45,6 +59,7 @@ class WindowManager {
    */
   async maximize(): Promise<void> {
     try {
+      if (!this.appWindow.maximize) return;
       await this.appWindow.maximize();
     } catch (error) {
       console.error('Failed to maximize window:', error);
@@ -56,6 +71,7 @@ class WindowManager {
    */
   async restore(): Promise<void> {
     try {
+      if (!this.appWindow.unmaximize) return;
       await this.appWindow.unmaximize();
     } catch (error) {
       console.error('Failed to restore window:', error);
@@ -67,6 +83,7 @@ class WindowManager {
    */
   async close(): Promise<void> {
     try {
+      if (!this.appWindow.close) return;
       await this.appWindow.close();
     } catch (error) {
       console.error('Failed to close window:', error);
@@ -79,6 +96,7 @@ class WindowManager {
    */
   async isMaximized(): Promise<boolean> {
     try {
+      if (!this.appWindow.isMaximized) return false;
       return await this.appWindow.isMaximized();
     } catch (error) {
       console.error('Failed to check if window is maximized:', error);
@@ -94,6 +112,7 @@ class WindowManager {
    */
   listen(event: string, callback: WindowEventCallback): WindowEventListener {
     try {
+      if (!this.appWindow.listen) return () => {};
       const unlisten = this.appWindow.listen(event, callback);
       return () => {
         unlisten.then((fn: () => void) => fn()).catch((err: Error) => {

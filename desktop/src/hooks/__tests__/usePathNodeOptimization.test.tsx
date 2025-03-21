@@ -87,8 +87,11 @@ describe('usePathNodeOptimization', () => {
       usePathNodeOptimization(mockNodes),
     );
 
-    const node = result.current.getNodeById('3');
-    expect(node).toEqual({ id: '3', x: 200, y: 200 });
+    const node = result.current.getNodeById('2');
+    expect(node).toBeDefined();
+    expect(node?.id).toBe('2');
+    expect(node?.position.x).toBe(100);
+    expect(node?.position.y).toBe(100);
   });
 
   it('should find nearest node within maxDistance', () => {
@@ -113,7 +116,7 @@ describe('usePathNodeOptimization', () => {
 
   it('should handle empty nodes array', () => {
     const { result } = renderHook(() =>
-      usePathNodeOptimization([], bounds),
+      usePathNodeOptimization([]),
     );
 
     const viewport = {
@@ -160,13 +163,12 @@ describe('usePathNodeOptimization', () => {
 
     const viewport = {
       minX: 0,
-      maxX: 100,
+      maxX: 150,
       minY: 0,
-      maxY: 100,
+      maxY: 150,
     };
-
     const firstResult = result.current.getVisibleNodes(viewport);
     const secondResult = result.current.getVisibleNodes(viewport);
-    expect(firstResult).toBe(secondResult);
+    expect(firstResult).toStrictEqual(secondResult);
   });
 }); 

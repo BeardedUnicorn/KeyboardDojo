@@ -9,8 +9,10 @@
  */
 
 import { audioService } from './audioService';
+import { BaseService } from './BaseService';
 import { currencyService } from './currencyService';
 import { loggerService } from './loggerService';
+import { serviceFactory } from './ServiceFactory';
 
 // Interface for hearts data
 export interface HeartsData {
@@ -45,24 +47,88 @@ export interface HeartsChangeEvent {
   reason: string;
 }
 
-class HeartsService {
+class HeartsService extends BaseService {
   private storageKey = 'user-hearts';
   private heartsData: HeartsData = DEFAULT_HEARTS_DATA;
   private changeListeners: ((event: HeartsChangeEvent) => void)[] = [];
   private regenerationTimer: number | null = null;
   
   constructor() {
-    this.loadHeartsData();
-    this.checkAndRegenerateHearts();
-    this.startRegenerationTimer();
+    super();
+  }
+  
+  /**
+   * Initialize the service
+   */
+  async initialize(): Promise<void> {
+    await super.initialize();
     
-    // Check for heart regeneration when the window becomes visible again
-    if (typeof window !== 'undefined') {
-      document.addEventListener('visibilitychange', () => {
-        if (document.visibilityState === 'visible') {
-          this.checkAndRegenerateHearts();
-        }
+    try {
+      // Load hearts data
+      this.loadHeartsData();
+      this.checkAndRegenerateHearts();
+      this.startRegenerationTimer();
+      
+      // Check for heart regeneration when the window becomes visible again
+      if (typeof window !== 'undefined') {
+        document.addEventListener('visibilitychange', () => {
+          if (document.visibilityState === 'visible') {
+            this.checkAndRegenerateHearts();
+          }
+        });
+      }
+      
+      loggerService.info('Hearts service initialized', { 
+        component: 'HeartsService',
       });
+      
+      this._status.initialized = true;
+    } catch (error) {
+      loggerService.error('Failed to initialize hearts service', error, { 
+        component: 'HeartsService',
+      });
+      
+      this._status.error = error instanceof Error ? error : new Error(String(error));
+      this._status.initialized = false;
+      
+      // Rethrow the error to properly signal initialization failure
+      throw error;
+    }
+  }
+
+  /**
+   * Clean up the service
+   */
+  cleanup(): void {
+    try {
+      // Save any unsaved hearts data
+      this.saveHeartsData();
+      
+      // Clear the regeneration timer
+      if (this.regenerationTimer !== null) {
+        clearTimeout(this.regenerationTimer);
+        this.regenerationTimer = null;
+      }
+      
+      // Remove event listeners
+      if (typeof window !== 'undefined') {
+        document.removeEventListener('visibilitychange', () => {
+          if (document.visibilityState === 'visible') {
+            this.checkAndRegenerateHearts();
+          }
+        });
+      }
+      
+      loggerService.info('Hearts service cleaned up', { 
+        component: 'HeartsService',
+      });
+      
+      super.cleanup();
+    } catch (error) {
+      loggerService.error('Error cleaning up hearts service', error, { 
+        component: 'HeartsService',
+      });
+      // Don't throw
     }
   }
   
@@ -454,3 +520,8 @@ class HeartsService {
 
 // Export a singleton instance
 export const heartsService = new HeartsService(); 
+
+// Register with ServiceFactory
+serviceFactory.register('heartsService', heartsService);
+
+export default heartsService; 

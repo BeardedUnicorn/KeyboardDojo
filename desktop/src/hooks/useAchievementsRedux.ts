@@ -10,6 +10,7 @@ import {
   selectCompletedAchievements,
   selectIsAchievementsLoading,
 } from '@store/slices';
+import { selectIsInitialized } from '@store/slices/appSlice';
 
 export const useAchievementsRedux = () => {
   const dispatch = useAppDispatch();
@@ -17,11 +18,14 @@ export const useAchievementsRedux = () => {
   const unlockedAchievements = useAppSelector(selectUnlockedAchievements);
   const completedAchievements = useAppSelector(selectCompletedAchievements);
   const isLoading = useAppSelector(selectIsAchievementsLoading);
+  const isAppInitialized = useAppSelector(selectIsInitialized);
 
-  // Load achievements on mount
+  // Load achievements on mount, but only after app is initialized
   useEffect(() => {
-    dispatch(fetchAchievements());
-  }, [dispatch]);
+    if (isAppInitialized) {
+      dispatch(fetchAchievements());
+    }
+  }, [dispatch, isAppInitialized]);
 
   // Award an achievement
   const awardAchievementHandler = useCallback(
@@ -41,9 +45,11 @@ export const useAchievementsRedux = () => {
 
   // Refresh achievements
   const refreshAchievementsHandler = useCallback(() => {
-    dispatch(refreshAchievements());
-    dispatch(fetchAchievements());
-  }, [dispatch]);
+    if (isAppInitialized) {
+      dispatch(refreshAchievements());
+      dispatch(fetchAchievements());
+    }
+  }, [dispatch, isAppInitialized]);
 
   return {
     achievements,

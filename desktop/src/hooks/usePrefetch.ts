@@ -7,18 +7,18 @@ import { loggerService } from '@/services';
 const routeChunks: Record<string, () => Promise<any>[]> = {
   '/curriculum': () => [
     import('@pages/CurriculumPage.tsx'),
-    import('@components/PathView'),
+    import('@components/curriculum/PathView'),
     import('@data/paths/vscode-path'),
     import('@data/paths/intellij-path'),
     import('@data/paths/cursor-path'),
   ],
   '/lesson': () => [
     import('@pages/LessonPage.tsx'),
-    import('@components/PathView'),
+    import('@components/curriculum/PathView'),
   ],
   '/checkpoint': () => [
     import('@pages/CheckpointPage.tsx'),
-    import('@components/PathView'),
+    import('@components/curriculum/PathView'),
   ],
 };
 

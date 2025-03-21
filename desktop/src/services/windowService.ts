@@ -6,18 +6,59 @@
  */
 
 // Import Tauri API
-import { getCurrentWindow } from '@tauri-apps/api/window';
+import { Window } from '@tauri-apps/api/window';
 
 import { BaseService } from './BaseService';
 import { loggerService } from './loggerService';
 import { serviceFactory } from './ServiceFactory';
 
+// Check if we're running in Storybook
+const isStorybook = () => {
+  return typeof window !== 'undefined' && 
+    (window.location.href.includes('localhost:6006') || 
+     window.location.href.includes('localhost:6007') || 
+     window.location.href.includes('storybook'));
+};
+
+// Mock window object for Storybook
+const mockWindow = {
+  setTitle: async () => {},
+  minimize: async () => {},
+  maximize: async () => {},
+  unmaximize: async () => {},
+  close: async () => {},
+  isMaximized: async () => false,
+  listen: async () => () => {},
+  once: async () => () => {},
+  show: async () => {},
+  hide: async () => {},
+  setFocus: async () => {},
+  startDragging: async () => {},
+};
+
 class WindowService extends BaseService {
-  private window: ReturnType<typeof getCurrentWindow>;
+  private appWindow: Window;
 
   constructor() {
     super();
-    this.window = getCurrentWindow();
+    
+    try {
+      // Use a mock window if running in Storybook
+      if (isStorybook()) {
+        this.appWindow = mockWindow as unknown as Window;
+        loggerService.debug('Using mock window for Storybook', { component: 'WindowService' });
+      } else {
+        // In the actual app, use the real Tauri window
+        this.appWindow = Window.getCurrent();
+      }
+    } catch (error) {
+      // Fallback to mock window in case of errors
+      loggerService.warn('Failed to get window, using mock window instead', { 
+        component: 'WindowService',
+        error,
+      });
+      this.appWindow = mockWindow as unknown as Window;
+    }
   }
 
   /**
@@ -26,8 +67,21 @@ class WindowService extends BaseService {
   async initialize(): Promise<void> {
     await super.initialize();
     
-    // Additional initialization if needed
-    loggerService.info('Window service initialized', { component: 'WindowService' });
+    try {
+      // Set initial window title
+      await this.setTitle('Keyboard Dojo');
+      
+      loggerService.info('Window service initialized', { component: 'WindowService' });
+      this._status.initialized = true;
+    } catch (error) {
+      // Log but don't fail initialization completely
+      loggerService.warn('Window service initialization had issues, but continuing', { 
+        component: 'WindowService',
+        error,
+      });
+      // Still mark as initialized since this is recoverable
+      this._status.initialized = true;
+    }
   }
 
   /**
@@ -35,76 +89,139 @@ class WindowService extends BaseService {
    */
   cleanup(): void {
     // No specific cleanup needed for window service
-    super.cleanup();
+    try {
+      super.cleanup();
+    } catch (error) {
+      loggerService.warn('Error cleaning up window service', { 
+        component: 'WindowService',
+        error,
+      });
+      // Don't rethrow to allow cleanup to continue
+    }
   }
 
   /**
    * Set the window title
    * @param title The new window title
    */
-  setTitle(title: string): void {
-    this.window.setTitle(title)
-      .catch((error) => {
-        loggerService.error('Failed to set window title', error, { component: 'WindowService' });
+  async setTitle(title: string): Promise<void> {
+    if (!title) {
+      loggerService.warn('Attempted to set empty window title, using default', { 
+        component: 'WindowService', 
+        title, 
       });
+      title = 'Keyboard Dojo';
+    }
+
+    try {
+      // Check if appWindow is available
+      if (!this.appWindow) {
+        throw new Error('Window not available');
+      }
+
+      // Ensure title is a string
+      const titleStr = String(title);
+      
+      // Use appWindow to set the title
+      await this.appWindow.setTitle(titleStr);
+      
+      // Also set document.title for web compatibility
+      document.title = titleStr;
+      
+      loggerService.debug(`Window title set to: ${titleStr}`, { 
+        component: 'WindowService',
+        title: titleStr, 
+      });
+    } catch (error) {
+      loggerService.error('Failed to set window title', error, { 
+        component: 'WindowService',
+        title,
+        fallbackUsed: true,
+      });
+      
+      // Fallback to document.title for web compatibility
+      try {
+        document.title = String(title);
+      } catch (docError) {
+        loggerService.error('Even fallback document.title failed', docError, { 
+          component: 'WindowService',
+          title, 
+        });
+      }
+    }
   }
 
   /**
    * Minimize the window
    */
-  minimize(): void {
-    this.window.minimize()
-      .catch((error) => {
-        loggerService.error('Failed to minimize window', error, { component: 'WindowService' });
-      });
+  async minimize(): Promise<void> {
+    try {
+      await this.appWindow.minimize();
+    } catch (error) {
+      loggerService.error('Failed to minimize window', error, { component: 'WindowService' });
+    }
   }
 
   /**
    * Maximize the window
    */
-  maximize(): void {
-    this.window.maximize()
-      .catch((error) => {
-        loggerService.error('Failed to maximize window', error, { component: 'WindowService' });
-      });
+  async maximize(): Promise<void> {
+    try {
+      await this.appWindow.maximize();
+    } catch (error) {
+      loggerService.error('Failed to maximize window', error, { component: 'WindowService' });
+    }
   }
 
   /**
    * Restore (unmaximize) the window
    */
-  restore(): void {
-    this.window.unmaximize()
-      .catch((error) => {
-        loggerService.error('Failed to restore window', error, { component: 'WindowService' });
-      });
+  async restore(): Promise<void> {
+    try {
+      await this.appWindow.unmaximize();
+    } catch (error) {
+      loggerService.error('Failed to restore window', error, { component: 'WindowService' });
+    }
   }
   
   /**
    * Toggle maximize/restore state
    */
-  toggleMaximize(): void {
-    this.window.toggleMaximize()
-      .catch((error) => {
-        loggerService.error('Failed to toggle window maximize state', error, { component: 'WindowService' });
-      });
+  async toggleMaximize(): Promise<void> {
+    try {
+      const isMaximized = await this.isMaximized();
+      if (isMaximized) {
+        await this.restore();
+      } else {
+        await this.maximize();
+      }
+    } catch (error) {
+      loggerService.error('Failed to toggle window maximize state', error, { component: 'WindowService' });
+    }
   }
   
   /**
    * Close the window
    */
-  close(): void {
-    this.window.close()
-      .catch((error) => {
-        loggerService.error('Failed to close window', error, { component: 'WindowService' });
-      });
+  async close(): Promise<void> {
+    try {
+      await this.appWindow.close();
+    } catch (error) {
+      loggerService.error('Failed to close window', error, { component: 'WindowService' });
+    }
   }
   
   /**
    * Check if the window is maximized
    * @returns Promise that resolves to true if the window is maximized, false otherwise
    */
-  isMaximized(): Promise<boolean> {
-    return this.window.isMaximized();
+  async isMaximized(): Promise<boolean> {
+    try {
+      return await this.appWindow.isMaximized();
+    } catch (error) {
+      loggerService.error('Failed to check if window is maximized', error, { component: 'WindowService' });
+      return false;
+    }
   }
 
   /**
@@ -114,15 +231,62 @@ class WindowService extends BaseService {
    * @returns A function to remove the listener
    */
   listen(event: string, callback: () => void): () => void {
+    let unlisten: Promise<() => void>;
+    
     try {
-      const unlisten = this.window.listen(event, callback);
-      return () => {
-        unlisten.then((fn: () => void) => fn()).catch((err: Error) => {
-          console.error(`Failed to remove listener for ${event}:`, err);
+      // Check if appWindow is available
+      if (!this.appWindow) {
+        loggerService.warn(`Window unavailable when trying to listen for ${event}`, { 
+          component: 'WindowService',
+          event,
         });
+        // Return a no-op function
+        return () => {};
+      }
+      
+      // Store the unlisten promise
+      unlisten = this.appWindow.listen(event, callback);
+
+      // Return a cleanup function
+      return () => {
+        try {
+          // Handle case where the window is no longer available
+          if (!this.appWindow) {
+            loggerService.warn(`Window unavailable when removing listener for ${event}`, { 
+              component: 'WindowService',
+              event,
+            });
+            return;
+          }
+          
+          // Use Promise.resolve().then().catch() to handle case where unlisten promise is rejected
+          Promise.resolve(unlisten)
+            .then((fn: () => void) => {
+              try {
+                fn();
+              } catch (unlistenError) {
+                loggerService.error(`Failed to remove listener for ${event}`, unlistenError, { 
+                  component: 'WindowService',
+                });
+              }
+            })
+            .catch((promiseError) => {
+              loggerService.error(`Failed to resolve unlisten promise for ${event}`, promiseError, { 
+                component: 'WindowService',
+              });
+            });
+        } catch (cleanupError) {
+          loggerService.error(`Failed to remove listener for ${event}`, cleanupError, { 
+            component: 'WindowService',
+          });
+        }
       };
     } catch (error) {
-      console.error(`Failed to add listener for ${event}:`, error);
+      loggerService.error(`Failed to add listener for ${event}`, error, { 
+        component: 'WindowService',
+        event,
+      });
+      // Return a no-op function
       return () => {};
     }
   }
@@ -152,11 +316,12 @@ class WindowService extends BaseService {
   /**
    * Start dragging the window
    */
-  startDragging(): void {
-    this.window.startDragging()
-      .catch((error) => {
-        loggerService.error('Failed to start window dragging', error, { component: 'WindowService' });
-      });
+  async startDragging(): Promise<void> {
+    try {
+      await this.appWindow.startDragging();
+    } catch (error) {
+      loggerService.error('Failed to start window dragging', error, { component: 'WindowService' });
+    }
   }
 }
 

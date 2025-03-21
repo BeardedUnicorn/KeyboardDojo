@@ -13,16 +13,24 @@ interface ThemeProviderReduxProps {
 export const ThemeProviderRedux: FC<ThemeProviderReduxProps> = ({ children }) => {
   const { mode, setThemeMode } = useThemeRedux();
 
-  // Sync theme with system preferences
+  // Sync theme with system preferences only if no user preference is stored
   useEffect(() => {
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-
+    
     const handleChange = (e: MediaQueryListEvent) => {
-      setThemeMode(e.matches ? 'dark' : 'light');
+      // Only update theme based on system preference if user hasn't set a preference
+      const userPreference = localStorage.getItem('theme-mode');
+      if (!userPreference) {
+        setThemeMode(e.matches ? 'dark' : 'light');
+      }
     };
 
-    // Set initial theme
-    setThemeMode(mediaQuery.matches ? 'dark' : 'light');
+    // Set initial theme only if not already set
+    // This avoids overriding user preference on component mount
+    const userPreference = localStorage.getItem('theme-mode');
+    if (!userPreference) {
+      setThemeMode(mediaQuery.matches ? 'dark' : 'light');
+    }
 
     // Listen for changes
     mediaQuery.addEventListener('change', handleChange);

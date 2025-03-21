@@ -32,38 +32,18 @@ export default defineConfig(({ mode }) => ({
     minify: mode === 'production' ? 'esbuild' : false,
     // produce sourcemaps for debug builds
     sourcemap: mode !== 'production',
-    // Configure chunking strategy
+    // Disable code splitting completely
     rollupOptions: {
       output: {
-        manualChunks: {
-          // Core vendor dependencies
-          'vendor-core': [
-            'react',
-            'react-dom',
-            'react-router-dom',
-            '@reduxjs/toolkit',
-            'react-redux',
-          ],
-          // Material-UI core
-          'vendor-mui': [
-            '@mui/material',
-            '@mui/icons-material',
-            '@emotion/react',
-            '@emotion/styled',
-          ],
-          // Animation libraries
-          'vendor-animation': [
-            'framer-motion',
-          ],
-        },
-        // Ensure chunks are loaded relative to base URL
-        chunkFileNames: 'assets/[name]-[hash].js',
+        // Disable code splitting by creating a single bundle
+        inlineDynamicImports: true,
+        // Ensure assets are loaded relative to base URL
         entryFileNames: 'assets/[name]-[hash].js',
         assetFileNames: 'assets/[name]-[hash][extname]',
       },
     },
     // Increase chunk size warning limit for development
-    chunkSizeWarningLimit: 2000,
+    chunkSizeWarningLimit: 5000,
   },
   // Path aliases configuration
   // These must match the paths in tsconfig.json

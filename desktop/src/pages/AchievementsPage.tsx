@@ -38,6 +38,7 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
+  CircularProgress,
 } from '@mui/material';
 import html2canvas from 'html2canvas';
 import React, { useState, useEffect, useRef } from 'react';
@@ -48,7 +49,7 @@ import { useAchievementsRedux } from '@hooks/useAchievementsRedux';
 
 import { AchievementsList } from '../components/gamification/achievements';
 
-import type { FC, ChangeEvent, SyntheticEvent } from 'react';
+import type { FC, ChangeEvent, SyntheticEvent, MouseEvent } from 'react';
 
 const AchievementsPage: FC = () => {
   const theme = useTheme();
@@ -64,8 +65,22 @@ const AchievementsPage: FC = () => {
   const [activeTab, setActiveTab] = useState<AchievementCategory | 'all'>('all');
 
   useEffect(() => {
-    refreshAchievements();
-  }, [refreshAchievements]);
+    // Only refresh if we have no achievements data and aren't already loading
+    if (!isLoading && achievements.length === 0) {
+      refreshAchievements();
+    }
+  }, [refreshAchievements, isLoading, achievements.length]);
+
+  // Show loading spinner if data is loading
+  if (isLoading) {
+    return (
+      <Container maxWidth="lg" sx={{ py: 4 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh' }}>
+          <CircularProgress size={60} />
+        </Box>
+      </Container>
+    );
+  }
 
   // Calculate achievement statistics
   const totalAchievements = achievements.length;
@@ -165,14 +180,14 @@ const AchievementsPage: FC = () => {
   const totalXpEarned = completedAchievements.reduce((sum, a) => sum + (a.achievement.xpReward || 0), 0);
 
   const handleCategoryFilterChange = (
-    _event: MouseEvent<HTMLElement>,
+    _event: SyntheticEvent,
     newCategory: string | null,
   ) => {
     setCategoryFilter(newCategory);
   };
 
   const handleRarityFilterChange = (
-    _event: MouseEvent<HTMLElement>,
+    _event: SyntheticEvent,
     newRarity: string | null,
   ) => {
     setRarityFilter(newRarity);
@@ -188,7 +203,7 @@ const AchievementsPage: FC = () => {
     setSearchQuery('');
   };
 
-  const handleShareClick = (event: MouseEvent<HTMLButtonElement>) => {
+  const handleShareClick = (event: React.MouseEvent<HTMLButtonElement>) => {
     setShareAnchorEl(event.currentTarget);
   };
 
@@ -251,14 +266,6 @@ const AchievementsPage: FC = () => {
   };
 
   const hasActiveFilters = categoryFilter || rarityFilter || searchQuery;
-
-  if (isLoading) {
-    return (
-      <Container maxWidth="lg" sx={{ py: 4 }}>
-        <LinearProgress />
-      </Container>
-    );
-  }
 
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>

@@ -24,6 +24,7 @@ import React, { useState, useEffect, useRef, type FC, type KeyboardEvent as Reac
 import { curriculumService, useLogger } from '@/services';
 import { useAppSelector } from '@/store';
 import { PathNodeType } from '@/types/progress/ICurriculum';
+import { findPathNodeById } from '@/data/curriculum';
 
 import { selectUserProgress, selectXp, selectLevel } from '../../store/slices/userProgressSlice';
 
@@ -593,7 +594,7 @@ const PathView: FC<PathViewProps> = ({ path, onSelectNode }) => {
             const isCurrent = false; // TODO: Implement current node tracking
 
             // Find the node component
-            const nodeComponent = curriculumService.findPathNodeById(node.id);
+            const nodeComponent = findPathNodeById(node.id);
             if (!nodeComponent) return null;
 
             return (

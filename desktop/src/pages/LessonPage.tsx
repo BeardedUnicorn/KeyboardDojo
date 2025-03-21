@@ -36,7 +36,8 @@ import { useLogger } from '@/services';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { vscodePath , cursorPath , intellijPath } from '@data/paths';
 
-import { EnhancedShortcutExercise, HeartRequirement } from '../components';
+import { EnhancedShortcutExercise } from '../components';
+import { HeartRequirement } from '../components/gamification/progress';
 import {
   awardAchievement as awardAchievementAction,
 } from '../store/slices/achievementsSlice';
@@ -81,13 +82,13 @@ interface LessonData {
 
 // Helper function to create lesson data from a node
 const createLessonData = (node: PathNode, logger: ReturnType<typeof useLogger>) => {
-  logger.info('Creating lesson data from node:', { nodeId: node.id, nodeContent: node.content });
-
   // Ensure we have valid data
   if (!node) {
-    console.error('Cannot create lesson data: node is undefined');
+    logger.error('Cannot create lesson data: node is undefined');
     return null;
   }
+  
+  logger.info('Creating lesson data from node:', { nodeId: node.id, nodeContent: node.content });
 
   // Default values for required fields
   const title = node.title || 'Untitled Lesson';
@@ -203,6 +204,15 @@ const LessonPage: FC = () => {
         if (node) {
           // Create lesson data from the node
           const lessonData = createLessonData(node, logger);
+          
+          // Check if lessonData was created successfully
+          if (!lessonData) {
+            setError('Failed to create lesson data');
+            logger.error('Failed to create lesson data from node:', { nodeId });
+            setLoading(false);
+            return;
+          }
+          
           setLesson(lessonData);
 
           // Calculate progress

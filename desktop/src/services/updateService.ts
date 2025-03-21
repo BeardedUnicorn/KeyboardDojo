@@ -7,7 +7,9 @@
 
 import { getVersion } from '@tauri-apps/api/app';
 
+import { BaseService } from './BaseService';
 import { loggerService } from './loggerService';
+import { serviceFactory } from './ServiceFactory';
 
 // Mock the update functions since they're not available in Tauri v2 yet
 // In a real implementation, these would be imported from Tauri plugins
@@ -38,7 +40,7 @@ export interface UpdateProgress {
   error?: string;
 }
 
-class UpdateService {
+class UpdateService extends BaseService {
   private _updateInfo: UpdateInfo | null = null;
   private _updateProgress: UpdateProgress = {
     status: 'idle',
@@ -54,24 +56,57 @@ class UpdateService {
    */
   async initialize(): Promise<void> {
     try {
-      // Get the current version
-      this._currentVersion = await getVersion();
-      loggerService.info(`Current app version: ${this._currentVersion}`, { 
-        component: 'UpdateService',
-        version: this._currentVersion,
-      });
+      // Call super.initialize first
+      await super.initialize();
       
-      // Check for updates immediately
-      await this.checkForUpdates();
+      try {
+        // Get the current version
+        this._currentVersion = await getVersion();
+        loggerService.info(`Current app version: ${this._currentVersion}`, { 
+          component: 'UpdateService',
+          version: this._currentVersion,
+        });
+      } catch (versionError) {
+        // Handle case where getVersion fails
+        loggerService.warn('Failed to get app version, using default', { 
+          component: 'UpdateService',
+          error: versionError,
+        });
+        // Continue with default version
+      }
+      
+      try {
+        // Check for updates immediately
+        await this.checkForUpdates();
+      } catch (checkError) {
+        // Handle case where initial update check fails
+        loggerService.warn('Initial update check failed, will retry later', { 
+          component: 'UpdateService',
+          error: checkError,
+        });
+        // Continue with service initialization
+      }
       
       // Set up automatic update checking every hour
       this._updateCheckInterval = window.setInterval(() => {
-        this.checkForUpdates();
+        this.checkForUpdates().catch((error) => {
+          loggerService.warn('Scheduled update check failed', { 
+            component: 'UpdateService',
+            error,
+          });
+        });
       }, 60 * 60 * 1000); // 1 hour
       
       loggerService.info('Update service initialized', { component: 'UpdateService' });
+      // Mark service as initialized even if some operations failed
+      this._status.initialized = true;
     } catch (error) {
       loggerService.error('Error initializing update service:', error, { component: 'UpdateService' });
+      // Set error status
+      this._status.error = error instanceof Error ? error : new Error(String(error));
+      this._status.initialized = false;
+      // Don't throw the error to prevent app initialization failure
+      // Just log it and continue
     }
   }
 
@@ -80,12 +115,20 @@ class UpdateService {
    * This clears the update check interval
    */
   cleanup(): void {
-    if (this._updateCheckInterval !== null) {
-      clearInterval(this._updateCheckInterval);
-      this._updateCheckInterval = null;
+    try {
+      if (this._updateCheckInterval !== null) {
+        clearInterval(this._updateCheckInterval);
+        this._updateCheckInterval = null;
+      }
+      
+      loggerService.info('Update service cleaned up', { component: 'UpdateService' });
+      
+      // Call super.cleanup last
+      super.cleanup();
+    } catch (error) {
+      loggerService.error('Error cleaning up update service:', error, { component: 'UpdateService' });
+      // Don't throw the error to prevent app cleanup failure
     }
-    
-    loggerService.info('Update service cleaned up', { component: 'UpdateService' });
   }
 
   /**
@@ -282,5 +325,9 @@ class UpdateService {
   }
 }
 
-// Export a singleton instance
-export const updateService = new UpdateService(); 
+// Create and register service
+const updateService = new UpdateService();
+serviceFactory.register('updateService', updateService);
+
+// Export the singleton instance
+export { updateService }; 

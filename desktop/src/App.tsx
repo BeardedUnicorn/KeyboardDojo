@@ -1,15 +1,26 @@
 import { Box, CssBaseline, CircularProgress, Typography, Button } from '@mui/material';
-import { ErrorBoundary } from '@sentry/react';
 import React, { lazy, Suspense } from 'react';
-import { HashRouter } from 'react-router-dom';
+import { 
+  HashRouter, 
+  createHashRouter, 
+  RouterProvider,
+  createRoutesFromChildren,
+} from 'react-router-dom';
 
+import AppInitializer from '@components/AppInitializer';
 import { PathSkeleton } from '@components/skeletons/ContentSkeletons';
 import { ThemeProviderRedux } from '@components/ThemeProviderRedux';
+import { ErrorBoundary, ErrorBoundaryProvider } from '@components/ui/ErrorBoundary';
 
 import { FeedbackProvider } from './components/feedback/FeedbackProvider';
 
-import type { FallbackRender } from '@sentry/react';
 import type { FC } from 'react';
+
+// Configure React Router future flags
+const routerFutureConfig = {
+  v7_startTransition: true,
+  v7_relativeSplatPath: true,
+};
 
 // Lazy load main components
 const AppRoutes = lazy(() => import('./routes'));
@@ -45,32 +56,31 @@ const ContentLoader = () => (
 );
 
 // Error fallback component
-const ErrorFallback: FallbackRender = ({ error, resetError }) => {
+const ErrorFallback = ({ error, resetError }: { error: Error; resetError: () => void }) => {
   const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
   const isContextError = error instanceof Error && error.message.includes('UserProgressProvider');
-
+  
   return (
     <Box
       sx={{
-        p: 3,
         display: 'flex',
         flexDirection: 'column',
-        alignItems: 'center',
         justifyContent: 'center',
+        alignItems: 'center',
         height: '100vh',
+        width: '100vw',
+        p: 2,
         bgcolor: 'background.default',
-        color: 'text.primary',
       }}
     >
-      <h1>Something went wrong</h1>
-      <pre>{errorMessage}</pre>
-      {isContextError && (
-        <Typography color="error">
-          Context error: Please refresh the page. If the error persists, clear your browser cache.
-        </Typography>
-      )}
-      <Button variant="contained" color="primary" onClick={resetError} sx={{ mt: 2 }}>
-        Try again
+      <Typography variant="h4" color="error.main" gutterBottom>
+        Something went wrong
+      </Typography>
+      <Typography variant="body1" paragraph>
+        {errorMessage}
+      </Typography>
+      <Button variant="contained" onClick={resetError}>
+        Try Again
       </Button>
     </Box>
   );
@@ -78,22 +88,35 @@ const ErrorFallback: FallbackRender = ({ error, resetError }) => {
 
 const App: FC = () => {
   return (
-    <ThemeProviderRedux>
-      <CssBaseline />
-      <ErrorBoundary fallback={ErrorFallback}>
+    <ErrorBoundaryProvider 
+      defaultFallback={ErrorFallback}
+      showErrorUI
+      reportToSentry={process.env.NODE_ENV === 'production'}
+      globalErrorHandler={(error, errorInfo, componentName) => {
+        console.error(`Error in ${componentName || 'App'}:`, error);
+      }}
+    >
+      <ThemeProviderRedux>
+        <CssBaseline />
         <FeedbackProvider>
-          <HashRouter>
+          <AppInitializer>
             <Suspense fallback={<AppLoader />}>
-              <MainLayout>
-                <Suspense fallback={<ContentLoader />}>
-                  <AppRoutes />
-                </Suspense>
-              </MainLayout>
+              <HashRouter future={routerFutureConfig}>
+                <ErrorBoundary componentName="MainLayout">
+                  <MainLayout>
+                    <Suspense fallback={<ContentLoader />}>
+                      <ErrorBoundary componentName="AppRoutes">
+                        <AppRoutes />
+                      </ErrorBoundary>
+                    </Suspense>
+                  </MainLayout>
+                </ErrorBoundary>
+              </HashRouter>
             </Suspense>
-          </HashRouter>
+          </AppInitializer>
         </FeedbackProvider>
-      </ErrorBoundary>
-    </ThemeProviderRedux>
+      </ThemeProviderRedux>
+    </ErrorBoundaryProvider>
   );
 };
 

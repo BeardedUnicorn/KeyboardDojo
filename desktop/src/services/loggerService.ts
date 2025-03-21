@@ -6,6 +6,7 @@
  */
 
 import { captureException, captureMessage, addBreadcrumb } from '../utils/sentry';
+import { BaseService } from './BaseService';
 
 /**
  * Log levels for the application
@@ -130,10 +131,11 @@ const formatLog = (
 /**
  * Logger class for structured logging with Sentry integration
  */
-class LoggerService {
+class LoggerService extends BaseService {
   private config: LoggerConfig;
 
   constructor(config?: LoggerConfig) {
+    super();
     this.config = {
       minLevel: process.env.NODE_ENV === 'production' ? LogLevel.INFO : LogLevel.DEBUG,
       includeTimestamps: true,
@@ -142,6 +144,44 @@ class LoggerService {
       globalContext: {},
       ...config,
     };
+  }
+  
+  /**
+   * Initialize the service
+   * Note: Keep this minimal as other services depend on logger during their initialization
+   */
+  async initialize(): Promise<void> {
+    await super.initialize();
+    
+    try {
+      // Simple initialization as this is a foundational service
+      this._status.initialized = true;
+      
+      // Log after setting status to avoid circular dependency
+      this.info('Logger service initialized', { 
+        component: 'LoggerService',
+      });
+    } catch (error) {
+      console.error('Failed to initialize logger service', error);
+      this._status.error = error instanceof Error ? error : new Error(String(error));
+      this._status.initialized = false;
+    }
+  }
+
+  /**
+   * Clean up the service
+   */
+  cleanup(): void {
+    try {
+      this.info('Logger service cleaned up', { 
+        component: 'LoggerService',
+      });
+      
+      super.cleanup();
+    } catch (error) {
+      console.error('Error cleaning up logger service', error);
+      // Don't throw
+    }
   }
 
   /**

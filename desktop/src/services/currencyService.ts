@@ -6,7 +6,9 @@
  */
 
 import { audioService } from './audioService';
+import { BaseService } from './BaseService';
 import { loggerService } from './loggerService';
+import { serviceFactory } from './ServiceFactory';
 
 // Currency rewards for different activities
 export const CURRENCY_REWARDS = {
@@ -135,13 +137,62 @@ export interface CurrencyChangeEvent {
   source: string;
 }
 
-class CurrencyService {
+class CurrencyService extends BaseService {
   private storageKey = 'user-currency';
   private currencyData: CurrencyData = DEFAULT_CURRENCY_DATA;
   private changeListeners: ((event: CurrencyChangeEvent) => void)[] = [];
   
   constructor() {
-    this.loadCurrencyData();
+    super();
+  }
+  
+  /**
+   * Initialize the service
+   */
+  async initialize(): Promise<void> {
+    await super.initialize();
+    
+    try {
+      // Load currency data
+      this.loadCurrencyData();
+      
+      loggerService.info('Currency service initialized', { 
+        component: 'CurrencyService',
+      });
+      
+      this._status.initialized = true;
+    } catch (error) {
+      loggerService.error('Failed to initialize currency service', error, { 
+        component: 'CurrencyService',
+      });
+      
+      this._status.error = error instanceof Error ? error : new Error(String(error));
+      this._status.initialized = false;
+      
+      // Rethrow the error to properly signal initialization failure
+      throw error;
+    }
+  }
+
+  /**
+   * Clean up the service
+   */
+  cleanup(): void {
+    try {
+      // Save any unsaved currency data
+      this.saveCurrencyData();
+      
+      loggerService.info('Currency service cleaned up', { 
+        component: 'CurrencyService',
+      });
+      
+      super.cleanup();
+    } catch (error) {
+      loggerService.error('Error cleaning up currency service', error, { 
+        component: 'CurrencyService',
+      });
+      // Don't throw
+    }
   }
   
   /**
@@ -508,3 +559,8 @@ class CurrencyService {
 
 // Create and export a singleton instance
 export const currencyService = new CurrencyService(); 
+
+// Register with ServiceFactory
+serviceFactory.register('currencyService', currencyService);
+
+export default currencyService; 

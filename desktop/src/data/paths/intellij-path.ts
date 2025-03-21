@@ -451,8 +451,20 @@ export const intellijPath: IPath = {
   connections: [],
 };
 
-// Add debug log
-loggerService.debug('IntelliJ path loaded', {
-  pathId: intellijPath.id,
-  nodesCount: intellijPath.nodes.length,
-});
+// Original logger call replaced with conditional logging that won't throw
+// This prevents issues during the module's initialization
+try {
+  // Only log in development environment
+  if (process.env.NODE_ENV === 'development' && loggerService && typeof loggerService.debug === 'function') {
+    // Use setTimeout to defer logging until after the module has been fully loaded
+    setTimeout(() => {
+      loggerService.debug('IntelliJ path loaded', {
+        pathId: intellijPath.id,
+        nodesCount: intellijPath.nodes.length,
+      });
+    }, 0);
+  }
+} catch (err) {
+  // Silently ignore logging errors to prevent import failures
+  console.warn('Failed to log IntelliJ path load:', err);
+}

@@ -1,7 +1,7 @@
 import { Box, Container, Typography } from '@mui/material';
 import React from 'react';
 
-import GamificationDashboard from '../components/GamificationDashboard';
+import GamificationDashboard from '../components/statistics/GamificationDashboard';
 
 import type { FC } from 'react';
 

@@ -191,7 +191,7 @@ const UpdateNotification = memo(({
 
         // Check for updates on mount if enabled
         if (checkOnMount) {
-          checkForUpdates();
+          await checkForUpdates();
         }
 
         // Set up automatic update checking if enabled

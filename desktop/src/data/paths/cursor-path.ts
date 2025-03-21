@@ -453,7 +453,9 @@ export const cursorPath: IPath = {
 };
 
 // Add debug log
-loggerService.debug('Cursor path loaded', {
-  pathId: cursorPath.id,
-  nodesCount: cursorPath.nodes?.length || 0,
-});
+if (loggerService && typeof loggerService.debug === 'function') {
+  loggerService.debug('Cursor path loaded', {
+    pathId: cursorPath.id,
+    nodesCount: cursorPath.nodes?.length || 0,
+  });
+}

@@ -17,3 +17,6 @@ export * as sentry from './sentry';
 export * as responsive from './responsive';
 export * as shortcutDetector from './shortcutDetector';
 export * as styleUtils from './styleUtils';
+
+// Export the new key normalization functions
+export * from './keyNormalization';

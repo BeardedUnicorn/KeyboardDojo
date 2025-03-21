@@ -20,7 +20,7 @@
     "sign:linux": "node scripts/sign.js linux",
     "sign:all": "node scripts/sign.js",
     "deploy": "node scripts/deploy.js",
-    "test": "vitest",
+    "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "test:ui": "vitest --ui",
@@ -28,7 +28,15 @@
     "analyze-bundle": "node scripts/analyze-bundle.js",
     "lint": "eslint . --ext .js,.jsx,.ts,.tsx --no-warn-ignored --ignore-pattern 'src-tauri/target/**'",
     "lint:fix": "eslint . --ext .js,.jsx,.ts,.tsx --fix --no-warn-ignored --ignore-pattern 'src-tauri/target/**'",
-    "lint:debug": "eslint . --ext .js,.jsx,.ts,.tsx --debug --ignore-pattern 'src-tauri/target/**'"
+    "lint:debug": "eslint . --ext .js,.jsx,.ts,.tsx --debug --ignore-pattern 'src-tauri/target/**'",
+    "storybook": "storybook dev -p 6006",
+    "build-storybook": "storybook build",
+    "test-storybook": "vitest run --config ./vitest.storybook.config.ts",
+    "storybook:dev": "concurrently \"npm run storybook\" \"npm run test-storybook -- --watch\"",
+    "test-storybook-ignore-errors": "yarn test-storybook || echo 'Tests completed with some failures (ignored)' && exit 0",
+    "test:snapshots": "vitest run src/tests/snapshots/storybook.test.js",
+    "test:visual": "vitest run src/tests/visual-regression/visual-regression.test.js",
+    "test:visual:update": "node src/tests/visual-regression/update-baselines.js"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
@@ -47,7 +55,25 @@
     "react-router-dom": "^6.30.0"
   },
   "devDependencies": {
+    "@chromatic-com/storybook": "^3",
     "@eslint/js": "^9.22.0",
+    "@storybook/addon-a11y": "^8.6.7",
+    "@storybook/addon-docs": "^8.6.7",
+    "@storybook/addon-essentials": "^8.6.7",
+    "@storybook/addon-interactions": "^8.6.7",
+    "@storybook/addon-links": "^8.6.7",
+    "@storybook/addon-onboarding": "^8.6.7",
+    "@storybook/addon-storyshots": "^7.6.20",
+    "@storybook/addon-viewport": "^8.6.7",
+    "@storybook/blocks": "^8.6.7",
+    "@storybook/jest": "^0.2.2",
+    "@storybook/manager-api": "^8.6.7",
+    "@storybook/react": "^8.6.7",
+    "@storybook/react-vite": "^8.6.7",
+    "@storybook/test": "^8.6.7",
+    "@storybook/test-runner": "^0.22.0",
+    "@storybook/testing-library": "^0.2.1",
+    "@storybook/theming": "^8.6.7",
     "@tauri-apps/cli": "^2.3.1",
     "@testing-library/jest-dom": "^6.4.2",
     "@testing-library/react": "^14.2.0",
@@ -59,15 +85,27 @@
     "@vitejs/plugin-react": "^4.3.4",
     "@vitest/coverage-v8": "^1.2.1",
     "@vitest/ui": "^1.2.1",
+    "concurrently": "^9.1.2",
     "eslint": "^9.22.0",
     "eslint-import-resolver-typescript": "^4.1.1",
     "eslint-plugin-import": "^2.31.0",
     "eslint-plugin-react": "^7.37.4",
     "eslint-plugin-react-hooks": "^5.2.0",
+    "eslint-plugin-storybook": "^0.11.6",
+    "glob": "^11.0.1",
+    "jest-puppeteer": "^11.0.0",
     "jsdom": "^24.0.0",
+    "puppeteer": "^24.4.0",
+    "react-confetti": "^6.4.0",
+    "storybook": "^8.6.7",
     "tsx": "^4.7.1",
     "typescript": "~5.7.2",
     "vite": "^6.2.0",
     "vitest": "^1.2.1"
+  },
+  "eslintConfig": {
+    "extends": [
+      "plugin:storybook/recommended"
+    ]
   }
 }

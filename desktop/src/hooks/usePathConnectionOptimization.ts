@@ -103,7 +103,13 @@ function lineIntersectsViewport(
   let code1 = computeCode(start.x, start.y);
   let code2 = computeCode(end.x, end.y);
 
-  while (true) {
+  // Add maximum iteration counter to prevent infinite loops
+  let iterations = 0;
+  const MAX_ITERATIONS = 100;
+
+  while (iterations < MAX_ITERATIONS) {
+    iterations++;
+    
     if (!(code1 | code2)) return true; // Both points inside
     if (code1 & code2) return false; // Both points on same side
 
@@ -112,18 +118,38 @@ function lineIntersectsViewport(
     let x: number;
     let y: number;
 
+    // Check for potential division by zero to prevent NaN values
     if (code & TOP) {
+      // Handle case where lines are horizontal (avoid division by zero)
+      if (Math.abs(end.y - start.y) < 0.0001) {
+        return start.y <= viewport.maxY && start.y >= viewport.minY;
+      }
       x = start.x + (end.x - start.x) * (viewport.maxY - start.y) / (end.y - start.y);
       y = viewport.maxY;
     } else if (code & BOTTOM) {
+      // Handle case where lines are horizontal (avoid division by zero)
+      if (Math.abs(end.y - start.y) < 0.0001) {
+        return start.y <= viewport.maxY && start.y >= viewport.minY;
+      }
       x = start.x + (end.x - start.x) * (viewport.minY - start.y) / (end.y - start.y);
       y = viewport.minY;
     } else if (code & RIGHT) {
+      // Handle case where lines are vertical (avoid division by zero)
+      if (Math.abs(end.x - start.x) < 0.0001) {
+        return start.x <= viewport.maxX && start.x >= viewport.minX;
+      }
       y = start.y + (end.y - start.y) * (viewport.maxX - start.x) / (end.x - start.x);
       x = viewport.maxX;
     } else if (code & LEFT) {
+      // Handle case where lines are vertical (avoid division by zero)
+      if (Math.abs(end.x - start.x) < 0.0001) {
+        return start.x <= viewport.maxX && start.x >= viewport.minX;
+      }
       y = start.y + (end.y - start.y) * (viewport.minX - start.x) / (end.x - start.x);
       x = viewport.minX;
+    } else {
+      // This shouldn't happen, but just in case
+      return false;
     }
 
     if (code === code1) {
@@ -136,6 +162,10 @@ function lineIntersectsViewport(
       code2 = computeCode(x, y);
     }
   }
+  
+  // If we hit the maximum iterations, assume no intersection to prevent infinite loops
+  console.warn('Max iterations reached in lineIntersectsViewport, assuming no intersection');
+  return false;
 }
 
 /**

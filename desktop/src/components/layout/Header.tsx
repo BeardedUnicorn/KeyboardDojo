@@ -23,12 +23,12 @@ import { Link, useNavigate } from 'react-router-dom';
 import { currencyService } from '../../services';
 import { useAppSelector } from '../../store';
 import { selectXp, selectLevel } from '../../store/slices/userProgressSlice';
-import CurrencyDisplay from '../CurrencyDisplay';
-import HeartsDisplay from '../HeartsDisplay';
-import XPDisplay from '../XPDisplay';
+import CurrencyDisplay from '../gamification/currency/CurrencyDisplay';
+import HeartsDisplay from '../gamification/progress/HeartsDisplay';
+import XPDisplay from '../gamification/progress/XPDisplay';
 
 import type { CurrencyChangeEvent } from '../../services/currencyService';
-import type { FC } from 'react';
+import type { FC, MouseEvent } from 'react';
 
 interface HeaderProps {
   onMenuToggle: () => void;

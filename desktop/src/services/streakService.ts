@@ -6,7 +6,9 @@
  */
 
 import { audioService } from './audioService';
+import { BaseService } from './BaseService';
 import { loggerService } from './loggerService';
+import { serviceFactory } from './ServiceFactory';
 
 // Interface for streak data
 export interface StreakData {
@@ -30,13 +32,62 @@ const DEFAULT_STREAK_DATA: StreakData = {
   streakHistory: [],
 };
 
-class StreakService {
+class StreakService extends BaseService {
   private storageKey = 'user-streak';
   private streakData: StreakData = DEFAULT_STREAK_DATA;
   
   constructor() {
-    this.loadStreakData();
-    this.checkAndUpdateStreak();
+    super();
+  }
+  
+  /**
+   * Initialize the service
+   */
+  async initialize(): Promise<void> {
+    await super.initialize();
+    
+    try {
+      // Load streak data
+      this.loadStreakData();
+      this.checkAndUpdateStreak();
+      
+      loggerService.info('Streak service initialized', { 
+        component: 'StreakService',
+      });
+      
+      this._status.initialized = true;
+    } catch (error) {
+      loggerService.error('Failed to initialize streak service', error, { 
+        component: 'StreakService',
+      });
+      
+      this._status.error = error instanceof Error ? error : new Error(String(error));
+      this._status.initialized = false;
+      
+      // Rethrow the error to properly signal initialization failure
+      throw error;
+    }
+  }
+
+  /**
+   * Clean up the service
+   */
+  cleanup(): void {
+    try {
+      // Save any unsaved streak data
+      this.saveStreakData();
+      
+      loggerService.info('Streak service cleaned up', { 
+        component: 'StreakService',
+      });
+      
+      super.cleanup();
+    } catch (error) {
+      loggerService.error('Error cleaning up streak service', error, { 
+        component: 'StreakService',
+      });
+      // Don't throw
+    }
   }
   
   /**
@@ -253,3 +304,8 @@ class StreakService {
 
 // Create and export a singleton instance
 export const streakService = new StreakService(); 
+
+// Register with ServiceFactory
+serviceFactory.register('streakService', streakService);
+
+export default streakService; 

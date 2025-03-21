@@ -46,11 +46,13 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.22.0",
+    "@types/redux-mock-store": "^1.5.0",
     "@typescript-eslint/eslint-plugin": "^8.26.1",
     "@typescript-eslint/parser": "^8.26.1",
     "eslint-plugin-import": "^2.31.0",
     "eslint-plugin-react": "^7.37.4",
     "eslint-plugin-react-hooks": "^5.2.0",
-    "globals": "^16.0.0"
+    "globals": "^16.0.0",
+    "redux-mock-store": "^1.5.5"
   }
 }

@@ -5,7 +5,9 @@
  * It handles loading, playing, and controlling audio files.
  */
 
+import { BaseService } from './BaseService';
 import { loggerService } from './loggerService';
+import { serviceFactory } from './ServiceFactory';
 
 // Define sound types
 type SoundType = 'success' | 'error' | 'hint' | 'levelUp' | 'checkpoint' | 'achievement' | string;
@@ -20,17 +22,107 @@ const soundMap: Record<SoundType, string> = {
   achievement: '/sounds/achievement.mp3',
 };
 
-class AudioService {
+class AudioService extends BaseService {
   private audioCache: Map<string, HTMLAudioElement> = new Map();
   private isMuted: boolean = false;
   private volume: number = 0.7; // Default volume (0.0 to 1.0)
 
   constructor() {
+    super();
     // Try to load user preferences from localStorage
     this.loadPreferences();
     
     // Preload common sounds
     this.preloadSounds(['success', 'error']);
+  }
+
+  /**
+   * Initialize service - overridden from BaseService
+   */
+  async initialize(): Promise<void> {
+    try {
+      // Additional initialization if needed
+      
+      // Mark as initialized
+      this._status.initialized = true;
+      this._status.error = null;
+      
+      loggerService.info('Audio service initialized', {
+        component: 'AudioService',
+        action: 'initialize',
+      });
+    } catch (error) {
+      this._status.error = error instanceof Error ? error : new Error(String(error));
+      this._status.initialized = false;
+      
+      loggerService.error('Failed to initialize audio service', error, {
+        component: 'AudioService',
+        action: 'initialize',
+      });
+      
+      throw error;
+    }
+  }
+
+  /**
+   * Cleanup service - overridden from BaseService
+   */
+  cleanup(): void {
+    try {
+      // Properly clean up all cached audio elements
+      if (this.audioCache.size > 0) {
+        loggerService.info(`Cleaning up ${this.audioCache.size} cached audio elements`, {
+          component: 'AudioService',
+          action: 'cleanup',
+        });
+        
+        // Clean up each audio element
+        this.audioCache.forEach((audio, key) => {
+          try {
+            // Stop playback
+            audio.pause();
+            // Reset current time
+            audio.currentTime = 0;
+            // Remove source
+            audio.src = '';
+            // Remove any event listeners (important to prevent memory leaks)
+            audio.oncanplay = null;
+            audio.oncanplaythrough = null;
+            audio.onerror = null;
+            audio.onended = null;
+            
+            loggerService.debug(`Cleaned up audio: ${key}`, {
+              component: 'AudioService',
+              action: 'cleanup',
+            });
+          } catch (audioError) {
+            loggerService.warn(`Failed to clean up audio: ${key}`, {
+              component: 'AudioService',
+              action: 'cleanup',
+              error: String(audioError),
+            });
+          }
+        });
+        
+        // Clear the cache
+        this.audioCache.clear();
+      }
+      
+      // Mark as not initialized
+      this._status.initialized = false;
+      
+      loggerService.info('Audio service cleaned up', {
+        component: 'AudioService',
+        action: 'cleanup',
+      });
+    } catch (error) {
+      loggerService.error('Failed to clean up audio service', error, {
+        component: 'AudioService',
+        action: 'cleanup',
+      });
+      
+      throw error;
+    }
   }
 
   /**
@@ -172,4 +264,7 @@ class AudioService {
 }
 
 // Create and export a singleton instance
-export const audioService = new AudioService(); 
+export const audioService = new AudioService();
+
+// Register with the service factory
+serviceFactory.register('audioService', audioService); 

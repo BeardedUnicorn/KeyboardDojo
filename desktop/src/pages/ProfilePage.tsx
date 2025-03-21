@@ -32,7 +32,8 @@ import { AchievementCategory } from '@/types/achievements/AchievementCategory';
 import { selectAchievements, selectCompletedAchievements } from '@store/slices';
 
 import { storageService } from '../../../shared/src/utils';
-import { AchievementBadge, LevelProgressBar, StreakDisplay } from '../components';
+import { LevelProgressBar, StreakDisplay } from '../components';
+import { AchievementBadge } from '../components/gamification/achievements';
 import { selectXp, selectLevel, selectStreakDays } from '../store/slices/userProgressSlice';
 
 import type { ReactNode , SyntheticEvent } from 'react';

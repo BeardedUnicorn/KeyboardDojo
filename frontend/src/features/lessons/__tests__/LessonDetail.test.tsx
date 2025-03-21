@@ -32,7 +32,7 @@ describe('LessonDetail Component', () => {
     });
 
     const practiceButton = screen.getByTestId('start-practice-button');
-    await fireEvent.click(practiceButton);
+    fireEvent.click(practiceButton);
 
     // Check if progress indicator is visible
     expect(screen.getByTestId('progress-indicator')).toBeInTheDocument();
@@ -47,13 +47,13 @@ describe('LessonDetail Component', () => {
     });
 
     const practiceButton = screen.getByTestId('start-practice-button');
-    await fireEvent.click(practiceButton);
+    fireEvent.click(practiceButton);
 
     // Simulate correct keyboard input
-    await fireEvent.keyDown(document, { key: 'Meta', code: 'MetaLeft' });
-    await fireEvent.keyDown(document, { key: 'c', code: 'KeyC' });
-    await fireEvent.keyUp(document, { key: 'c', code: 'KeyC' });
-    await fireEvent.keyUp(document, { key: 'Meta', code: 'MetaLeft' });
+    fireEvent.keyDown(document, { key: 'Meta', code: 'MetaLeft' });
+    fireEvent.keyDown(document, { key: 'c', code: 'KeyC' });
+    fireEvent.keyUp(document, { key: 'c', code: 'KeyC' });
+    fireEvent.keyUp(document, { key: 'Meta', code: 'MetaLeft' });
 
     // Wait for feedback and completion message
     await waitFor(() => {
@@ -70,15 +70,15 @@ describe('LessonDetail Component', () => {
     });
 
     const practiceButton = screen.getByTestId('start-practice-button');
-    await fireEvent.click(practiceButton);
+    fireEvent.click(practiceButton);
 
     // Simulate incorrect keyboard input
-    await fireEvent.keyDown(document, { key: 'x', code: 'KeyX' });
-    await fireEvent.keyUp(document, { key: 'x', code: 'KeyX' });
+    fireEvent.keyDown(document, { key: 'x', code: 'KeyX' });
+    fireEvent.keyUp(document, { key: 'x', code: 'KeyX' });
 
     // Wait for error message
     await waitFor(() => {
       expect(screen.getByTestId('error-message')).toBeInTheDocument();
     }, { timeout: 2000 });
   });
-}); 
+});

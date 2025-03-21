@@ -5,7 +5,9 @@
  * and completed lessons/challenges.
  */
 
+import { BaseService } from './BaseService';
 import { loggerService } from './loggerService';
+import { serviceFactory } from './ServiceFactory';
 
 import type { ApplicationType } from '@/types/progress/ICurriculum';
 import type { IUserProgress } from '@/types/progress/IUserProgress';
@@ -58,12 +60,60 @@ export const XP_REWARDS = {
   WEEKLY_STREAK: 50, // Additional for 7-day streak
 };
 
-class UserProgressService {
+class UserProgressService extends BaseService {
   private storageKey = 'userProgress';
   private userProgress: IUserProgress | null = null;
 
   constructor() {
-    this.loadProgress();
+    super();
+  }
+  
+  /**
+   * Initialize the service
+   */
+  async initialize(): Promise<void> {
+    await super.initialize();
+    
+    try {
+      this.loadProgress();
+      
+      loggerService.info('User progress service initialized', { 
+        component: 'UserProgressService',
+      });
+      
+      this._status.initialized = true;
+    } catch (error) {
+      loggerService.error('Failed to initialize user progress service', error, { 
+        component: 'UserProgressService',
+      });
+      
+      this._status.error = error instanceof Error ? error : new Error(String(error));
+      this._status.initialized = false;
+      // Don't throw to allow application to continue with limited functionality
+    }
+  }
+
+  /**
+   * Clean up the service
+   */
+  cleanup(): void {
+    try {
+      // Save any pending progress changes
+      if (this.userProgress) {
+        this.saveProgress();
+      }
+      
+      loggerService.info('User progress service cleaned up', { 
+        component: 'UserProgressService',
+      });
+      
+      super.cleanup();
+    } catch (error) {
+      loggerService.error('Error cleaning up user progress service', error, { 
+        component: 'UserProgressService',
+      });
+      // Don't throw
+    }
   }
 
   /**
@@ -455,4 +505,5 @@ class UserProgressService {
 }
 
 // Export a singleton instance
-export const userProgressService = new UserProgressService();
+const userProgressServiceInstance = new UserProgressService();
+export const userProgressService = serviceFactory.register('userProgressService', userProgressServiceInstance);

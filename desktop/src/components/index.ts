@@ -36,3 +36,6 @@ export * from './review';
 
 // Export components
 export { default as ReduxExample } from './ReduxExample';
+
+// Add AppInitializer to the component exports
+export { default as AppInitializer } from './AppInitializer';

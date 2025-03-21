@@ -1,5 +1,5 @@
 import { Box, Typography, Button, Card, CardContent, Stack, LinearProgress, Container } from '@mui/material';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 
 import ConfettiEffect from '../effects/ConfettiEffect';
 import KeyboardListener from '../keyboard/KeyboardListener';
@@ -17,9 +17,17 @@ interface ReviewSessionProps {
       responseTime: number;
     }>
   ) => void;
+  /**
+   * ID for the review session for accessibility purposes
+   */
+  sessionId?: string;
 }
 
-const ReviewSession: FC<ReviewSessionProps> = ({ session, onComplete }) => {
+const ReviewSession: FC<ReviewSessionProps> = ({ 
+  session, 
+  onComplete,
+  sessionId = `review-session-${session.id}`,
+}) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [results, setResults] = useState<
     Array<{
@@ -32,6 +40,11 @@ const ReviewSession: FC<ReviewSessionProps> = ({ session, onComplete }) => {
   const [showConfetti, setShowConfetti] = useState(false);
   const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
   const [showAnswer, setShowAnswer] = useState(false);
+  
+  // Refs for managing focus
+  const answerButtonRef = useRef<HTMLButtonElement>(null);
+  const ratingButtonsRef = useRef<HTMLDivElement>(null);
+  const feedbackRef = useRef<HTMLDivElement>(null);
 
   const currentShortcut = session.shortcuts[currentIndex];
   const isLastShortcut = currentIndex === session.shortcuts.length - 1;
@@ -42,7 +55,32 @@ const ReviewSession: FC<ReviewSessionProps> = ({ session, onComplete }) => {
     setStartTime(Date.now());
     setIsCorrect(null);
     setShowAnswer(false);
-  }, [currentIndex]);
+    
+    // Announce new shortcut for screen readers
+    const shortcutName = currentShortcut.name || 'Next shortcut';
+    const shortcutDescription = currentShortcut.description || 'Try to recall this shortcut';
+    document.getElementById(`${sessionId}-sr-live`)?.setAttribute('aria-label', 
+      `${shortcutName}. ${shortcutDescription}. ${currentIndex + 1} of ${session.shortcuts.length} shortcuts.`
+    );
+  }, [currentIndex, currentShortcut, session.shortcuts.length, sessionId]);
+
+  // Focus management when feedback is shown
+  useEffect(() => {
+    if (isCorrect !== null && feedbackRef.current) {
+      feedbackRef.current.focus();
+    }
+  }, [isCorrect]);
+
+  // Focus management when answer is shown
+  useEffect(() => {
+    if (showAnswer && ratingButtonsRef.current) {
+      // Focus the first rating button when the answer is shown
+      const firstButton = ratingButtonsRef.current.querySelector('button');
+      if (firstButton) {
+        (firstButton as HTMLButtonElement).focus();
+      }
+    }
+  }, [showAnswer]);
 
   const handleShortcutAttempt = (success: boolean) => {
     if (isCorrect !== null) return; // Already answered
@@ -51,6 +89,13 @@ const ReviewSession: FC<ReviewSessionProps> = ({ session, onComplete }) => {
     const responseTime = startTime ? endTime - startTime : 0;
 
     setIsCorrect(success);
+
+    // Announce result for screen readers
+    const feedbackMessage = success 
+      ? 'Correct! Well done. Rate your performance.'
+      : 'Not quite right. Try again or view the answer.';
+    
+    document.getElementById(`${sessionId}-sr-live`)?.setAttribute('aria-label', feedbackMessage);
 
     if (success) {
       setShowConfetti(true);
@@ -69,6 +114,11 @@ const ReviewSession: FC<ReviewSessionProps> = ({ session, onComplete }) => {
     };
 
     setResults([...results, result]);
+
+    // Announce rating for screen readers
+    document.getElementById(`${sessionId}-sr-live`)?.setAttribute('aria-label', 
+      `Performance rated as ${performance}. ${isLastShortcut ? 'Session complete.' : 'Moving to next shortcut.'}`
+    );
 
     // Move to the next shortcut or complete the session
     if (isLastShortcut) {
@@ -94,37 +144,107 @@ const ReviewSession: FC<ReviewSessionProps> = ({ session, onComplete }) => {
   const handleShowAnswer = () => {
     setShowAnswer(true);
     setIsCorrect(false);
+    
+    // Announce showing answer for screen readers
+    document.getElementById(`${sessionId}-sr-live`)?.setAttribute('aria-label', 
+      `Answer shown. The correct shortcut is: ${currentShortcut.shortcutWindows}. Please rate your performance.`
+    );
+  };
+
+  // Handle keyboard navigation for rating buttons
+  const handleRatingKeyDown = (event: React.KeyboardEvent, rating: PerformanceRating) => {
+    if (event.key === 'ArrowRight' || event.key === 'ArrowLeft') {
+      event.preventDefault();
+      
+      const buttons = ratingButtonsRef.current?.querySelectorAll('button');
+      if (!buttons) return;
+      
+      const buttonsArray = Array.from(buttons);
+      const currentIndex = buttonsArray.indexOf(event.currentTarget as HTMLButtonElement);
+      
+      let newIndex;
+      if (event.key === 'ArrowRight') {
+        newIndex = (currentIndex + 1) % buttonsArray.length;
+      } else {
+        newIndex = (currentIndex - 1 + buttonsArray.length) % buttonsArray.length;
+      }
+      
+      (buttonsArray[newIndex] as HTMLButtonElement).focus();
+    }
   };
 
   return (
     <Container maxWidth="md">
-      <Box sx={{ mb: 4 }}>
-        <Typography variant="h4" gutterBottom>
+      {/* Screen reader only live region for announcements */}
+      <div
+        id={`${sessionId}-sr-live`}
+        aria-live="assertive"
+        className="visually-hidden"
+        style={{
+          position: 'absolute',
+          width: '1px',
+          height: '1px',
+          padding: 0,
+          margin: '-1px',
+          overflow: 'hidden',
+          clip: 'rect(0, 0, 0, 0)',
+          whiteSpace: 'nowrap',
+          borderWidth: 0,
+        }}
+      >
+        {currentShortcut.name}: {currentShortcut.description} - {currentIndex + 1} of {session.shortcuts.length}
+      </div>
+      
+      <Box sx={{ mb: 4 }} role="region" aria-labelledby={`${sessionId}-title`}>
+        <Typography variant="h4" gutterBottom id={`${sessionId}-title`}>
           Review Session
         </Typography>
-        <LinearProgress variant="determinate" value={progress} sx={{ mb: 2 }} />
+        <LinearProgress 
+          variant="determinate" 
+          value={progress} 
+          sx={{ mb: 2 }} 
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-valuenow={progress}
+          aria-valuetext={`${currentIndex + 1} of ${session.shortcuts.length} shortcuts completed`}
+        />
         <Typography variant="body2" color="text.secondary">
           {currentIndex + 1} of {session.shortcuts.length} shortcuts
         </Typography>
       </Box>
 
-      <Card variant="outlined" sx={{ mb: 4 }}>
+      <Card 
+        variant="outlined" 
+        sx={{ mb: 4 }} 
+        aria-labelledby={`${sessionId}-shortcut-name`}
+        role="region"
+      >
         <CardContent>
-          <Typography variant="h5" gutterBottom>
+          <Typography variant="h5" gutterBottom id={`${sessionId}-shortcut-name`}>
             {currentShortcut.name}
           </Typography>
-          <Typography variant="body1" paragraph>
+          <Typography variant="body1" paragraph id={`${sessionId}-shortcut-description`}>
             {currentShortcut.description || 'Try to recall this shortcut'}
           </Typography>
 
           {showAnswer && (
             <Box sx={{ mt: 2, p: 2, bgcolor: 'background.paper', borderRadius: 1 }}>
-              <ShortcutDisplay shortcut={currentShortcut} />
+              <ShortcutDisplay 
+                shortcut={currentShortcut} 
+                shortcutId={`${sessionId}-shortcut-display`}
+                accessibilityContext="This is the correct shortcut for this review session."
+              />
             </Box>
           )}
 
           {isCorrect === true && (
-            <Box sx={{ mt: 2, p: 2, bgcolor: 'success.light', borderRadius: 1 }}>
+            <Box 
+              sx={{ mt: 2, p: 2, bgcolor: 'success.light', borderRadius: 1 }}
+              ref={feedbackRef}
+              tabIndex={-1}
+              aria-live="polite"
+              role="status"
+            >
               <Typography variant="body1" color="success.contrastText">
                 Correct! Well done.
               </Typography>
@@ -132,7 +252,13 @@ const ReviewSession: FC<ReviewSessionProps> = ({ session, onComplete }) => {
           )}
 
           {isCorrect === false && !showAnswer && (
-            <Box sx={{ mt: 2, p: 2, bgcolor: 'error.light', borderRadius: 1 }}>
+            <Box 
+              sx={{ mt: 2, p: 2, bgcolor: 'error.light', borderRadius: 1 }}
+              ref={feedbackRef}
+              tabIndex={-1}
+              aria-live="polite"
+              role="status"
+            >
               <Typography variant="body1" color="error.contrastText">
                 Not quite right. Try again or view the answer.
               </Typography>
@@ -143,17 +269,31 @@ const ReviewSession: FC<ReviewSessionProps> = ({ session, onComplete }) => {
 
       <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 4 }}>
         {!showAnswer && isCorrect === null && (
-          <Button variant="outlined" onClick={handleShowAnswer}>
+          <Button 
+            variant="outlined" 
+            onClick={handleShowAnswer}
+            ref={answerButtonRef}
+            aria-describedby={`${sessionId}-shortcut-description`}
+          >
             Show Answer
           </Button>
         )}
 
         {(isCorrect !== null || showAnswer) && (
-          <Stack direction="row" spacing={2} sx={{ width: '100%', justifyContent: 'center' }}>
+          <Stack 
+            direction="row" 
+            spacing={2} 
+            sx={{ width: '100%', justifyContent: 'center' }}
+            ref={ratingButtonsRef}
+            role="toolbar"
+            aria-label="Rate your performance"
+          >
             <Button
               variant="contained"
               color="error"
               onClick={() => handleRatePerformance('again')}
+              onKeyDown={(e) => handleRatingKeyDown(e, 'again')}
+              aria-label="Rate as Again - I didn't remember this at all"
             >
               Again
             </Button>
@@ -161,6 +301,8 @@ const ReviewSession: FC<ReviewSessionProps> = ({ session, onComplete }) => {
               variant="contained"
               color="warning"
               onClick={() => handleRatePerformance('hard')}
+              onKeyDown={(e) => handleRatingKeyDown(e, 'hard')}
+              aria-label="Rate as Hard - I barely remembered this"
             >
               Hard
             </Button>
@@ -168,6 +310,8 @@ const ReviewSession: FC<ReviewSessionProps> = ({ session, onComplete }) => {
               variant="contained"
               color="info"
               onClick={() => handleRatePerformance('good')}
+              onKeyDown={(e) => handleRatingKeyDown(e, 'good')}
+              aria-label="Rate as Good - I remembered this with some effort"
             >
               Good
             </Button>
@@ -175,6 +319,8 @@ const ReviewSession: FC<ReviewSessionProps> = ({ session, onComplete }) => {
               variant="contained"
               color="success"
               onClick={() => handleRatePerformance('easy')}
+              onKeyDown={(e) => handleRatingKeyDown(e, 'easy')}
+              aria-label="Rate as Easy - I easily remembered this"
             >
               Easy
             </Button>
@@ -183,7 +329,10 @@ const ReviewSession: FC<ReviewSessionProps> = ({ session, onComplete }) => {
       </Box>
 
       {/* Keyboard listener to detect shortcut presses */}
-      <KeyboardListener onKeyboardEvent={handleKeyboardEvent} />
+      <KeyboardListener 
+        onKeyboardEvent={handleKeyboardEvent} 
+        ariaDescription={`Current shortcut to practice: ${currentShortcut.name}. Try to recall and press the shortcut.`}
+      />
 
       {/* Confetti effect for correct answers */}
       {showConfetti && <ConfettiEffect />}

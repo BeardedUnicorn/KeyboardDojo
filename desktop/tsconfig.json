@@ -41,6 +41,6 @@
       "@slices/*": ["src/store/slices/*"]
     }
   },
-  "include": ["src"],
+  "include": ["src", "src/types/jest-global.d.ts", ".storybook/**/*", "src/stories/.storybook-mocks.tsx", "src/stories/.storybook-test-setup.tsx"],
   "references": [{ "path": "./tsconfig.node.json" }]
 }

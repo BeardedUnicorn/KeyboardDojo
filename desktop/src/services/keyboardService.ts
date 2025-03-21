@@ -8,8 +8,10 @@
 
 import { shortcutDetector } from '../utils/shortcutDetector';
 
+import { BaseService } from './BaseService';
 import { loggerService } from './loggerService';
 import { osDetectionService } from './osDetectionService';
+import { serviceFactory } from './ServiceFactory';
 
 import type { OperatingSystem } from './osDetectionService';
 import type { ShortcutEvent, KeyMapping } from '../utils/shortcutDetector';
@@ -33,7 +35,7 @@ const linuxKeyMappings: KeyMapping[] = [
   { from: 'Super', to: 'Meta' },
 ];
 
-class KeyboardService {
+class KeyboardService extends BaseService {
   private globalShortcuts: Map<string, (event: any) => void> = new Map();
   private platformSpecificMappings: Map<OperatingSystem, KeyMapping[]> = new Map([
     ['macos', macKeyMappings],
@@ -41,7 +43,6 @@ class KeyboardService {
     ['linux', linuxKeyMappings],
   ]);
   private customKeyMappings: KeyMapping[] = [];
-  private isInitialized: boolean = false;
   private appWindow: Window | null = null;
 
   /**
@@ -152,9 +153,13 @@ class KeyboardService {
    * Initialize the keyboard service
    */
   async initialize(): Promise<void> {
-    if (this.isInitialized) {
+    // Don't proceed if already initialized
+    if (this.isInitialized()) {
       return;
     }
+
+    // Call parent initialize first
+    await super.initialize();
 
     try {
       // Get the current window
@@ -184,10 +189,11 @@ class KeyboardService {
         //   shortcutDetector.resetState();
         // });
       }
-
-      this.isInitialized = true;
     } catch (error) {
       loggerService.error('Failed to initialize keyboard service:', error, { component: 'KeyboardService' });
+      // Update status to reflect failure
+      this._status.initialized = false;
+      this._status.error = error instanceof Error ? error : new Error(String(error));
       throw error;
     }
   }
@@ -196,28 +202,35 @@ class KeyboardService {
    * Clean up the keyboard service
    */
   cleanup(): void {
-    if (!this.isInitialized) {
+    // Don't proceed if not initialized
+    if (!this.isInitialized()) {
       return;
     }
 
-    loggerService.info('Cleaning up keyboard service', { component: 'KeyboardService' });
+    try {
+      loggerService.info('Cleaning up keyboard service', { component: 'KeyboardService' });
 
-    // Unregister all global shortcuts
-    this.globalShortcuts.forEach((_, shortcut) => {
-      this.unregisterGlobalShortcut(shortcut);
-    });
+      // Unregister all global shortcuts
+      this.globalShortcuts.forEach((_, shortcut) => {
+        this.unregisterGlobalShortcut(shortcut);
+      });
 
-    // Clean up the shortcut detector
-    shortcutDetector.cleanup();
+      // Clean up the shortcut detector
+      shortcutDetector.cleanup();
 
-    // Remove event listeners from the window
-    if (this.appWindow) {
-      // In a real implementation, we would use Tauri API to remove window event listeners
-      // this.appWindow.unlisten('tauri://focus');
-      // this.appWindow.unlisten('tauri://blur');
+      // Remove event listeners from the window
+      if (this.appWindow) {
+        // In a real implementation, we would use Tauri API to remove window event listeners
+        // this.appWindow.unlisten('tauri://focus');
+        // this.appWindow.unlisten('tauri://blur');
+      }
+
+      // Call parent cleanup to update status
+      super.cleanup();
+    } catch (error) {
+      loggerService.error('Error cleaning up keyboard service:', error, { component: 'KeyboardService' });
+      throw error;
     }
-
-    this.isInitialized = false;
   }
 
   /**
@@ -247,5 +260,9 @@ class KeyboardService {
   }
 }
 
-// Export a singleton instance
-export const keyboardService = new KeyboardService();
+// Create and register the service
+const keyboardService = new KeyboardService();
+serviceFactory.register('keyboardService', keyboardService);
+
+// Export the singleton instance
+export { keyboardService };

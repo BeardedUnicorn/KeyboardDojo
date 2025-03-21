@@ -29,9 +29,9 @@ import {
 import React, { useState } from 'react';
 
 import { SubscriptionTier , useLogger } from '@/services';
+import { useSubscriptionRedux } from '@hooks/useSubscriptionRedux';
 
-import { CheckIcon, FavoriteIcon } from '../components/icons';
-import { useSubscription } from '../contexts/SubscriptionContext';
+import { CheckIcon, FavoriteIcon } from '../components/ui/icons';
 import { formatDate } from '../utils/dateTimeUtils';
 
 import type { FC, ReactNode, SyntheticEvent } from 'react';
@@ -109,8 +109,8 @@ const TabPanel = (props: TabPanelProps) => {
 const SubscriptionPage: FC= () => {
   const {
     hasPremium,
-    isPremiumLoading: isLoading,
-  } = useSubscription();
+    isLoading,
+  } = useSubscriptionRedux();
 
   const logger = useLogger('SubscriptionPage');
 

@@ -7,8 +7,6 @@ import React from 'react';
 
 import { TRANSITIONS } from '@/theme';
 
-import { SuccessIcon, ErrorIcon } from '../feedback/FeedbackAnimation';
-
 import type {
   BaseComponentProps,
   DisableableProps,
@@ -19,6 +17,8 @@ import type {
 import type {
   ButtonProps as MuiButtonProps } from '@mui/material';
 import type { ReactNode ,FC } from 'react';
+import ErrorIcon from '@mui/icons-material/Error';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 
 /**
  * Props for the enhanced Button component
@@ -91,9 +91,9 @@ export const Button: FC<ButtonProps> = ({
   const isDisabled = disabled || loading;
 
   // Handle click events
-  const handleClick = (event: MouseEvent) => {
+  const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
     if (!isDisabled && onClick) {
-      onClick(event);
+      onClick(event as any);
     }
   };
 
@@ -111,8 +111,8 @@ export const Button: FC<ButtonProps> = ({
     </>
   ) : (
     <>
-      {success && <SuccessIcon size={size === 'small' ? 16 : 20} />}
-      {error && <ErrorIcon size={size === 'small' ? 16 : 20} />}
+      {success && <CheckCircleIcon fontSize={size === 'small' ? 'small' : 'medium'} />}
+      {error && <ErrorIcon fontSize={size === 'small' ? 'small' : 'medium'} />}
       {!success && !error && startIcon}
       {children}
       {!success && !error && endIcon}

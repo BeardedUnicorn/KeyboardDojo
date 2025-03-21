@@ -1,4 +1,6 @@
+import { BaseService } from './BaseService';
 import { loggerService } from './loggerService';
+import { serviceFactory } from './ServiceFactory';
 
 import type { DifficultyLevel } from '@/types/curriculum/DifficultyLevel';
 import type { IShortcut } from '@/types/curriculum/IShortcut';
@@ -29,7 +31,7 @@ export interface ShortcutReviewItem {
 }
 
 /**
- * Review session configuration
+ * Configuration for a review session
  */
 export interface ReviewSessionConfig {
   maxItems?: number;
@@ -54,15 +56,97 @@ export interface ReviewSession {
 }
 
 /**
- * SpacedRepetitionService
- *
- * Implements the SM-2 algorithm for spaced repetition of shortcuts.
- * This service manages the scheduling of shortcut reviews based on user performance.
+ * Spaced Repetition Service
+ * 
+ * Manages the spaced repetition system for shortcuts.
  */
-class SpacedRepetitionService {
+class SpacedRepetitionService extends BaseService {
   private system: ISpacedRepetitionSystem = {
     shortcuts: [],
   };
+  private storageKey = 'spaced-repetition-system';
+  
+  constructor() {
+    super();
+  }
+  
+  /**
+   * Initialize the service
+   */
+  async initialize(): Promise<void> {
+    await super.initialize();
+    
+    try {
+      // Load stored system data
+      this.loadSystemData();
+      
+      loggerService.info('Spaced repetition service initialized', { 
+        component: 'SpacedRepetitionService',
+      });
+      
+      this._status.initialized = true;
+    } catch (error) {
+      loggerService.error('Failed to initialize spaced repetition service', error, { 
+        component: 'SpacedRepetitionService',
+      });
+      
+      this._status.error = error instanceof Error ? error : new Error(String(error));
+      this._status.initialized = false;
+      
+      // Rethrow the error to properly signal initialization failure
+      throw error;
+    }
+  }
+
+  /**
+   * Clean up the service
+   */
+  cleanup(): void {
+    try {
+      // Save any unsaved system data
+      this.saveSystemData();
+      
+      loggerService.info('Spaced repetition service cleaned up', { 
+        component: 'SpacedRepetitionService',
+      });
+      
+      super.cleanup();
+    } catch (error) {
+      loggerService.error('Error cleaning up spaced repetition service', error, { 
+        component: 'SpacedRepetitionService',
+      });
+      // Don't throw
+    }
+  }
+  
+  /**
+   * Load system data from local storage
+   */
+  private loadSystemData(): void {
+    try {
+      const savedSystem = localStorage.getItem(this.storageKey);
+      if (savedSystem) {
+        this.system = JSON.parse(savedSystem);
+      }
+    } catch (error) {
+      loggerService.error('Failed to load spaced repetition system data', error, {
+        component: 'SpacedRepetitionService',
+      });
+    }
+  }
+  
+  /**
+   * Save system data to local storage
+   */
+  private saveSystemData(): void {
+    try {
+      localStorage.setItem(this.storageKey, JSON.stringify(this.system));
+    } catch (error) {
+      loggerService.error('Failed to save spaced repetition system data', error, {
+        component: 'SpacedRepetitionService',
+      });
+    }
+  }
 
   /**
    * Initialize the spaced repetition system
@@ -293,5 +377,10 @@ class SpacedRepetitionService {
   }
 }
 
+// Create and export a singleton instance
 export const spacedRepetitionService = new SpacedRepetitionService();
+
+// Register with ServiceFactory
+serviceFactory.register('spacedRepetitionService', spacedRepetitionService);
+
 export default spacedRepetitionService;

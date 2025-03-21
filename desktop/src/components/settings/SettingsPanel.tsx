@@ -47,6 +47,24 @@ const DEFAULT_SETTINGS: Settings = {
   autoUpdate: true,
 };
 
+// Type guard to validate if the parsed object is a valid Settings object
+function isValidSettings(obj: unknown): obj is Settings {
+  if (!obj || typeof obj !== 'object') return false;
+  
+  const settings = obj as Record<string, unknown>;
+  
+  // Check for required properties and their types
+  return (
+    typeof settings.startWithSystem === 'boolean' &&
+    typeof settings.minimizeToTray === 'boolean' &&
+    typeof settings.showNotifications === 'boolean' &&
+    typeof settings.fontSize === 'number' &&
+    typeof settings.keyboardLayout === 'string' &&
+    typeof settings.autoSave === 'boolean' &&
+    typeof settings.autoUpdate === 'boolean'
+  );
+}
+
 const SettingsPanel = ({ open, onClose }: SettingsPanelProps) => {
   const theme = useTheme();
   const [settings, setSettings] = useState<Settings>(DEFAULT_SETTINGS);
@@ -58,10 +76,28 @@ const SettingsPanel = ({ open, onClose }: SettingsPanelProps) => {
       try {
         const savedSettings = localStorage.getItem('app-settings');
         if (savedSettings) {
-          setSettings(JSON.parse(savedSettings));
+          try {
+            // Safely parse JSON in a separate try-catch block
+            const parsedSettings = JSON.parse(savedSettings);
+            
+            // Validate the structure with our type guard
+            if (isValidSettings(parsedSettings)) {
+              setSettings(parsedSettings);
+            } else {
+              // Log warning if settings are invalid and fallback to defaults
+              loggerService.warn('Invalid settings structure detected, using defaults');
+              setSettings(DEFAULT_SETTINGS);
+            }
+          } catch (parseError) {
+            // Handle JSON parsing errors separately
+            loggerService.error('Failed to parse settings JSON:', { error: parseError });
+            setSettings(DEFAULT_SETTINGS);
+          }
         }
       } catch (error) {
-        loggerService.error('Failed to load settings:', { error });
+        loggerService.error('Failed to load settings from storage:', { error });
+        // Fallback to defaults on error
+        setSettings(DEFAULT_SETTINGS);
       } finally {
         setLoading(false);
       }
@@ -72,8 +108,8 @@ const SettingsPanel = ({ open, onClose }: SettingsPanelProps) => {
     }
   }, [open]);
 
-  // Handle settings change
-  const handleChange = (key: keyof Settings, value: any) => {
+  // Handle settings change with proper typing
+  const handleChange = <K extends keyof Settings>(key: K, value: Settings[K]) => {
     setSettings((prev) => ({
       ...prev,
       [key]: value,
@@ -196,7 +232,7 @@ const SettingsPanel = ({ open, onClose }: SettingsPanelProps) => {
               </Typography>
               <Slider
                 value={settings.fontSize}
-                onChange={(_, value) => handleChange('fontSize', value)}
+                onChange={(_, value) => handleChange('fontSize', value as number)}
                 aria-labelledby="font-size-slider"
                 valueLabelDisplay="auto"
                 step={1}
@@ -220,7 +256,7 @@ const SettingsPanel = ({ open, onClose }: SettingsPanelProps) => {
                 labelId="keyboard-layout-label"
                 value={settings.keyboardLayout}
                 label="Keyboard Layout"
-                onChange={(e) => handleChange('keyboardLayout', e.target.value)}
+                onChange={(e) => handleChange('keyboardLayout', e.target.value as string)}
               >
                 <MenuItem value="qwerty">QWERTY</MenuItem>
                 <MenuItem value="dvorak">Dvorak</MenuItem>

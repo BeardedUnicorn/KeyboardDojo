@@ -35,24 +35,67 @@ const AppTopBar: FC<AppTopBarProps> = ({
   const isMacOS = osDetectionService.isMacOS();
 
   useEffect(() => {
-    // Set the window title
-    windowService.setTitle(title);
+    // Set the window title with retry mechanism
+    const setAppWindowTitle = async (retryCount = 0, maxRetries = 3) => {
+      try {
+        await windowService.setTitle(title);
+      } catch (error) {
+        console.error(`Failed to set window title in AppTopBar (attempt ${retryCount + 1}/${maxRetries + 1}):`, error);
+        
+        // Retry a few times with exponential backoff if needed
+        if (retryCount < maxRetries) {
+          const delay = Math.pow(2, retryCount) * 500; // 500ms, 1s, 2s
+          setTimeout(() => setAppWindowTitle(retryCount + 1, maxRetries), delay);
+        } else {
+          // Fallback - at least set the document title directly in case window title fails
+          try {
+            document.title = title;
+          } catch (docError) {
+            console.error('Failed to set even document.title:', docError);
+          }
+        }
+      }
+    };
+
+    setAppWindowTitle();
 
     // Check if window is maximized
     const checkMaximized = async () => {
-      const maximized = await windowService.isMaximized();
-      setIsMaximized(maximized);
+      try {
+        const maximized = await windowService.isMaximized();
+        setIsMaximized(maximized);
+      } catch (error) {
+        console.error('Failed to check if window is maximized:', error);
+      }
     };
 
     checkMaximized();
 
-    // Listen for window maximize/unmaximize events
-    const unlistenMaximize = windowService.listen('maximize', () => setIsMaximized(true));
-    const unlistenUnmaximize = windowService.listen('unmaximize', () => setIsMaximized(false));
+    let unlistenMaximize: (() => void) | null = null;
+    let unlistenUnmaximize: (() => void) | null = null;
 
+    try {
+      // Listen for window maximize/unmaximize events
+      unlistenMaximize = windowService.listen('maximize', () => setIsMaximized(true));
+      unlistenUnmaximize = windowService.listen('unmaximize', () => setIsMaximized(false));
+    } catch (error) {
+      console.error('Error setting up window event listeners:', error);
+    }
+
+    // Return cleanup function
     return () => {
-      unlistenMaximize();
-      unlistenUnmaximize();
+      try {
+        // Safely remove event listeners
+        if (typeof unlistenMaximize === 'function') {
+          unlistenMaximize();
+        }
+        
+        if (typeof unlistenUnmaximize === 'function') {
+          unlistenUnmaximize();
+        }
+      } catch (error) {
+        console.error('Error removing window event listeners:', error);
+      }
     };
   }, [title]);
 
@@ -72,7 +115,7 @@ const AppTopBar: FC<AppTopBarProps> = ({
   const dragAreaProps = {
     'data-tauri-drag-region': true,
     className: 'draggable-area',
-    onMouseDown: (e: MouseEvent) => {
+    onMouseDown: (e: React.MouseEvent) => {
       // Only start dragging if the click was on the draggable area
       if ((e.target as HTMLElement).closest('[data-tauri-drag-region="false"]') === null) {
         windowService.startDragging();

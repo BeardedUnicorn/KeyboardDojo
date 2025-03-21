@@ -27,11 +27,11 @@ import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import { useNavigate } from 'react-router-dom';
-import { 
-  getAllLessons, 
-  createLesson, 
-  updateLesson, 
-  deleteLesson, 
+import {
+  getAllLessons,
+  createLesson,
+  updateLesson,
+  deleteLesson,
   seedLessons,
   Lesson,
   LessonInput
@@ -115,7 +115,7 @@ const AdminLessonsManager: React.FC = () => {
         });
       }
       handleCloseDialog();
-      fetchLessons();
+      await fetchLessons();
     } catch (err) {
       setSnackbar({
         open: true,
@@ -129,7 +129,7 @@ const AdminLessonsManager: React.FC = () => {
 
   const handleDelete = async () => {
     if (!currentLesson) return;
-    
+
     setSubmitting(true);
     try {
       await deleteLesson(currentLesson.lessonId);
@@ -139,7 +139,7 @@ const AdminLessonsManager: React.FC = () => {
         severity: 'success',
       });
       handleCloseDialog();
-      fetchLessons();
+      await fetchLessons();
     } catch (err) {
       setSnackbar({
         open: true,
@@ -160,7 +160,7 @@ const AdminLessonsManager: React.FC = () => {
         message: `${result.results.length} lessons seeded successfully`,
         severity: 'success',
       });
-      fetchLessons();
+      await fetchLessons();
     } catch (err) {
       setSnackbar({
         open: true,
@@ -384,4 +384,4 @@ const AdminLessonsManager: React.FC = () => {
   );
 };
 
-export default AdminLessonsManager; 
+export default AdminLessonsManager;

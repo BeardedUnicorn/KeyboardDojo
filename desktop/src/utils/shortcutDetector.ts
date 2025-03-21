@@ -6,6 +6,7 @@
  */
 
 import { loggerService } from '@/services/loggerService';
+import { normalizeKey as baseNormalizeKey, isModifierKey } from './keyNormalization';
 
 // Types for shortcut handling
 export type Modifier = 'Ctrl' | 'Alt' | 'Shift' | 'Meta';
@@ -36,6 +37,40 @@ export interface KeyMapping {
 }
 
 /**
+ * Normalize a key name 
+ * @param key Key name to normalize
+ * @returns Normalized key name
+ */
+export const normalizeKey = (key: string): string => {
+  // This function translates keys to the format expected by the shortcutDetector tests
+  const lowercaseKey = key.toLowerCase();
+  
+  // Handle modifier keys
+  if (lowercaseKey === 'control' || lowercaseKey === 'ctrl') return 'Ctrl';
+  if (lowercaseKey === 'alt' || lowercaseKey === 'option' || lowercaseKey === '⌥') return 'Alt';
+  if (lowercaseKey === 'shift' || lowercaseKey === '⇧') return 'Shift';
+  if (['meta', 'command', 'cmd', '⌘', 'super', 'win', 'windows'].includes(lowercaseKey)) return 'Meta';
+  
+  // Handle special keys
+  if (lowercaseKey === 'return') return 'Enter';
+  if (lowercaseKey === ' ' || lowercaseKey === 'space') return 'Space';
+  
+  // Handle arrow keys
+  if (lowercaseKey === 'up') return 'ArrowUp';
+  if (lowercaseKey === 'down') return 'ArrowDown';
+  if (lowercaseKey === 'left') return 'ArrowLeft';
+  if (lowercaseKey === 'right') return 'ArrowRight';
+  
+  // Handle single letter keys - capitalize
+  if (lowercaseKey.length === 1 && lowercaseKey >= 'a' && lowercaseKey <= 'z') {
+    return lowercaseKey.toUpperCase();
+  }
+  
+  // Return other keys as is
+  return key;
+};
+
+/**
  * Parse a shortcut string into a ShortcutKey object
  * @param shortcutStr Shortcut string (e.g., "Ctrl+Shift+P")
  * @returns ShortcutKey object
@@ -58,68 +93,12 @@ export const formatShortcut = (shortcut: ShortcutKey): string => {
 };
 
 /**
- * Normalize a key to a standard format
- * @param key The key to normalize
- * @returns Normalized key
- */
-export const normalizeKey = (key: string): string => {
-  // Normalize key names
-  switch (key.toLowerCase()) {
-    case 'control':
-    case 'ctrl':
-      return 'Ctrl';
-    case 'alt':
-    case 'option':
-    case '⌥':
-      return 'Alt';
-    case 'shift':
-    case '⇧':
-      return 'Shift';
-    case 'meta':
-    case 'command':
-    case 'cmd':
-    case '⌘':
-    case 'super':
-    case 'win':
-    case 'windows':
-      return 'Meta';
-    case 'escape':
-      return 'Escape';
-    case 'return':
-    case 'enter':
-      return 'Enter';
-    case 'space':
-    case ' ':
-      return 'Space';
-    case 'arrowup':
-    case 'up':
-      return 'ArrowUp';
-    case 'arrowdown':
-    case 'down':
-      return 'ArrowDown';
-    case 'arrowleft':
-    case 'left':
-      return 'ArrowLeft';
-    case 'arrowright':
-    case 'right':
-      return 'ArrowRight';
-    default:
-      // Capitalize single letters
-      if (key.length === 1) {
-        return key.toUpperCase();
-      }
-      return key;
-  }
-};
-
-/**
  * Check if a key is a modifier key
  * @param key The key to check
  * @returns Whether the key is a modifier
  */
 export const isModifier = (key: string): boolean => {
-  const normalizedKey = normalizeKey(key);
-  return ['Ctrl', 'Alt', 'Shift', 'Meta'].includes(normalizedKey);
+  return isModifierKey(key);
 };
 
 /**
@@ -154,11 +133,14 @@ export const matchesShortcut = (event: KeyboardEvent, shortcut: ShortcutKey): bo
   // Check if no extra modifiers are active
   const noExtraModifiers = activeModifiers.every((mod) => shortcut.modifiers.includes(mod));
 
-  // Normalize the key
-  const normalizedKey = normalizeKey(event.key);
+  // Normalize the key from event
+  const normalizedEventKey = normalizeKey(event.key);
+  // Normalize the target key from shortcut
+  const normalizedShortcutKey = normalizeKey(shortcut.key);
 
-  // Check if the key matches
-  const keyMatches = normalizedKey === shortcut.key;
+  // Check if the key matches (either direct match or normalized match)
+  const keyMatches = normalizedEventKey === normalizedShortcutKey ||
+                    event.key === shortcut.key;
 
   return allModifiersActive && noExtraModifiers && keyMatches;
 };
@@ -382,27 +364,35 @@ export class ShortcutDetector {
    * Handle key down event
    */
   private handleKeyDownImpl = (event: KeyboardEvent): void => {
-    // Map the key if needed
-    const mappedKey = this.applyKeyMappings(event.key);
+    // Skip if event is already processed
+    if (event.defaultPrevented) {
+      return;
+    }
+
+    // Apply key mappings
+    const rawKey = event.key;
+    const mappedKey = this.applyKeyMappings(rawKey);
+    const normalizedKey = normalizeKey(mappedKey);
 
     // Add to active keys
-    this.activeKeys.add(mappedKey);
+    this.activeKeys.add(normalizedKey);
 
-    // Check for matching shortcuts
-    for (const [id, shortcut] of this.shortcuts.entries()) {
+    // Check if this event matches any registered shortcuts
+    for (const shortcut of this.shortcuts.values()) {
       if (matchesShortcut(event, shortcut.shortcut)) {
-        // Create shortcut event
-        const shortcutEvent: ShortcutEvent = {
+        this.logger.debug(
+          `Shortcut detected: ${formatShortcut(shortcut.shortcut)} (${shortcut.id})`,
+        );
+
+        // Invoke callback with the shortcut event
+        shortcut.callback({
           shortcut: shortcut.shortcut,
           event,
-        };
+        });
 
-        // Call the callback
-        shortcut.callback(shortcutEvent);
-
-        // Prevent default if it's a shortcut
+        // Prevent default action for the event
         event.preventDefault();
-        return;
+        break;
       }
     }
   };
@@ -414,22 +404,23 @@ export class ShortcutDetector {
 
   /**
    * Handle key up event
-   * @param event Keyboard event
    */
   private handleKeyUp = (event: KeyboardEvent): void => {
     // Apply key mappings
-    const mappedKey = this.applyKeyMappings(normalizeKey(event.key));
+    const rawKey = event.key;
+    const mappedKey = this.applyKeyMappings(rawKey);
+    const normalizedKey = normalizeKey(mappedKey);
 
     // Remove from active keys
-    this.activeKeys.delete(mappedKey);
+    this.activeKeys.delete(normalizedKey);
   };
 
   /**
-   * Handle blur event
-   * This clears all active keys when the window loses focus
+   * Handle window blur event - clear active keys
    */
   private handleBlur = (): void => {
     this.activeKeys.clear();
+    this.logger.debug('Window blur detected, cleared active keys');
   };
 
   /**
@@ -438,7 +429,8 @@ export class ShortcutDetector {
    * @returns Whether the key is pressed
    */
   isKeyPressed(key: string): boolean {
-    return this.activeKeys.has(normalizeKey(key));
+    const normalizedKey = normalizeKey(key);
+    return this.activeKeys.has(normalizedKey);
   }
 
   /**

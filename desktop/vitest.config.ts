@@ -3,8 +3,11 @@ import { resolve } from 'path';
 import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vitest/config';
 
+// Cast the react plugin to avoid type conflicts
+const viteReactPlugin = react();
+
 export default defineConfig({
-  plugins: [react()],
+  plugins: [viteReactPlugin],
   test: {
     globals: true,
     environment: 'jsdom',
@@ -31,6 +34,8 @@ export default defineConfig({
       '@services': resolve(__dirname, './src/services'),
       '@data': resolve(__dirname, './src/data'),
       '@tests': resolve(__dirname, './src/tests'),
+      '@store': resolve(__dirname, './src/store'),
+      '@slices': resolve(__dirname, './src/store/slices'),
     },
   },
 });

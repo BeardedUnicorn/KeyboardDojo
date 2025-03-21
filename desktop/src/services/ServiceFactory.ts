@@ -20,7 +20,7 @@ class ServiceFactory {
    */
   register<T extends BaseService>(name: string, service: T): T {
     if (this.services.has(name)) {
-      loggerService.warn(`Service ${name} is already registered. Returning existing instance.`, {
+      loggerService.debug(`Service ${name} is already registered. Returning existing instance.`, {
         component: 'ServiceFactory',
         action: 'register',
         serviceName: name,
@@ -64,6 +64,7 @@ class ServiceFactory {
    * Initialize a service
    * @param name The name of the service
    * @returns A promise that resolves when the service is initialized
+   * @throws Error if the service initialization fails
    */
   async initializeService(name: string): Promise<void> {
     const service = this.services.get(name);
@@ -75,11 +76,21 @@ class ServiceFactory {
         action: 'initializeService',
         serviceName: name,
       });
-      throw error;
+      throw error; // Throw to properly signal failure
     }
     
     if (this.initializedServices.has(name)) {
-      loggerService.warn(`Service ${name} is already initialized`, {
+      loggerService.debug(`Service ${name} is already initialized`, {
+        component: 'ServiceFactory',
+        action: 'initializeService',
+        serviceName: name,
+      });
+      return;
+    }
+    
+    // Check if the service is already initializing to prevent duplicate initialization
+    if (service.isInitializing && service.isInitializing()) {
+      loggerService.debug(`Service ${name} is already initializing, waiting for completion`, {
         component: 'ServiceFactory',
         action: 'initializeService',
         serviceName: name,
@@ -89,6 +100,18 @@ class ServiceFactory {
     
     try {
       await service.initialize();
+      
+      // Verify service is actually initialized
+      if (!service.isInitialized()) {
+        const error = new Error(`Service ${name} initialize() method completed but service not marked as initialized`);
+        loggerService.error(`Failed to initialize service ${name}`, error, {
+          component: 'ServiceFactory',
+          action: 'initializeService',
+          serviceName: name,
+        });
+        throw error; // Throw to properly signal failure
+      }
+      
       this.initializedServices.add(name);
       
       loggerService.info(`Service ${name} initialized`, {
@@ -102,7 +125,8 @@ class ServiceFactory {
         action: 'initializeService',
         serviceName: name,
       });
-      throw error;
+      
+      throw error; // Always throw to properly signal failures
     }
   }
 
@@ -138,7 +162,7 @@ class ServiceFactory {
     const service = this.services.get(name);
     
     if (!service) {
-      loggerService.warn(`Cannot clean up service ${name}: not registered`, {
+      loggerService.debug(`Cannot clean up service ${name}: not registered`, {
         component: 'ServiceFactory',
         action: 'cleanupService',
         serviceName: name,
@@ -147,7 +171,7 @@ class ServiceFactory {
     }
     
     if (!this.initializedServices.has(name)) {
-      loggerService.warn(`Service ${name} is not initialized, no cleanup needed`, {
+      loggerService.debug(`Service ${name} is not initialized, no cleanup needed`, {
         component: 'ServiceFactory',
         action: 'cleanupService',
         serviceName: name,

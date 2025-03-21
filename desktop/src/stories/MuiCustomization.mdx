@@ -1,0 +1,213 @@
+import { Meta, Story, Canvas, ArgsTable, Source } from '@storybook/blocks';
+import { Button, Typography, Box, Paper, Stack, styled } from '@mui/material';
+import { ThemeProvider, createTheme } from '@mui/material/styles';
+
+<Meta title="Documentation/MUI Customization" />
+
+# MUI v6 Component Customization
+
+This guide demonstrates how to customize MUI components in the Keyboard Dojo application.
+
+## Using Theme Overrides
+
+The application uses a global theme defined in `src/theme.ts`. You can override theme settings for specific components:
+
+<Canvas>
+  <Story name="Theme Override Example">
+    {() => {
+      // Create a custom theme by extending the base theme
+      const customTheme = createTheme({
+        components: {
+          MuiButton: {
+            styleOverrides: {
+              root: {
+                borderRadius: 28,
+                padding: '10px 24px',
+                fontWeight: 600,
+              },
+              contained: {
+                boxShadow: '0 4px 8px rgba(0,0,0,0.1)',
+                '&:hover': {
+                  transform: 'translateY(-2px)',
+                  boxShadow: '0 6px 12px rgba(0,0,0,0.15)',
+                },
+              },
+            },
+          },
+        },
+      });
+      
+      return (
+        <Stack spacing={2} direction="column" alignItems="center">
+          <Typography variant="subtitle1">Default Button</Typography>
+          <Button variant="contained" color="primary">
+            Regular Button
+          </Button>
+          
+          <Typography variant="subtitle1" sx={{ mt: 4 }}>Customized Button</Typography>
+          <ThemeProvider theme={customTheme}>
+            <Button variant="contained" color="primary">
+              Customized Button
+            </Button>
+          </ThemeProvider>
+        </Stack>
+      );
+    }}
+  </Story>
+</Canvas>
+
+## Component Style Customization
+
+There are several ways to customize MUI components in your application:
+
+### 1. Using the `sx` prop
+
+The `sx` prop allows for one-off customizations directly in the component:
+
+<Canvas>
+  <Story name="SX Prop Example">
+    <Stack spacing={2}>
+      <Button 
+        variant="contained" 
+        sx={{ 
+          backgroundColor: '#8A2BE2', 
+          borderRadius: 4,
+          px: 3,
+          '&:hover': {
+            backgroundColor: '#6A1CB0',
+            transform: 'scale(1.05)'
+          }
+        }}
+      >
+        Custom Button with sx
+      </Button>
+    </Stack>
+  </Story>
+</Canvas>
+
+### 2. Using styled components
+
+For reusable component customizations, use the `styled` API:
+
+<Canvas>
+  <Story name="Styled Components Example">
+    {() => {
+      // Create a styled version of MUI Button
+      const GradientButton = styled(Button)(({ theme }) => ({
+        background: 'linear-gradient(45deg, #FE6B8B 30%, #FF8E53 90%)',
+        border: 0,
+        borderRadius: 3,
+        boxShadow: '0 3px 5px 2px rgba(255, 105, 135, .3)',
+        color: 'white',
+        height: 48,
+        padding: '0 30px',
+        transition: 'all 0.3s ease',
+        '&:hover': {
+          transform: 'translateY(-3px)',
+          boxShadow: '0 6px 10px 4px rgba(255, 105, 135, .2)',
+        }
+      }));
+      
+      // Create a styled Paper component
+      const ElevatedPaper = styled(Paper)(({ theme }) => ({
+        padding: theme.spacing(3),
+        background: theme.palette.mode === 'dark' 
+          ? 'linear-gradient(to bottom right, #2a2a2a, #3a3a3a)' 
+          : 'linear-gradient(to bottom right, #ffffff, #f5f5f5)',
+        boxShadow: '0 8px 16px rgba(0,0,0,0.1)',
+        borderRadius: 16,
+        transition: 'all 0.3s ease',
+        '&:hover': {
+          transform: 'translateY(-5px)',
+          boxShadow: '0 12px 20px rgba(0,0,0,0.15)',
+        }
+      }));
+      
+      return (
+        <Stack spacing={4}>
+          <GradientButton>Styled Gradient Button</GradientButton>
+          
+          <ElevatedPaper>
+            <Typography variant="h5" gutterBottom>Styled Paper Component</Typography>
+            <Typography variant="body1">
+              This paper component has custom styling using the styled API.
+            </Typography>
+          </ElevatedPaper>
+        </Stack>
+      );
+    }}
+  </Story>
+</Canvas>
+
+### 3. Using Emotion with MUI
+
+Emotion and MUI work well together for custom styling:
+
+<Canvas>
+  <Story name="Emotion Integration Example">
+    {() => {
+      // Using Emotion's css prop via MUI styled
+      const ColorfulBox = styled(Box)(({ theme }) => ({
+        padding: theme.spacing(3),
+        borderRadius: theme.shape.borderRadius * 2,
+        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        color: 'white',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+        '&:hover': {
+          transform: 'scale(1.05) rotate(1deg)',
+        }
+      }));
+
+      return (
+        <ColorfulBox>
+          <Typography variant="h6" sx={{ mb: 1 }}>Emotion + MUI Integration</Typography>
+          <Typography variant="body2" textAlign="center">
+            This component uses Emotion's styling capabilities with MUI components
+          </Typography>
+        </ColorfulBox>
+      );
+    }}
+  </Story>
+</Canvas>
+
+## Best Practices
+
+When customizing MUI components in Keyboard Dojo:
+
+1. **Prefer theme customization** for app-wide styling to maintain consistency
+2. **Use styled components** for reusable custom components
+3. **Use the sx prop** for one-off customizations that don't need to be reused
+4. **Follow our spacing system** using theme.spacing() instead of arbitrary pixel values
+5. **Maintain accessibility** even when customizing components
+
+<Source
+  language="tsx"
+  code={`
+// Example of a reusable styled component
+const CustomButton = styled(Button)(({ theme }) => ({
+  borderRadius: theme.shape.borderRadius * 3,
+  padding: theme.spacing(1, 3),
+  textTransform: 'none',
+  fontWeight: 600,
+  boxShadow: theme.shadows[3],
+  transition: 'all 0.3s ease',
+  '&:hover': {
+    transform: 'translateY(-2px)',
+    boxShadow: theme.shadows[5],
+  }
+}));
+
+// Usage
+function MyComponent() {
+  return (
+    <CustomButton variant="contained" color="primary">
+      Styled Button
+    </CustomButton>
+  );
+}
+`}
+/> 

@@ -32,11 +32,12 @@ import React, { useState, useEffect } from 'react';
 
 import { curriculumService } from '../../services';
 
-import type { ApplicationTrack, ApplicationType, ICurriculumMetadata, Module } from '../../types/ICurriculum';
 import type { DifficultyLevel } from '@/types/curriculum/DifficultyLevel';
 import type {
   SelectChangeEvent } from '@mui/material';
 import type { FC, SyntheticEvent } from 'react';
+import type { IApplicationTrack, ICurriculumMetadata, IModule } from '@/types/progress/ICurriculum';
+import { ApplicationType } from '@/types/progress/ICurriculum';
 
 interface CurriculumViewProps {
   onSelectLesson?: (trackId: ApplicationType, moduleId: string, lessonId: string) => void;
@@ -48,9 +49,9 @@ const CurriculumView: FC<CurriculumViewProps> = ({
   onSelectChallenge,
 }) => {
   const theme = useTheme();
-  const [selectedTrack, setSelectedTrack] = useState<ApplicationType>('vscode');
+  const [selectedTrack, setSelectedTrack] = useState<ApplicationType>(ApplicationType.VSCODE);
   const [expandedModules, setExpandedModules] = useState<string[]>([]);
-  const [tracks, setTracks] = useState<ApplicationTrack[]>([]);
+  const [tracks, setTracks] = useState<IApplicationTrack[]>([]);
   const [curriculums, setCurriculums] = useState<ICurriculumMetadata[]>([]);
   const [selectedCurriculumId, setSelectedCurriculumId] = useState<string>('');
 
@@ -211,7 +212,7 @@ const CurriculumView: FC<CurriculumViewProps> = ({
   };
 
   // Render a module
-  const renderModule = (module: Module) => {
+  const renderModule = (module: IModule) => {
     const isExpanded = expandedModules.includes(module.id);
     const isUnlocked = isModuleUnlocked(module.id);
 
@@ -270,14 +271,14 @@ const CurriculumView: FC<CurriculumViewProps> = ({
         <Collapse in={isExpanded && isUnlocked} timeout="auto" unmountOnExit>
           <List component="div" disablePadding>
             {module.lessons.map((lesson) => {
-              const lessonCompleted = isLessonCompleted(lesson.lessonId);
-              const lessonUnlocked = isLessonUnlocked(module.id, lesson.lessonId);
-              const progress = getLessonProgress(lesson.lessonId);
+              const lessonCompleted = isLessonCompleted(lesson.id);
+              const lessonUnlocked = isLessonUnlocked(module.id, lesson.id);
+              const progress = getLessonProgress(lesson.id);
 
               return (
-                <ListItem key={lesson.lessonId}>
+                <ListItem key={lesson.id}>
                   <ButtonBase
-                    onClick={() => lessonUnlocked && handleLessonSelect(module.id, lesson.lessonId)}
+                    onClick={() => lessonUnlocked && handleLessonSelect(module.id, lesson.id)}
                     disabled={!lessonUnlocked}
                     sx={{
                       pl: 4,
@@ -360,7 +361,7 @@ const CurriculumView: FC<CurriculumViewProps> = ({
             .filter((module) => module.id.includes('mastery'))
             .flatMap((module) => module.lessons)
             .map((challenge) => (
-              <ListItem key={challenge.lessonId}>
+              <ListItem key={challenge.id}>
                 <ButtonBase
                   onClick={() => handleChallengeSelect(challenge.id)}
                   sx={{

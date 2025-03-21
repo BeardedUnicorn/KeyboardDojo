@@ -94,17 +94,35 @@ export const fetchAchievements = createAsyncThunk(
     try {
       // This would typically call achievementsService.getAchievements()
       // For now, we'll simulate by retrieving from localStorage
-      const storedAchievements = localStorage.getItem('achievements');
-      if (storedAchievements) {
-        return JSON.parse(storedAchievements);
-      }
-      return {
+      let achievementsData = {
         achievements: availableAchievements,
         unlockedAchievements: [],
         completedAchievements: [],
       };
+      
+      try {
+        const storedAchievements = localStorage.getItem('achievements');
+        if (storedAchievements) {
+          const parsedData = JSON.parse(storedAchievements);
+          if (parsedData && typeof parsedData === 'object') {
+            achievementsData = parsedData;
+          }
+        }
+      } catch (storageError) {
+        // If localStorage access fails, log it but use the default achievements
+        loggerService.warn('Error accessing localStorage for achievements, using defaults', {
+          component: 'achievementsSlice',
+          error: storageError,
+        });
+      }
+      
+      return achievementsData;
     } catch (error) {
-      loggerService.error('Error fetching achievements', error);
+      loggerService.error('Error fetching achievements', {
+        component: 'achievementsSlice',
+        action: 'fetchAchievements',
+        error,
+      });
       return rejectWithValue('Failed to fetch achievements');
     }
   },
@@ -131,7 +149,12 @@ export const awardAchievement = createAsyncThunk(
 
       return achievementProgress;
     } catch (error) {
-      loggerService.error('Error awarding achievement', error);
+      loggerService.error('Error awarding achievement', {
+        component: 'achievementsSlice',
+        action: 'awardAchievement',
+        achievementId,
+        error,
+      });
       return rejectWithValue('Failed to award achievement');
     }
   },

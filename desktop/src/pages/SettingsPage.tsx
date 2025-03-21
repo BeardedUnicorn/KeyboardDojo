@@ -20,9 +20,11 @@ import {
 import React, { useState, useEffect } from 'react';
 
 import { useLogger } from '@/services';
+import { useSubscriptionRedux } from '@hooks/useSubscriptionRedux';
 
 import { storageService } from '../../../shared/src/utils';
-import { useSubscription } from '../contexts/SubscriptionContext';
+// The old import is commented out to guide future migration
+// import { useSubscription } from '../contexts/SubscriptionContext';
 
 import type {
   SelectChangeEvent } from '@mui/material';
@@ -68,8 +70,8 @@ const SettingsPage: FC = () => {
   const [updateVersion, setUpdateVersion] = useState<string | null>(null);
   const [appVersion, setAppVersion] = useState('1.0.0');
 
-  const { hasPremium } = useSubscription();
-  const [isPremiumLoading, setIsPremiumLoading] = useState(false);
+  // Migrated to Redux hook
+  const { hasPremium, isLoading: isPremiumLoading } = useSubscriptionRedux();
 
   // Load settings from storage
   useEffect(() => {

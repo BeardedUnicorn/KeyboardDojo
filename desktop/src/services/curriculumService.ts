@@ -18,6 +18,10 @@ import {
   getNextPathNode,
 } from '@data/curriculum';
 
+import { BaseService } from './BaseService';
+import { loggerService } from './loggerService';
+import { serviceFactory } from './ServiceFactory';
+
 import type { IShortcut } from '@/types/curriculum/IShortcut';
 import type { ILesson } from '@/types/curriculum/lesson/ILesson';
 import type {
@@ -29,12 +33,55 @@ import type {
 } from '@/types/progress/ICurriculum';
 import type { IUserProgress } from '@/types/progress/IUserProgress';
 
-class CurriculumService {
+class CurriculumService extends BaseService {
   private userProgress: IUserProgress | null = null;
 
   constructor() {
-    // Initialize the curriculum registry
-    initializeCurriculum();
+    super();
+  }
+
+  /**
+   * Initialize the curriculum service
+   */
+  async initialize(): Promise<void> {
+    await super.initialize();
+    
+    try {
+      // Initialize the curriculum registry
+      initializeCurriculum();
+      
+      loggerService.info('Curriculum service initialized', { 
+        component: 'CurriculumService',
+      });
+      
+      this._status.initialized = true;
+    } catch (error) {
+      loggerService.error('Failed to initialize curriculum service', error, { 
+        component: 'CurriculumService',
+      });
+      
+      this._status.error = error instanceof Error ? error : new Error(String(error));
+      this._status.initialized = false;
+      // Don't throw to allow application to continue with limited functionality
+    }
+  }
+
+  /**
+   * Clean up resources
+   */
+  cleanup(): void {
+    try {
+      // Perform any cleanup needed
+      loggerService.info('Curriculum service cleaned up', { 
+        component: 'CurriculumService',
+      });
+      super.cleanup();
+    } catch (error) {
+      loggerService.error('Error cleaning up curriculum service', error, { 
+        component: 'CurriculumService',
+      });
+      // Don't throw
+    }
   }
 
   /**
@@ -251,4 +298,5 @@ class CurriculumService {
 }
 
 // Create and export a singleton instance
-export const curriculumService = new CurriculumService();
+const curriculumServiceInstance = new CurriculumService();
+export const curriculumService = serviceFactory.register('curriculumService', curriculumServiceInstance);

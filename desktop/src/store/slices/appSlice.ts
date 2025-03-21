@@ -27,16 +27,58 @@ export const initializeApp = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     let success = false;
     let result = null;
+    let partialInitialization = false;
+    let serviceError = null;
     
     try {
-      // This would typically initialize app services, check for updates, etc.
-      result = { success: true };
-      success = true;
+      // Import the initializeAllServices function dynamically to avoid circular imports
+      const { initializeAllServices } = await import('@services/initializeServices');
+      
+      try {
+        // Initialize all services
+        await initializeAllServices();
+        
+        result = { success: true };
+        success = true;
+      } catch (serviceInitError) {
+        // Log the service initialization error but still allow the app to continue
+        loggerService.error('Error initializing services', serviceInitError, {
+          component: 'AppSlice',
+          action: 'initializeApp',
+          recoverable: true,
+        });
+        
+        // We'll still consider the app initialized since services may not be available in some environments
+        partialInitialization = true;
+        serviceError = serviceInitError instanceof Error ? serviceInitError.message : String(serviceInitError);
+        
+        result = { 
+          success: true, 
+          partialInitialization,
+          serviceError,
+        };
+        success = true;
+      }
     } catch (error) {
-      loggerService.error('Error initializing app', error);
+      loggerService.error('Critical error initializing app', error, {
+        component: 'AppSlice',
+        action: 'initializeApp',
+        recoverable: false,
+      });
+      return rejectWithValue('Failed to initialize app: ' + (error instanceof Error ? error.message : String(error)));
     }
     
     if (success) {
+      if (partialInitialization) {
+        // Add a notification for users about partial initialization
+        setTimeout(() => {
+          loggerService.warn('Adding notification about partial initialization', {
+            component: 'AppSlice',
+            action: 'initializeApp',
+            serviceError,
+          });
+        }, 1000);
+      }
       return result;
     } else {
       return rejectWithValue('Failed to initialize app');

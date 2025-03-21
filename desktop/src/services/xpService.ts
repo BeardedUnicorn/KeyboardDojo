@@ -6,7 +6,9 @@
  */
 
 import { audioService } from './audioService';
+import { BaseService } from './BaseService';
 import { loggerService } from './loggerService';
+import { serviceFactory } from './ServiceFactory';
 
 // XP thresholds for each level
 const XP_THRESHOLDS = [
@@ -97,14 +99,64 @@ export interface LevelUpEvent {
   title: string;
 }
 
-class XPService {
+class XPService extends BaseService {
   private storageKey = 'user-xp';
   private xpData: XPData = DEFAULT_XP_DATA;
   private levelUpListeners: ((event: LevelUpEvent) => void)[] = [];
   private changeListeners: (() => void)[] = [];
+  private levelUpListenerMap = new Map<(newLevel: number) => void, (event: LevelUpEvent) => void>();
   
   constructor() {
-    this.loadXPData();
+    super();
+  }
+  
+  /**
+   * Initialize the service
+   */
+  async initialize(): Promise<void> {
+    await super.initialize();
+    
+    try {
+      // Load XP data
+      this.loadXPData();
+      
+      loggerService.info('XP service initialized', { 
+        component: 'XPService',
+      });
+      
+      this._status.initialized = true;
+    } catch (error) {
+      loggerService.error('Failed to initialize XP service', error, { 
+        component: 'XPService',
+      });
+      
+      this._status.error = error instanceof Error ? error : new Error(String(error));
+      this._status.initialized = false;
+      
+      // Rethrow the error to properly signal initialization failure
+      throw error;
+    }
+  }
+
+  /**
+   * Clean up the service
+   */
+  cleanup(): void {
+    try {
+      // Save any unsaved XP data
+      this.saveXPData();
+      
+      loggerService.info('XP service cleaned up', { 
+        component: 'XPService',
+      });
+      
+      super.cleanup();
+    } catch (error) {
+      loggerService.error('Error cleaning up XP service', error, { 
+        component: 'XPService',
+      });
+      // Don't throw
+    }
   }
   
   /**
@@ -376,7 +428,14 @@ class XPService {
    * @param listener Function to call when user levels up
    */
   subscribeToLevelUp(listener: (newLevel: number) => void): void {
-    this.onLevelUp((event) => listener(event.newLevel));
+    // Create a wrapper function that extracts the newLevel from the event
+    const wrapperFn = (event: LevelUpEvent) => listener(event.newLevel);
+    
+    // Store the mapping between the original listener and the wrapper
+    this.levelUpListenerMap.set(listener, wrapperFn);
+    
+    // Add the wrapper to the levelUpListeners array
+    this.onLevelUp(wrapperFn);
   }
   
   /**
@@ -384,11 +443,23 @@ class XPService {
    * @param listener Function to remove from listeners
    */
   unsubscribeFromLevelUp(listener: (newLevel: number) => void): void {
-    // Since we're wrapping the listener in onLevelUp, we can't directly remove it
-    // This is a limitation of the current implementation
-    loggerService.warn('unsubscribeFromLevelUp is not fully implemented');
+    // Get the wrapper function for this listener
+    const wrapperFn = this.levelUpListenerMap.get(listener);
+    
+    if (wrapperFn) {
+      // Remove the wrapper from the levelUpListeners array
+      this.levelUpListeners = this.levelUpListeners.filter((l) => l !== wrapperFn);
+      
+      // Remove the mapping
+      this.levelUpListenerMap.delete(listener);
+    }
   }
 }
 
 // Create and export a singleton instance
 export const xpService = new XPService(); 
+
+// Register with ServiceFactory
+serviceFactory.register('xpService', xpService);
+
+export default xpService; 

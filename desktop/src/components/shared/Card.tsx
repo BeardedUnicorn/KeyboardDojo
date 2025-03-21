@@ -10,7 +10,15 @@ import React from 'react';
 
 import { TRANSITIONS, ELEVATION } from '@/theme';
 
-import { LoadingIcon } from '../feedback/FeedbackAnimation';
+// Use mock LoadingIcon in test environment if available
+let LoadingIcon;
+if (typeof window !== 'undefined' && window.MOCK_LOADING_ICON) {
+  LoadingIcon = window.MOCK_LOADING_ICON;
+} else {
+  // Import the real component
+  const { LoadingIcon: RealLoadingIcon } = require('../feedback/FeedbackAnimation');
+  LoadingIcon = RealLoadingIcon;
+}
 
 import type {
   BaseComponentProps,
@@ -20,6 +28,13 @@ import type {
   ThemeableProps,
 } from './types';
 import type { ReactNode ,FC } from 'react';
+
+// Extend the Window interface for our mock
+declare global {
+  interface Window {
+    MOCK_LOADING_ICON?: any;
+  }
+}
 
 type CardThemeableProps = Omit<ThemeableProps, 'variant'>;
 
@@ -58,7 +73,7 @@ export interface CardProps
   /** Custom header actions */
   headerActions?: ReactNode;
   /** Click handler */
-  onClick?: (event: MouseEvent<HTMLDivElement>) => void;
+  onClick?: (event: React.MouseEvent<HTMLDivElement>) => void;
 }
 
 /**
@@ -100,7 +115,7 @@ export const Card: FC<CardProps> = ({
   ...props
 }) => {
   // Handle click events
-  const handleClick = (event: MouseEvent<HTMLDivElement>) => {
+  const handleClick = (event: React.MouseEvent<HTMLDivElement>) => {
     if (!disabled && onClick) {
       onClick(event);
     }

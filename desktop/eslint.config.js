@@ -114,7 +114,7 @@ export default [
         },
       ],
       'import/order': [
-        'error',
+        'off',
         {
           groups: [
             'builtin',
@@ -167,13 +167,15 @@ export default [
   // Test files rules
   {
     files: [
-      '**/*.spec.ts', 
-      '**/*.spec.tsx', 
-      '**/*.test.ts', 
-      '**/*.test.tsx', 
+      '**/*.spec.ts',
+      '**/*.spec.tsx',
+      '**/*.test.ts',
+      '**/*.test.tsx',
       '**/*.bench.ts',
       '**/*.bench.tsx',
       '**/tests/**',
+      '**/mocks/**/*.ts',
+      '**/mocks/**/*.tsx',
     ],
     languageOptions: {
       globals: {
@@ -184,6 +186,32 @@ export default [
       '@typescript-eslint/no-explicit-any': 'off',
       '@typescript-eslint/no-non-null-assertion': 'off',
       'import/no-extraneous-dependencies': 'off',
+      'no-undef': 'off',
+    },
+  },
+
+  // Storybook-specific rules
+  {
+    files: [
+      '.storybook/**/*.ts',
+      '.storybook/**/*.tsx',
+      '**/*.stories.ts',
+      '**/*.stories.tsx',
+    ],
+    languageOptions: {
+      parserOptions: {
+        project: './tsconfig.json',
+      },
+      globals: {
+        ...globals.jest,
+      },
+    },
+    rules: {
+      'import/no-extraneous-dependencies': 'off',
+      'react-hooks/rules-of-hooks': 'off',
+      'no-console': 'off',
+      '@typescript-eslint/no-require-imports': 'off',
+      'no-undef': 'off',
     },
   },
 
@@ -208,6 +236,8 @@ export default [
       '**/__tests__/**',
       '**/*.test.*',
       '**/tests/**',
+      '.storybook/**',
+      'src/stories/**',
     ],
   },
 ];

@@ -1,6 +1,6 @@
 import type { DifficultyLevel } from '@/types/curriculum/DifficultyLevel';
-import type { ILessonExercise } from '@/types/curriculum/ILessonExercise';
-import type { ILessonStep } from '@/types/curriculum/ILessonStep';
+import type { ILessonExercise } from '@/types/curriculum/lesson/ILessonExercise';
+import type { ILessonStep } from '@/types/curriculum/lesson/ILessonStep';
 import type { IShortcut } from '@/types/curriculum/IShortcut';
 import type { ShortcutCategory } from '@/types/curriculum/ShortcutCategory';
 
